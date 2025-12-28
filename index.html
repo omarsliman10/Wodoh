@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wodoh – وضوح</title>
+  <meta name="description" content="حوّل النصوص والملفات إلى ملخصات وأسئلة تفاعلية خلال ثوانٍ." />
+  <meta name="theme-color" content="#0B1020" />
+
+  <!-- ✅ PDF.js + Worker (must be loaded before script.js) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    }
+  </script>
+
+  <!-- ✅ Mammoth.js for DOCX -->
+  <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="bg-glow g1"></div>
+  <div class="bg-glow g2"></div>
+  <div class="bg-glow g3"></div>
+
+  <!-- Landing -->
+  <section class="landing" id="landing">
+    <div class="landing-card">
+
+      <div class="landing-logo-corner" aria-label="Wodoh Logo">
+        <img src="./logo.png" alt="Wodoh logo" class="landing-logo-img" />
+      </div>
+
+      <div class="badge">
+        <div class="badge-text">
+          <div class="badge-ar" data-i18n="brandAr">وضوح</div>
+          <div class="badge-en" data-i18n="brandEn">Wodoh</div>
+        </div>
+      </div>
+
+      <h1 class="title">
+        <span class="brand-inline">وضوح</span>
+        <span class="brand-inline-en">Wodoh</span><br>
+        <span data-i18n="landingTitle">تعلّم أوضح، أسرع، وبشكل تفاعلي</span>
+      </h1>
+
+      <p class="subtitle" data-i18n="landingSubtitle">
+        الصق نصًا أو ارفع ملفًا، واحصل على ملخص وأسئلة اختيار من متعدد وصح/خطأ — بالعربية أو الإنجليزية.
+      </p>
+
+      <div class="features">
+        <div class="feat" data-i18n="featFast">⚡ سريع</div>
+        <div class="feat" data-i18n="featInteractive">🧠 تفاعلي</div>
+        <div class="feat" data-i18n="featFiles">📄 يدعم ملفات</div>
+        <div class="feat" data-i18n="featLangs">🌐 لغتين</div>
+      </div>
+
+      <div class="cta">
+        <button id="startBtn" class="btn btn-primary" type="button" data-i18n="startBtn">ابدأ الآن</button>
+        <button id="skipBtn" class="btn btn-ghost" type="button" data-i18n="skipBtn">تخطي</button>
+      </div>
+
+      <p class="note">
+        <span class="note-ar" data-i18n="landingNoteAr">منصّة ذكية لتحويل المحتوى إلى فهم حقيقي</span>
+        <span class="note-en" data-i18n="landingNoteEn">A smart platform that turns content into real understanding</span>
+      </p>
+
+    </div>
+  </section>
+
+  <!-- App -->
+  <main class="container app" id="app" style="display:none;">
+
+    <header class="header">
+      <div class="header-logo-corner" aria-label="Wodoh Logo">
+        <img src="./logo.png" alt="Wodoh logo" class="header-logo-img" />
+      </div>
+
+      <div class="brand">
+        <div class="brand-text">
+          <div class="brand-lines">
+            <div class="brand-ar" data-i18n="brandAr">وضوح</div>
+            <div class="brand-en" data-i18n="brandEn">Wodoh</div>
+          </div>
+
+          <div class="brand-desc">
+            <div class="desc-ar" data-i18n="brandDescAr">حوّل المحتوى إلى فهم — ملخصات وأسئلة تفاعلية</div>
+            <div class="desc-en" data-i18n="brandDescEn">Turn content into understanding — summaries & interactive questions</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="mySummariesBtn" class="btn btn-soft" type="button" data-i18n="mySummariesBtn">📚 ملخصاتي</button>
+
+        <button id="headerAccountBtn" class="btn btn-soft" type="button" data-i18n="accountBtnTop">👤 الحساب</button>
+        <button id="headerSubscribeBtn" class="btn btn-primary" type="button" data-i18n="subscribeBtnTop">⭐ اشترك</button>
+
+        <button id="langBtn" class="btn btn-soft" type="button" data-i18n="langBtn">🌐 English</button>
+      </div>
+    </header>
+
+    <section class="panel">
+      <label class="label" id="inputLabel" data-i18n="inputLabel">النص</label>
+
+      <textarea
+        id="textInput"
+        dir="auto"
+        data-i18n-placeholder="textPlaceholder"
+        placeholder="الصق النص هنا..."
+      ></textarea>
+
+      <div class="uploader" id="dropZone">
+        <div class="uploader-top">
+          <div class="uploader-title" id="uploaderTitle" data-i18n="uploadTitle">📎 رفع ملف</div>
+          <button id="clearFileBtn" type="button" class="btn btn-danger" disabled data-i18n="clearFileBtn">مسح الملف ✖</button>
+        </div>
+
+        <div class="uploader-body">
+          <input id="fileInput" type="file" accept=".txt,.pdf,.docx" hidden />
+          <button id="chooseFileBtn" type="button" class="btn btn-soft" data-i18n="chooseFileBtn">اختيار ملف</button>
+
+          <div class="uploader-hint" id="fileHint" data-i18n="fileHint">
+            اسحب الملف هنا أو اضغط “اختيار ملف” (TXT / PDF / DOCX)
+          </div>
+
+          <div class="file-preview" id="filePreview" style="display:none;">
+            <div class="file-name" id="fileName">—</div>
+            <div class="file-meta" id="fileMeta">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="generateBtn" type="button" class="btn btn-primary btn-wide" data-i18n="generateBtn">تلخيص + أسئلة</button>
+      </div>
+
+      <div id="toast" class="toast" style="display:none;"></div>
+    </section>
+
+    <section class="output" id="output"></section>
+    <section id="mySummaries" class="output" style="display:none;"></section>
+
+    <footer class="footer">
+      <span>© <span id="year"></span> <span data-i18n="footerBrand">Wodoh – وضوح</span></span>
+    </footer>
+  </main>
+
+  <!-- Paywall -->
+  <div id="paywallModal" class="modal" style="display:none;">
+    <div class="modal-card">
+      <h3 id="paywallTitle" data-i18n="paywallTitle">🔒 انتهت المحاولات المجانية اليوم</h3>
+      <p id="paywallText" data-i18n="paywallText">لديك 3 مرات يوميًا مجانًا. اشترك للمتابعة بلا حدود.</p>
+      <div class="modal-actions">
+        <button id="paywallAccountBtn" class="btn btn-soft" type="button" data-i18n="accountBtnTop">👤 الحساب</button>
+        <button id="paywallSubscribeBtn" class="btn btn-primary" type="button" data-i18n="subscribeBtnTop">⭐ اشترك</button>
+        <button id="closePaywall" class="btn btn-ghost" type="button" data-i18n="closeBtn">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ Account Modal -->
+  <div id="accountModal" class="modal" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="accountTitle" data-i18n="accountBtnTop">👤 الحساب</h3>
+        <button id="accountClose" class="btn btn-ghost" type="button" aria-label="close">✕</button>
+      </div>
+
+      <div class="tab-row">
+        <button id="tabLogin" class="tab active" type="button" data-i18n="tabLogin">تسجيل دخول</button>
+        <button id="tabSignup" class="tab" type="button" data-i18n="tabSignup">إنشاء حساب</button>
+      </div>
+
+      <div class="auth-form">
+        <label class="field" data-auth-name>
+          <span class="field-label" id="firstNameLabel" data-i18n="firstNameLabel">الاسم الأول</span>
+          <input id="authFirstName" type="text" data-i18n-placeholder="firstNamePh" autocomplete="given-name" />
+        </label>
+
+        <label class="field" data-auth-name>
+          <span class="field-label" id="lastNameLabel" data-i18n="lastNameLabel">اسم العائلة</span>
+          <input id="authLastName" type="text" data-i18n-placeholder="lastNamePh" autocomplete="family-name" />
+        </label>
+
+        <label class="field">
+          <span class="field-label" id="emailLabel" data-i18n="emailLabel">الإيميل</span>
+          <input id="authEmail" type="email" placeholder="name@email.com" autocomplete="email" />
+        </label>
+
+        <label class="field">
+          <span class="field-label" id="passLabel" data-i18n="passLabel">كلمة المرور</span>
+          <input id="authPass" type="password" placeholder="********" autocomplete="current-password" />
+        </label>
+
+        <button id="authSubmit" class="btn btn-primary" type="button" data-i18n="authSubmit">دخول</button>
+
+        <div class="tiny-hint" id="authHint" data-i18n="authHint">
+          ملاحظة: تسجيل الدخول وحده لا يعطيك لا محدود. اللا محدود فقط للمشترك.
+        </div>
+
+        <button id="logoutBtn" class="btn btn-danger" type="button" style="display:none;" data-i18n="logoutBtn">تسجيل خروج</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ Subscribe Modal (PayPal Subscriptions: Monthly + Yearly) -->
+  <div id="subscribeModal" class="modal" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="subTitle" data-i18n="subscribeBtnTop">⭐ الاشتراك</h3>
+        <button id="subClose" class="btn btn-ghost" type="button" aria-label="close">✕</button>
+      </div>
+
+      <p class="sub-text" id="subText" data-i18n="subText">
+        اختر الخطة. عند الاشتراك يصبح الاستخدام بلا حدود.
+      </p>
+
+      <div class="plan-grid">
+        <button class="plan active" data-plan="monthly" type="button">
+          <div class="plan-name">Monthly</div>
+          <div class="plan-price">PayPal Plan</div>
+          <div class="plan-desc">Unlimited</div>
+        </button>
+
+        <button class="plan" data-plan="yearly" type="button">
+          <div class="plan-name">Yearly</div>
+          <div class="plan-price">PayPal Plan</div>
+          <div class="plan-desc">Best value</div>
+        </button>
+      </div>
+
+      <div class="paypal-box">
+        <div class="paypal-note" id="paypalNote" data-i18n="paypalNote">
+          ادفع عبر PayPal لتفعيل الاشتراك.
+        </div>
+
+        <!-- ✅ PayPal Buttons render here -->
+        <div id="paypalButtons" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="tiny-hint" id="subHint" data-i18n="subHint">
+        عند تفعيل الاشتراك سيتم إزالة حد 3 مرات/اليوم.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+
+  <!-- ✅ PayPal SDK (SUBSCRIPTIONS)
+       ملاحظة: لا نحدد currency هنا حتى لا يصير تعارض مع عملة الخطة داخل PayPal -->
+  <script
+    src="https://www.paypal.com/sdk/js?client-id=AQhaA8WOxv9FdWToZccgDLITuazgbSw1bRwSpKARLc1c4bidUFTzsOAjUVf97rVFcw0RaGq0awF9_WhB&vault=true&intent=subscription&components=buttons">
+  </script>
+
+  <script src="script.js"></script>
+</body>
+</html>
