@@ -8,8 +8,8 @@ import multer from "multer";
 import pdfParse from "pdf-parse";
 import mammoth from "mammoth";
 
-import fs from "fs";
-import fsp from "fs/promises";
+import crypto from "crypto";
+import fs from "fs/promises";
 
 dotenv.config();
 
@@ -19,15 +19,15 @@ const PORT = process.env.PORT || 3000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/* ==========================================
-   IMPORTANT: Keep rawBody for PayPal webhooks
-   - PayPal webhook signature verification needs the exact raw bytes
-========================================== */
+/* =======================
+   Body + static
+   ✅ Keep rawBody for PayPal webhooks verification
+======================= */
 app.use(
   express.json({
     limit: "2mb",
     verify: (req, res, buf) => {
-      // store raw body for webhook verification
+      // Keep exact raw bytes (useful for PayPal verification/debug)
       req.rawBody = buf;
     },
   })
@@ -152,7 +152,6 @@ Text:
 ${text}
 `.trim();
 
-  // ✅ Localized "more" requirements (no English leaking into AR/HE)
   const moreReq = isAr
     ? `المطلوب (أسئلة فقط بدون ملخص):
 1) [${headerMCQ}] أنشئ ${safeCount} سؤال جديد تمامًا (A/B/C/D) وحدد ${ansCorrectLabel}: A
@@ -235,324 +234,8 @@ async function callGemini(prompt, apiKey) {
   return { response, data };
 }
 
-/* =====================================================
-   ✅ PayPal: Server-side verification + Webhook storage
-   ENV required:
-   - PAYPAL_CLIENT_ID=...
-   - PAYPAL_CLIENT_SECRET=...
-   - PAYPAL_WEBHOOK_ID=...   (Webhook ID from PayPal dashboard)
-   Optional:
-   - PAYPAL_MODE=live|sandbox  (default: live)
-   - PAYPAL_API_BASE=https://api-m.paypal.com (live) OR https://api-m.sandbox.paypal.com
-===================================================== */
-
-const PAYPAL_MODE = (process.env.PAYPAL_MODE || "").toLowerCase().trim();
-const PAYPAL_API_BASE =
-  process.env.PAYPAL_API_BASE ||
-  (PAYPAL_MODE === "sandbox"
-    ? "https://api-m.sandbox.paypal.com"
-    : "https://api-m.paypal.com");
-
-const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || "";
-const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET || "";
-const PAYPAL_WEBHOOK_ID = process.env.PAYPAL_WEBHOOK_ID || "";
-
-// Simple local storage (safe for MVP). Replace with DB later.
-const DATA_DIR = path.join(__dirname, "data");
-const SUBS_FILE = path.join(DATA_DIR, "subscriptions.json");
-
-async function ensureDataFile() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  if (!fs.existsSync(SUBS_FILE)) {
-    await fsp.writeFile(SUBS_FILE, JSON.stringify({ subscriptions: {} }, null, 2), "utf8");
-  }
-}
-
-async function readSubs() {
-  await ensureDataFile();
-  const raw = await fsp.readFile(SUBS_FILE, "utf8");
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return { subscriptions: {} };
-  }
-}
-
-async function writeSubs(db) {
-  await ensureDataFile();
-  const tmp = SUBS_FILE + ".tmp";
-  await fsp.writeFile(tmp, JSON.stringify(db, null, 2), "utf8");
-  await fsp.rename(tmp, SUBS_FILE);
-}
-
-function isActiveStatus(status) {
-  // PayPal subscription statuses can include: APPROVAL_PENDING, APPROVED, ACTIVE, SUSPENDED, CANCELLED, EXPIRED
-  // We treat ACTIVE as active. You can also treat APPROVED as active depending on your flow.
-  return String(status || "").toUpperCase() === "ACTIVE";
-}
-
-async function getPayPalAccessToken() {
-  if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
-    throw new Error("Missing PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET");
-  }
-
-  const basic = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString("base64");
-  const r = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${basic}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: "grant_type=client_credentials",
-  });
-
-  const data = await r.json();
-  if (!r.ok || !data?.access_token) {
-    throw new Error(`PayPal token error: ${r.status} ${JSON.stringify(data)}`);
-  }
-  return data.access_token;
-}
-
-async function fetchSubscriptionFromPayPal(subscriptionId) {
-  const token = await getPayPalAccessToken();
-  const r = await fetch(`${PAYPAL_API_BASE}/v1/billing/subscriptions/${subscriptionId}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  });
-  const data = await r.json();
-  if (!r.ok) throw new Error(`PayPal subscription fetch failed: ${r.status} ${JSON.stringify(data)}`);
-  return data;
-}
-
-async function verifyPayPalWebhook(req) {
-  // PayPal recommends verifying webhook signature using /v1/notifications/verify-webhook-signature
-  if (!PAYPAL_WEBHOOK_ID) throw new Error("Missing PAYPAL_WEBHOOK_ID");
-
-  const token = await getPayPalAccessToken();
-
-  const transmissionId = req.header("paypal-transmission-id");
-  const transmissionTime = req.header("paypal-transmission-time");
-  const certUrl = req.header("paypal-cert-url");
-  const authAlgo = req.header("paypal-auth-algo");
-  const transmissionSig = req.header("paypal-transmission-sig");
-
-  if (!transmissionId || !transmissionTime || !certUrl || !authAlgo || !transmissionSig) {
-    throw new Error("Missing PayPal webhook headers");
-  }
-
-  const webhookEvent = req.body; // parsed JSON
-  const raw = req.rawBody; // exact bytes captured by express.json verify
-
-  // PayPal expects the exact webhook event object and the exact raw body string for some implementations.
-  // In practice, sending the parsed body works, while the "webhook_event" is the JSON object.
-  // We'll send webhook_event parsed + required headers.
-  const payload = {
-    auth_algo: authAlgo,
-    cert_url: certUrl,
-    transmission_id: transmissionId,
-    transmission_sig: transmissionSig,
-    transmission_time: transmissionTime,
-    webhook_id: PAYPAL_WEBHOOK_ID,
-    webhook_event: webhookEvent,
-  };
-
-  const r = await fetch(`${PAYPAL_API_BASE}/v1/notifications/verify-webhook-signature`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const data = await r.json();
-  if (!r.ok) throw new Error(`Verify webhook failed: ${r.status} ${JSON.stringify(data)}`);
-
-  const status = String(data?.verification_status || "");
-  if (status !== "SUCCESS") {
-    throw new Error(`Webhook signature not verified: ${status}`);
-  }
-
-  return true;
-}
-
-async function upsertSubscriptionStatus(subscriptionId, patch) {
-  const db = await readSubs();
-  db.subscriptions = db.subscriptions || {};
-  const current = db.subscriptions[subscriptionId] || {};
-  db.subscriptions[subscriptionId] = {
-    ...current,
-    ...patch,
-    subscriptionId,
-    updatedAt: new Date().toISOString(),
-  };
-  await writeSubs(db);
-  return db.subscriptions[subscriptionId];
-}
-
-/* ===========================
-   ✅ PayPal Webhook endpoint
-   Add this URL to PayPal dashboard:
-   https://YOUR_DOMAIN/api/paypal/webhook
-=========================== */
-app.post("/api/paypal/webhook", async (req, res) => {
-  try {
-    // 1) verify signature
-    await verifyPayPalWebhook(req);
-
-    // 2) handle event
-    const eventType = String(req.body?.event_type || "");
-    const resource = req.body?.resource || {};
-
-    // For subscription events, resource.id is usually the subscription ID
-    const subscriptionId = resource?.id || resource?.billing_agreement_id || null;
-
-    // If you pass custom_id in create subscription (recommended), it arrives here:
-    // resource.custom_id (depends on integration)
-    const customId = resource?.custom_id || resource?.custom || null;
-
-    if (subscriptionId) {
-      // Map PayPal events to status updates
-      // Common subscription events:
-      // BILLING.SUBSCRIPTION.ACTIVATED
-      // BILLING.SUBSCRIPTION.CANCELLED
-      // BILLING.SUBSCRIPTION.SUSPENDED
-      // BILLING.SUBSCRIPTION.EXPIRED
-      // BILLING.SUBSCRIPTION.UPDATED
-      // BILLING.SUBSCRIPTION.CREATED / APPROVED (depending)
-      let nextStatus = null;
-
-      if (eventType.includes("BILLING.SUBSCRIPTION.")) {
-        // If resource has status, trust it
-        if (resource?.status) nextStatus = resource.status;
-        else {
-          // fallback mapping
-          if (eventType.endsWith(".ACTIVATED")) nextStatus = "ACTIVE";
-          if (eventType.endsWith(".CANCELLED")) nextStatus = "CANCELLED";
-          if (eventType.endsWith(".SUSPENDED")) nextStatus = "SUSPENDED";
-          if (eventType.endsWith(".EXPIRED")) nextStatus = "EXPIRED";
-          if (eventType.endsWith(".APPROVED")) nextStatus = "APPROVED";
-        }
-      }
-
-      const saved = await upsertSubscriptionStatus(subscriptionId, {
-        status: nextStatus || resource?.status || "UNKNOWN",
-        eventType,
-        customId,
-        lastEventId: req.body?.id || null,
-      });
-
-      return res.json({ ok: true, saved });
-    }
-
-    // If event not related to subscription or missing id, still ACK it.
-    res.json({ ok: true, note: "Webhook received (no subscription id found)", eventType });
-  } catch (err) {
-    // Important: PayPal expects 2xx if you want to avoid retries.
-    // But if verification fails, better return 400/401 so it retries (and you can debug).
-    res.status(400).json({ ok: false, error: String(err?.message || err) });
-  }
-});
-
-/* ==========================================
-   ✅ Server-side subscription check endpoints
-   - Use these instead of trusting frontend
-========================================== */
-
-// Fetch latest from PayPal + update local storage
-app.get("/api/subscription/status", async (req, res) => {
-  try {
-    const subscriptionId = String(req.query?.subId || "").trim();
-    if (!subscriptionId) return res.status(400).json({ ok: false, error: "Missing subId" });
-
-    const paypalData = await fetchSubscriptionFromPayPal(subscriptionId);
-    const status = paypalData?.status || "UNKNOWN";
-
-    const saved = await upsertSubscriptionStatus(subscriptionId, {
-      status,
-      lastCheckedAt: new Date().toISOString(),
-      source: "paypal_api",
-    });
-
-    res.json({
-      ok: true,
-      subscriptionId,
-      status,
-      active: isActiveStatus(status),
-      saved,
-    });
-  } catch (err) {
-    res.status(500).json({ ok: false, error: String(err?.message || err) });
-  }
-});
-
-// Lightweight verify endpoint (client can call after onApprove, but server decides)
-app.post("/api/subscription/verify", async (req, res) => {
-  try {
-    const subscriptionId = String(req.body?.subscriptionId || "").trim();
-    if (!subscriptionId) return res.status(400).json({ ok: false, error: "Missing subscriptionId" });
-
-    const paypalData = await fetchSubscriptionFromPayPal(subscriptionId);
-    const status = paypalData?.status || "UNKNOWN";
-
-    const saved = await upsertSubscriptionStatus(subscriptionId, {
-      status,
-      lastVerifiedAt: new Date().toISOString(),
-      source: "paypal_api",
-    });
-
-    res.json({ ok: true, subscriptionId, status, active: isActiveStatus(status), saved });
-  } catch (err) {
-    res.status(500).json({ ok: false, error: String(err?.message || err) });
-  }
-});
-
-/* ==========================================
-   ✅ (Optional) Protect routes with active subscription
-   - Example usage: add requireActiveSubscription middleware to paid endpoints
-   - Client should send header: x-subscription-id: <id>
-========================================== */
-async function requireActiveSubscription(req, res, next) {
-  try {
-    const subId =
-      String(req.header("x-subscription-id") || "").trim() ||
-      String(req.query?.subId || "").trim();
-
-    if (!subId) return res.status(401).json({ ok: false, error: "Missing subscription id" });
-
-    // Prefer stored status first (fast), but you can force PayPal API check if you want.
-    const db = await readSubs();
-    const saved = db?.subscriptions?.[subId];
-    const status = saved?.status || "";
-
-    if (isActiveStatus(status)) return next();
-
-    // Fallback to PayPal API verification (prevents stale local status)
-    const paypalData = await fetchSubscriptionFromPayPal(subId);
-    const liveStatus = paypalData?.status || "UNKNOWN";
-
-    await upsertSubscriptionStatus(subId, {
-      status: liveStatus,
-      lastCheckedAt: new Date().toISOString(),
-      source: "paypal_api_fallback",
-    });
-
-    if (!isActiveStatus(liveStatus)) {
-      return res.status(403).json({ ok: false, error: "Subscription not active", status: liveStatus });
-    }
-
-    next();
-  } catch (err) {
-    res.status(500).json({ ok: false, error: String(err?.message || err) });
-  }
-}
-
 /* =======================
    JSON: /api/generate
-   (unchanged)
 ======================= */
 app.post("/api/generate", async (req, res) => {
   try {
@@ -586,7 +269,6 @@ app.post("/api/generate", async (req, res) => {
 
 /* =======================
    FILE: /api/generate-file
-   (unchanged)
 ======================= */
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -649,15 +331,208 @@ app.post("/api/generate-file", upload.single("file"), async (req, res) => {
   }
 });
 
-/* ==========================================
-   ✅ Example: Protect paid endpoints (optional)
-   If you want /api/generate to be paid-only:
-   - uncomment the middleware below (and same for generate-file)
-========================================== */
-// app.post("/api/generate", requireActiveSubscription, ...)
-// app.post("/api/generate-file", requireActiveSubscription, ...)
+/* =======================
+   PayPal (Webhook + Verify)
+======================= */
+function paypalBase() {
+  const mode = String(process.env.PAYPAL_MODE || "live").toLowerCase();
+  return mode === "sandbox" ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
+}
+
+// ✅ Quick env check
+app.get("/api/paypal/webhook-health", (req, res) => {
+  res.json({
+    ok: true,
+    mode: String(process.env.PAYPAL_MODE || "live"),
+    hasWebhookId: !!process.env.PAYPAL_WEBHOOK_ID,
+    hasClientId: !!process.env.PAYPAL_CLIENT_ID,
+    hasClientSecret: !!process.env.PAYPAL_CLIENT_SECRET,
+  });
+});
+
+let paypalTokenCache = { token: "", exp: 0 };
+
+async function getPayPalAccessToken() {
+  const clientId = process.env.PAYPAL_CLIENT_ID;
+  const secret = process.env.PAYPAL_CLIENT_SECRET;
+  if (!clientId || !secret) throw new Error("Missing PAYPAL_CLIENT_ID or PAYPAL_CLIENT_SECRET");
+
+  const now = Date.now();
+  if (paypalTokenCache.token && paypalTokenCache.exp > now + 10_000) return paypalTokenCache.token;
+
+  const auth = Buffer.from(`${clientId}:${secret}`).toString("base64");
+  const resp = await fetch(`${paypalBase()}/v1/oauth2/token`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${auth}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: "grant_type=client_credentials",
+  });
+
+  if (!resp.ok) {
+    const t = await resp.text().catch(() => "");
+    throw new Error(`PayPal token failed: ${resp.status} ${t}`);
+  }
+
+  const data = await resp.json();
+  const token = data.access_token;
+  const expires = Number(data.expires_in || 300);
+  paypalTokenCache = { token, exp: now + expires * 1000 };
+  return token;
+}
+
+async function verifyPayPalWebhookSignature(reqHeaders, webhookEvent) {
+  const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+  if (!webhookId) throw new Error("Missing PAYPAL_WEBHOOK_ID");
+
+  const token = await getPayPalAccessToken();
+
+  const payload = {
+    auth_algo: reqHeaders["paypal-auth-algo"],
+    cert_url: reqHeaders["paypal-cert-url"],
+    transmission_id: reqHeaders["paypal-transmission-id"],
+    transmission_sig: reqHeaders["paypal-transmission-sig"],
+    transmission_time: reqHeaders["paypal-transmission-time"],
+    webhook_id: webhookId,
+    webhook_event: webhookEvent,
+  };
+
+  const resp = await fetch(`${paypalBase()}/v1/notifications/verify-webhook-signature`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(`verify-webhook-signature failed: ${resp.status}`);
+
+  return data?.verification_status === "SUCCESS";
+}
+
+/* local storage (simple) */
+const DATA_DIR = path.join(__dirname, "data");
+const SUBS_FILE = path.join(DATA_DIR, "subscriptions.json");
+
+async function readSubs() {
+  try {
+    const raw = await fs.readFile(SUBS_FILE, "utf8");
+    return JSON.parse(raw || "{}") || {};
+  } catch {
+    return {};
+  }
+}
+
+async function writeSubs(obj) {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(SUBS_FILE, JSON.stringify(obj, null, 2), "utf8");
+}
+
+function mapStatusFromEventType(eventType, resource) {
+  switch (eventType) {
+    case "BILLING.SUBSCRIPTION.ACTIVATED":
+      return "ACTIVE";
+    case "BILLING.SUBSCRIPTION.CANCELLED":
+      return "CANCELLED";
+    case "BILLING.SUBSCRIPTION.SUSPENDED":
+      return "SUSPENDED";
+    case "BILLING.SUBSCRIPTION.EXPIRED":
+      return "EXPIRED";
+    case "BILLING.SUBSCRIPTION.UPDATED":
+      return String(resource?.status || "UPDATED").toUpperCase();
+    case "BILLING.SUBSCRIPTION.CREATED":
+      return "CREATED";
+    // Support both variants (seen differences in some docs/tools)
+    case "BILLING.SUBSCRIPTION.RE-ACTIVATED":
+    case "BILLING.SUBSCRIPTION.REACTIVATED":
+      return "ACTIVE";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+// PayPal webhook receiver
+app.post("/api/paypal/webhook", async (req, res) => {
+  try {
+    const headers = Object.fromEntries(
+      Object.entries(req.headers).map(([k, v]) => [String(k).toLowerCase(), v])
+    );
+    const event = req.body;
+
+    if (!event || !event.event_type) {
+      return res.status(400).json({ ok: false, error: "Bad webhook payload" });
+    }
+
+    const ok = await verifyPayPalWebhookSignature(headers, event);
+    if (!ok) return res.status(400).json({ ok: false, error: "Invalid signature" });
+
+    const eventType = event.event_type;
+    const resource = event.resource || {};
+    const subId = resource.id || resource?.billing_agreement_id || resource?.subscription_id;
+
+    if (subId) {
+      const subs = await readSubs();
+      subs[subId] = {
+        id: subId,
+        status: mapStatusFromEventType(eventType, resource),
+        updatedAt: new Date().toISOString(),
+        eventType,
+      };
+      await writeSubs(subs);
+    }
+
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e?.message || e) });
+  }
+});
+
+// Verify subscription by calling PayPal directly
+app.post("/api/subscription/verify", async (req, res) => {
+  try {
+    const subscriptionId = String(req.body?.subscriptionId || "").trim();
+    if (!subscriptionId) return res.status(400).json({ ok: false, error: "Missing subscriptionId" });
+
+    const token = await getPayPalAccessToken();
+    const resp = await fetch(`${paypalBase()}/v1/billing/subscriptions/${subscriptionId}`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    });
+
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) return res.status(500).json({ ok: false, error: "PayPal verify failed", details: data });
+
+    const status = String(data?.status || "").toUpperCase();
+    const active = status === "ACTIVE";
+
+    const subs = await readSubs();
+    subs[subscriptionId] = {
+      id: subscriptionId,
+      status,
+      updatedAt: new Date().toISOString(),
+      source: "verify",
+    };
+    await writeSubs(subs);
+
+    res.json({ ok: true, active, status });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e?.message || e) });
+  }
+});
+
+// Local status check
+app.get("/api/subscription/status", async (req, res) => {
+  const subId = String(req.query?.subId || "").trim();
+  if (!subId) return res.status(400).json({ ok: false, error: "Missing subId" });
+
+  const subs = await readSubs();
+  const row = subs[subId];
+  res.json({ ok: true, found: !!row, data: row || null });
+});
 
 app.listen(PORT, () => {
   console.log(`✅ Server running: http://localhost:${PORT}`);
-  console.log(`💳 PayPal API base: ${PAYPAL_API_BASE}`);
 });
