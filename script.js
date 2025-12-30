@@ -65,11 +65,11 @@ function consumeOneUse(){
 
 /* =======================
    Auth + Subscription (Local state)
-   ✅ UPDATED: store subscriptionId
 ======================= */
 const LS_USER_KEY = "wodoh_user_v1";
+
 /* =======================
-   Users DB (Local) ✅ NEW
+   Users DB (Local)
 ======================= */
 const LS_USERS_DB_KEY = "wodoh_users_db_v1";
 
@@ -190,6 +190,21 @@ const accountClose = document.getElementById("accountClose");
 const tabLogin = document.getElementById("tabLogin");
 const tabSignup = document.getElementById("tabSignup");
 
+/* Subscribe modal */
+const subscribeModal = document.getElementById("subscribeModal");
+const subClose = document.getElementById("subClose");
+const paypalButtonsEl = document.getElementById("paypalButtons");
+
+/* =======================
+   Pro Auth UX elements
+======================= */
+const authAlert = document.getElementById("authAlert");
+const togglePass = document.getElementById("togglePass");
+const rememberMe = document.getElementById("rememberMe");
+const forgotPass = document.getElementById("forgotPass");
+const authCancel = document.getElementById("authCancel");
+const logoutArea = document.getElementById("logoutArea");
+
 /* name fields */
 const authFirstName = document.getElementById("authFirstName");
 const authLastName  = document.getElementById("authLastName");
@@ -198,11 +213,6 @@ const authEmail = document.getElementById("authEmail");
 const authPass = document.getElementById("authPass");
 const authSubmit = document.getElementById("authSubmit");
 const logoutBtn = document.getElementById("logoutBtn");
-
-/* Subscribe modal */
-const subscribeModal = document.getElementById("subscribeModal");
-const subClose = document.getElementById("subClose");
-const paypalButtonsEl = document.getElementById("paypalButtons");
 
 /* =======================
    i18n
@@ -435,10 +445,69 @@ function hideToast(){
 function openModal(el){ if (el) el.style.display = "flex"; }
 function closeModal(el){ if (el) el.style.display = "none"; }
 
+/* =======================
+   File helpers (needed by restoreSession)
+======================= */
+function clearFile(){
+  currentFile = null;
+  if (filePreview) filePreview.style.display = "none";
+  if (fileNameEl) fileNameEl.textContent = "—";
+  if (fileMetaEl) fileMetaEl.textContent = "—";
+  if (clearFileBtn) clearFileBtn.disabled = true;
+}
+function updateFileUI(file){
+  if (!filePreview || !fileNameEl || !fileMetaEl) return;
+  filePreview.style.display = "block";
+  fileNameEl.textContent = file.name;
+  fileMetaEl.textContent = `${formatBytes(file.size)} • ${file.type || file.name.split(".").pop()?.toUpperCase()}`;
+}
+function readTxt(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onerror = ()=> reject(reader.error);
+    reader.onload = ()=> resolve(reader.result || "");
+    reader.readAsText(file, "utf-8");
+  });
+}
+async function readDocx(file){
+  const buf = await file.arrayBuffer();
+  const result = await window.mammoth.extractRawText({ arrayBuffer: buf });
+  return result?.value || "";
+}
+async function readPdf(file){
+  const buf = await file.arrayBuffer();
+  try{
+    if (window.pdfjsLib?.GlobalWorkerOptions && !window.pdfjsLib.GlobalWorkerOptions.workerSrc){
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    }
+  }catch(e){}
+  const loadingTask = window.pdfjsLib.getDocument({ data: buf });
+  const pdf = await loadingTask.promise;
+  let fullText = "";
+  for (let i=1; i<=pdf.numPages; i++){
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const strings = content.items.map(it=> it.str);
+    fullText += strings.join(" ") + "\n";
+  }
+  return fullText;
+}
+function formatBytes(bytes){
+  if (!bytes || bytes <= 0) return "0 B";
+  const units = ["B","KB","MB","GB"];
+  let i=0, n=bytes;
+  while (n >= 1024 && i < units.length - 1){ n/=1024; i++; }
+  return `${n.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+}
+
+/* =======================
+   Header buttons
+======================= */
 function refreshHeaderButtons(){
   const u = getUser();
 
-  // ✅ Show name (username) not email
+  // ✅ Show name not email
   if (headerAccountBtn){
     const fullName = `${u.firstName || ""} ${u.lastName || ""}`.trim();
     if (u.loggedIn){
@@ -548,8 +617,6 @@ function openAccount(mode="login"){
     logoutBtn.textContent = currentLang==="ar" ? "تسجيل خروج" : "Log out";
   }
   openModal(accountModal);
-
-  // ✅ small UX: focus email
   setTimeout(()=>{ authEmail?.focus?.(); }, 50);
 }
 function closeAccount(){ closeModal(accountModal); }
@@ -568,6 +635,75 @@ tabSignup?.addEventListener("click", ()=> setAccountTab("signup"));
   });
 });
 
+/* =======================
+   Pro Auth UX (SAFE ORDER)
+======================= */
+function showAuthAlert(msg, type="err"){
+  if (!authAlert) return;
+  authAlert.className = `auth-alert ${type === "ok" ? "ok" : "err"}`;
+  authAlert.textContent = msg;
+  authAlert.style.display = "block";
+}
+function clearAuthAlert(){
+  if (!authAlert) return;
+  authAlert.className = "auth-alert";
+  authAlert.textContent = "";
+  authAlert.style.display = "none";
+}
+
+togglePass?.addEventListener("click", ()=>{
+  if (!authPass) return;
+  const isPwd = authPass.type === "password";
+  authPass.type = isPwd ? "text" : "password";
+  togglePass.textContent = isPwd ? "🙈" : "👁";
+});
+
+authCancel?.addEventListener("click", ()=> closeModal(accountModal));
+
+forgotPass?.addEventListener("click", ()=>{
+  showAuthAlert(
+    currentLang==="ar"
+      ? "ميزة استرجاع كلمة المرور قريبًا. حاليًا: تواصل مع الدعم أو استخدم إيميل آخر."
+      : "Password reset is coming soon. For now, contact support or use another email.",
+    "err"
+  );
+});
+
+// Remember email
+const LS_REMEMBER_KEY = "wodoh_remember_email_v1";
+try{
+  const savedEmail = localStorage.getItem(LS_REMEMBER_KEY) || "";
+  if (savedEmail && authEmail){
+    authEmail.value = savedEmail;
+    if (rememberMe) rememberMe.checked = true;
+  }
+}catch{}
+
+// Wrap openAccount safely (after it exists)
+const _oldOpenAccount = openAccount;
+openAccount = function(mode="login"){
+  _oldOpenAccount(mode);
+  clearAuthAlert();
+  const u = getUser();
+  if (logoutArea) logoutArea.classList.toggle("show", !!u.loggedIn);
+};
+
+// Wrap setUser safely (after it exists)
+const _oldSetUser = setUser;
+setUser = function(obj){
+  _oldSetUser(obj);
+  try{
+    if (rememberMe?.checked && obj?.email){
+      localStorage.setItem(LS_REMEMBER_KEY, obj.email);
+    }else{
+      localStorage.removeItem(LS_REMEMBER_KEY);
+    }
+  }catch{}
+};
+
+/* =======================
+   Auth submit / logout
+======================= */
 authSubmit?.addEventListener("click", ()=>{
   const emailRaw = (authEmail?.value || "").trim();
   const pass = (authPass?.value || "").trim();
@@ -588,7 +724,6 @@ authSubmit?.addEventListener("click", ()=>{
       return;
     }
 
-    // ✅ منع إنشاء حساب بنفس الإيميل
     const created = createUser({ email, pass, firstName, lastName });
     if (!created.ok && created.error === "EMAIL_EXISTS"){
       showToast(currentLang==="ar" ? "⚠️ هذا الإيميل مسجل بالفعل. سجّل دخول بدلًا من ذلك." : "⚠️ Email already exists. Please log in.", "err", 3500);
@@ -605,16 +740,14 @@ authSubmit?.addEventListener("click", ()=>{
       lastName
     });
 
-    // ✅ clear fields
     if (authPass) authPass.value = "";
-
     closeAccount();
     refreshHeaderButtons();
     showToast(t("toastSignedUp"));
     return;
   }
 
-  // ✅ login
+  // login
   const res = verifyLogin(email, pass);
   if (!res.ok){
     if (res.error === "NOT_FOUND"){
@@ -635,14 +768,11 @@ authSubmit?.addEventListener("click", ()=>{
     lastName: res.user.lastName || ""
   });
 
-  // ✅ clear password
   if (authPass) authPass.value = "";
-
   closeAccount();
   refreshHeaderButtons();
   showToast(t("toastLoggedIn"));
 });
-
 
 logoutBtn?.addEventListener("click", ()=>{
   const u = getUser();
@@ -653,12 +783,10 @@ logoutBtn?.addEventListener("click", ()=>{
 });
 
 /* =======================
-   Subscribe modal (PayPal REAL) ✅ FIXED + SERVER VERIFY ✅
+   Subscribe modal (PayPal REAL) + SERVER VERIFY
 ======================= */
 let selectedPlan = "monthly";
 let paypalRendered = false;
-
-// ✅ NEW: wait timer so we can render once SDK is ready (no need to reopen modal)
 let paypalWaitTimer = null;
 
 function getSelectedPlanId(){
@@ -671,10 +799,9 @@ function openSubscribe(){
     return;
   }
   openModal(subscribeModal);
-  ensurePayPalButtons(); // ✅ will now auto-wait for SDK
+  ensurePayPalButtons();
 }
 
-// ✅ updated: stop waiting if user closes modal
 function closeSubscribe(){
   if (paypalWaitTimer){
     clearInterval(paypalWaitTimer);
@@ -699,12 +826,10 @@ function ensurePayPalButtons(){
   if (paypalRendered) return;
   if (!paypalButtonsEl) return;
 
-  // reset container
   paypalButtonsEl.innerHTML = "";
 
   const isReady = () => !!(window.paypal && window.paypal.Buttons);
 
-  // ✅ If PayPal SDK not ready yet, wait and render automatically when ready
   if (!isReady()){
     showToast(
       currentLang === "ar"
@@ -733,22 +858,16 @@ function ensurePayPalButtons(){
     return;
   }
 
-  // ready -> render
   try{
     window.paypal.Buttons({
-      style: {
-        layout: "vertical",
-        shape: "rect",
-        label: "subscribe",
-      },
+      style: { layout: "vertical", shape: "rect", label: "subscribe" },
 
       createSubscription: function(data, actions) {
         const planId = getSelectedPlanId();
         return actions.subscription.create({ plan_id: planId });
       },
 
-      onApprove: async function(data, actions) {
-        // ✅ IMPORTANT: server verify before enabling unlimited
+      onApprove: async function(data) {
         const subscriptionId = data?.subscriptionID || "";
         const verify = await serverVerifySubscription(subscriptionId);
 
@@ -828,48 +947,39 @@ function applyLang(){
 
 /* =======================
    Session Save/Restore
+   ✅ المطلوب:
+   - بعد الريفرش نمسح النص/النتائج/الملف
+   - لكن اللغة تبقى (اختياري)
+   - تسجيل الدخول + الاشتراك يبقوا (LS_USER_KEY مستقل)
 ======================= */
 const LS_SESSION_KEY = "wodoh_last_session_v5";
 
 function saveSession(){
   try{
-    const payload = {
+    // نخزن فقط اللغة (بدون نص/نتائج/ملف)
+    localStorage.setItem(LS_SESSION_KEY, JSON.stringify({
       lang: currentLang,
-      text: (textInput?.value || ""),
-      lastSourceText: lastSourceText || "",
-      lastOutputLang: lastOutputLang || "",
-      previousQuestions,
-      outputHTML: output?.innerHTML || "",
-      fileName: currentFile?.name || "",
-      fileSize: currentFile?.size || 0,
       ts: Date.now()
-    };
-    localStorage.setItem(LS_SESSION_KEY, JSON.stringify(payload));
-  }catch(e){}
+    }));
+  }catch{}
 }
+
 function restoreSession(){
+  // ✅ دائماً: نظّف الواجهة عند الريفرش
+  if (textInput) textInput.value = "";
+  if (output) output.innerHTML = "";
+  previousQuestions = [];
+  lastSourceText = "";
+  lastOutputLang = "";
+  clearFile();
+
+  // ✅ رجّع اللغة فقط إن وجدت
   try{
     const raw = localStorage.getItem(LS_SESSION_KEY);
     if (!raw) return;
     const s = JSON.parse(raw);
-
-    if (s.lang) currentLang = s.lang;
-    if (textInput && typeof s.text === "string") textInput.value = s.text;
-    if (typeof s.lastSourceText === "string") lastSourceText = s.lastSourceText;
-    if (typeof s.lastOutputLang === "string") lastOutputLang = s.lastOutputLang;
-    if (Array.isArray(s.previousQuestions)) previousQuestions = s.previousQuestions;
-
-    if (output && typeof s.outputHTML === "string" && s.outputHTML.trim()){
-      output.innerHTML = s.outputHTML;
-    }
-
-    if (s.fileName && filePreview && fileNameEl && fileMetaEl){
-      filePreview.style.display = "block";
-      fileNameEl.textContent = s.fileName;
-      fileMetaEl.textContent = s.fileSize ? formatBytes(s.fileSize) : "—";
-      if (clearFileBtn) clearFileBtn.disabled = false;
-    }
-  }catch(e){}
+    if (s?.lang) currentLang = s.lang;
+  }catch{}
 }
 
 /* =======================
@@ -892,7 +1002,31 @@ restoreSession();
 applyLang();
 refreshHeaderButtons();
 setAccountTab("login");
+
+// نخزن اللغة فقط
 textInput?.addEventListener("input", saveSession);
+
+/* ✅ keep subscription but verify it on every refresh */
+(async function verifySubOnLoad(){
+  try{
+    const u = getUser();
+    if (!u?.subscriptionId) return;
+
+    const v = await serverVerifySubscription(u.subscriptionId);
+
+    if (!v.ok || !v.active){
+      setUser({
+        loggedIn: u.loggedIn,
+        subscribed: false,
+        subscriptionId: "",
+        email: u.email || "",
+        firstName: u.firstName || "",
+        lastName: u.lastName || ""
+      });
+    }
+    refreshHeaderButtons();
+  }catch{}
+})();
 
 /* =======================
    Uploader Logic (TXT / PDF / DOCX)
@@ -906,7 +1040,10 @@ fileInput?.addEventListener("change", async ()=>{
   fileInput.value = "";
 });
 
-clearFileBtn?.addEventListener("click", clearFile);
+clearFileBtn?.addEventListener("click", ()=>{
+  clearFile();
+  saveSession();
+});
 
 dropZone?.addEventListener("dragover", (e)=>{ e.preventDefault(); dropZone.classList.add("dragover"); });
 dropZone?.addEventListener("dragleave", ()=> dropZone.classList.remove("dragover"));
@@ -962,66 +1099,10 @@ async function handleFile(file){
     lastOutputLang = detectLangFromText(extracted);
 
     saveSession();
-  }catch(err){
-    console.error(err);
-    showToast(t("toastErr"), "err", 3500);
+  }catch(e){
+    console.error(e);
+    showToast(t("toastErr"), "err");
   }
-}
-
-function clearFile(){
-  currentFile = null;
-  if (filePreview) filePreview.style.display = "none";
-  if (fileNameEl) fileNameEl.textContent = "—";
-  if (fileMetaEl) fileMetaEl.textContent = "—";
-  if (clearFileBtn) clearFileBtn.disabled = true;
-  saveSession();
-}
-
-function updateFileUI(file){
-  if (!filePreview || !fileNameEl || !fileMetaEl) return;
-  filePreview.style.display = "block";
-  fileNameEl.textContent = file.name;
-  fileMetaEl.textContent = `${formatBytes(file.size)} • ${file.type || file.name.split(".").pop()?.toUpperCase()}`;
-}
-
-function readTxt(file){
-  return new Promise((resolve, reject)=>{
-    const reader = new FileReader();
-    reader.onerror = ()=> reject(reader.error);
-    reader.onload = ()=> resolve(reader.result || "");
-    reader.readAsText(file, "utf-8");
-  });
-}
-async function readDocx(file){
-  const buf = await file.arrayBuffer();
-  const result = await window.mammoth.extractRawText({ arrayBuffer: buf });
-  return result?.value || "";
-}
-async function readPdf(file){
-  const buf = await file.arrayBuffer();
-  try{
-    if (window.pdfjsLib?.GlobalWorkerOptions && !window.pdfjsLib.GlobalWorkerOptions.workerSrc){
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-    }
-  }catch(e){}
-  const loadingTask = window.pdfjsLib.getDocument({ data: buf });
-  const pdf = await loadingTask.promise;
-  let fullText = "";
-  for (let i=1; i<=pdf.numPages; i++){
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    const strings = content.items.map(it=> it.str);
-    fullText += strings.join(" ") + "\n";
-  }
-  return fullText;
-}
-function formatBytes(bytes){
-  if (!bytes || bytes <= 0) return "0 B";
-  const units = ["B","KB","MB","GB"];
-  let i=0, n=bytes;
-  while (n >= 1024 && i < units.length - 1){ n/=1024; i++; }
-  return `${n.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
 /* =======================
@@ -1159,7 +1240,6 @@ generateBtn?.addEventListener("click", async ()=>{
       `);
     }
 
-    // ✅ Summary: paragraphs + bullets together in saved text
     const paras = (parsed.summaryParas || parsed.summary || []);
     const bullets = (parsed.summaryBullets || []);
     const summaryText =
@@ -1269,48 +1349,39 @@ document.addEventListener("click", async (e)=>{
 });
 
 /* =======================
-   Answer selection ✅ UPDATED (طلبك 100%)
-   - إذا اختار غلط: يقدر يغيّر
-   - إذا اختار صح: يقفل السؤال ولا يمكن الضغط مجددًا
+   Answer selection
 ======================= */
-document.addEventListener("click",(e)=>{
-  const opt = e.target.closest("[data-opt]");
+document.addEventListener("click", (e) => {
+  const opt = e.target.closest("button[data-opt]");
   if (!opt) return;
 
   const q = opt.closest(".q");
   if (!q) return;
 
-  // ✅ if locked (already answered correctly) => ignore
   if (q.dataset.locked === "1") return;
 
-  const chosen = opt.dataset.opt;
-  const correct = q.dataset.correct;
+  const chosen = String(opt.dataset.opt || "");
+  const correct = String(q.dataset.correct || "");
 
-  // ✅ Clear previous marks (allow changing when wrong)
-  q.querySelectorAll("[data-opt]").forEach(b=>{
-    b.classList.remove("wrong","correct","disabled");
-    b.disabled = false;
+  q.querySelectorAll("button[data-opt]").forEach((b) => {
+    b.classList.remove("correct", "wrong", "selected");
   });
 
-  // ✅ Mark current choice
-  if (chosen === correct){
-    // ✅ correct => lock forever
+  opt.classList.add("selected");
+
+  if (chosen === correct) {
     q.dataset.locked = "1";
-    q.querySelectorAll("[data-opt]").forEach(b=>{
+    q.querySelectorAll("button[data-opt]").forEach((b) => {
       b.disabled = true;
       b.classList.add("disabled");
-      if (b.dataset.opt === correct) b.classList.add("correct");
+      if (String(b.dataset.opt || "") === correct) b.classList.add("correct");
     });
   } else {
-    // ✅ wrong => allow retry
     opt.classList.add("wrong");
-    // show correct (optional) but keep enabled:
-    // q.querySelectorAll("[data-opt]").forEach(b=>{
-    //   if (b.dataset.opt === correct) b.classList.add("correct");
-    // });
+    opt.disabled = true;
   }
 
-  saveSession();
+  saveSession?.();
 });
 
 /* =======================
@@ -1392,7 +1463,7 @@ function renderTF(q){
 }
 
 /* =======================
-   Parser ✅ UPDATED (Summary paragraphs + bullets)
+   Parser (Summary paragraphs + bullets)
 ======================= */
 function parseGeminiText(text){
   const raw = String(text || "").replace(/\r/g, "");
@@ -1419,13 +1490,11 @@ function parseGeminiText(text){
     buffer = [];
     if (!joined) return;
 
-    // Split into blocks by blank lines
     const blocks = joined.split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean);
 
     for (const block of blocks){
       const blines = block.split("\n").map(x=>x.trim()).filter(Boolean);
 
-      // If block is all bullets -> bullets
       if (blines.length && blines.every(isBulletLine)){
         blines.forEach(line=>{
           summaryBullets.push(line.replace(/^(\-|\*|•)\s+/, "").trim());
@@ -1433,7 +1502,6 @@ function parseGeminiText(text){
         continue;
       }
 
-      // Mixed: collect bullet lines separately, rest as paragraph
       const paraLines = [];
       blines.forEach(line=>{
         if (isBulletLine(line)){
@@ -1499,9 +1567,7 @@ function parseGeminiText(text){
 
   if (section === "summary") flushSummaryBuffer();
 
-  // Backward compatible "summary" array (paragraphs only)
   const summary = [...summaryParas];
-
   return { summary, summaryParas, summaryBullets, mcq, tf, raw };
 }
 
@@ -1531,8 +1597,9 @@ function saveSummaries(list){
 }
 function addSummaryItem({ title, summaryText, questions }){
   const list = loadSummaries();
+
   const id = (window.crypto?.randomUUID)
-    ? crypto.randomUUID()
+    ? window.crypto.randomUUID()
     : String(Date.now()) + "-" + Math.random().toString(16).slice(2);
 
   list.unshift({
@@ -1669,6 +1736,7 @@ document.addEventListener("keydown",(e)=>{
 
 /* =======================
    Language toggle (UI only)
+   ✅ لا نمسح شيء هنا
 ======================= */
 langBtn?.addEventListener("click", ()=>{
   currentLang = currentLang === "ar" ? "en" : "ar";

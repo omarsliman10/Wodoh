@@ -163,55 +163,92 @@
     </div>
   </div>
 
-  <!-- ✅ Account Modal -->
+  <!-- ✅ Account Modal (UPDATED to match your CSS + script.js ids) -->
   <div id="accountModal" class="modal" style="display:none;">
-    <div class="modal-card">
-      <div class="modal-head">
-        <h3 id="accountTitle" data-i18n="accountBtnTop">👤 الحساب</h3>
-        <button id="accountClose" class="btn btn-ghost" type="button" aria-label="close">✕</button>
+    <div class="modal-card auth-pro">
+
+      <div class="auth-header">
+        <div>
+          <h3 class="auth-title" id="accountTitle" data-i18n="accountBtnTop">👤 الحساب</h3>
+          <div class="auth-subtitle" data-i18n="authSubtitle">
+            سجّل دخولك أو أنشئ حسابك خلال ثوانٍ.
+          </div>
+        </div>
+        <button id="accountClose" class="auth-close" type="button" aria-label="close">✕</button>
       </div>
 
-      <div class="tab-row">
-        <button id="tabLogin" class="tab active" type="button" data-i18n="tabLogin">تسجيل دخول</button>
-        <button id="tabSignup" class="tab" type="button" data-i18n="tabSignup">إنشاء حساب</button>
+      <!-- ✅ Tabs (match .auth-tabs styling) -->
+      <div class="auth-tabs">
+        <button id="tabLogin" class="active" type="button" data-i18n="tabLogin">تسجيل دخول</button>
+        <button id="tabSignup" type="button" data-i18n="tabSignup">إنشاء حساب</button>
       </div>
 
-      <!-- ✅ NEW: profile card when logged in (UI only, safe addition) -->
-      <div id="authProfile" style="display:none;margin:10px 0 12px;padding:12px;border-radius:14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
-        <div id="authProfileName" style="font-weight:800;margin-bottom:6px;">—</div>
-        <div id="authProfileEmail" style="opacity:.85;font-size:13px;">—</div>
-        <div id="authProfileSub" style="opacity:.85;font-size:13px;margin-top:6px;">—</div>
-      </div>
+      <!-- ✅ Alert (used by script.js) -->
+      <div id="authAlert" class="auth-alert"></div>
 
-      <div class="auth-form">
-        <label class="field" data-auth-name>
-          <span class="field-label" id="firstNameLabel" data-i18n="firstNameLabel">الاسم الأول</span>
-          <input id="authFirstName" type="text" data-i18n-placeholder="firstNamePh" autocomplete="given-name" />
-        </label>
+      <form class="auth-form" onsubmit="return false;">
+        <!-- ✅ Names row (shown only on signup via [data-auth-name]) -->
+        <div class="auth-names" data-auth-name>
+          <label class="field">
+            <span class="field-label" id="firstNameLabel" data-i18n="firstNameLabel">الاسم الأول</span>
+            <div class="field-control">
+              <input id="authFirstName" type="text" data-i18n-placeholder="firstNamePh" autocomplete="given-name" />
+            </div>
+          </label>
 
-        <label class="field" data-auth-name>
-          <span class="field-label" id="lastNameLabel" data-i18n="lastNameLabel">اسم العائلة</span>
-          <input id="authLastName" type="text" data-i18n-placeholder="lastNamePh" autocomplete="family-name" />
-        </label>
+          <label class="field">
+            <span class="field-label" id="lastNameLabel" data-i18n="lastNameLabel">اسم العائلة</span>
+            <div class="field-control">
+              <input id="authLastName" type="text" data-i18n-placeholder="lastNamePh" autocomplete="family-name" />
+            </div>
+          </label>
+        </div>
 
         <label class="field">
           <span class="field-label" id="emailLabel" data-i18n="emailLabel">الإيميل</span>
-          <input id="authEmail" type="email" placeholder="name@email.com" autocomplete="email" />
+          <div class="field-control">
+            <input id="authEmail" type="email" placeholder="name@email.com" autocomplete="email" />
+          </div>
         </label>
 
         <label class="field">
           <span class="field-label" id="passLabel" data-i18n="passLabel">كلمة المرور</span>
-          <input id="authPass" type="password" placeholder="********" autocomplete="current-password" />
+          <div class="field-control">
+            <input id="authPass" type="password" placeholder="********" autocomplete="current-password" />
+            <!-- ✅ Toggle pass (used by script.js) -->
+            <button id="togglePass" class="icon-btn" type="button" aria-label="toggle password">👁</button>
+          </div>
         </label>
 
-        <button id="authSubmit" class="btn btn-primary" type="button" data-i18n="authSubmit">دخول</button>
+        <!-- ✅ remember + forgot (ids used by script.js) -->
+        <div class="auth-row">
+          <label class="check">
+            <input id="rememberMe" type="checkbox" />
+            <span data-i18n="rememberMe">تذكرني</span>
+          </label>
 
-        <div class="tiny-hint" id="authHint" data-i18n="authHint">
+          <button id="forgotPass" class="link-btn" type="button" data-i18n="forgotPass">
+            نسيت كلمة المرور؟
+          </button>
+        </div>
+
+        <div class="auth-actions">
+          <button id="authSubmit" class="btn btn-primary" type="button" data-i18n="authSubmit">دخول</button>
+          <button id="authCancel" class="btn btn-secondary" type="button" data-i18n="cancelBtn">إغلاق</button>
+        </div>
+
+        <div class="auth-divider"></div>
+
+        <div class="tiny-hint" id="authHint" data-i18n="authHint" style="margin-top:10px;opacity:.9;line-height:1.6;">
           ملاحظة: تسجيل الدخول وحده لا يعطيك لا محدود. اللا محدود فقط للمشترك.
         </div>
 
-        <button id="logoutBtn" class="btn btn-danger" type="button" style="display:none;" data-i18n="logoutBtn">تسجيل خروج</button>
-      </div>
+        <!-- ✅ logout area (used by script.js) -->
+        <div id="logoutArea" class="logout-area">
+          <button id="logoutBtn" class="btn btn-danger" type="button" data-i18n="logoutBtn">تسجيل خروج</button>
+        </div>
+      </form>
+
     </div>
   </div>
 
@@ -246,7 +283,6 @@
           ادفع عبر PayPal لتفعيل الاشتراك.
         </div>
 
-        <!-- ✅ PayPal Buttons render here -->
         <div id="paypalButtons" style="margin-top:12px;"></div>
       </div>
 

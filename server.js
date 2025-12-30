@@ -11,27 +11,93 @@ import mammoth from "mammoth";
 import crypto from "crypto";
 import fs from "fs/promises";
 
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import jwt from "jsonwebtoken";
+
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+/* =======================
+   Paths
+======================= */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /* =======================
-   Body + static
+   ✅ Render proxy support (important for secure cookies + rate limit)
+======================= */
+app.set("trust proxy", 1); // Render / proxies
+app.disable("x-powered-by");
+
+/* =======================
+   CORS
+   (ضيف localhost لو بتجرب محليًا)
+======================= */
+app.use(
+  cors({
+    origin: ["https://wodoh.onrender.com", "http://localhost:3000"],
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
+
+/* =======================
+   Security headers
+======================= */
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // لأن عندك CDN + PayPal + PDF.js
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
+/* =======================
+   Cookies
+======================= */
+app.use(cookieParser());
+
+/* =======================
+   Body
    ✅ Keep rawBody for PayPal webhooks verification
 ======================= */
 app.use(
   express.json({
     limit: "2mb",
     verify: (req, res, buf) => {
-      req.rawBody = buf;
+      req.rawBody = buf; // مهم للتحقق من PayPal webhook
     },
   })
 );
 
+/* =======================
+   Basic rate limit for APIs
+======================= */
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 min
+  max: 120, // 120 requests / 15min لكل IP
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use("/api/", apiLimiter);
+
+/* ✅ Rate limit for auth routes only */
+const authLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use("/api/auth", authLimiter);
+
+/* =======================
+   Static
+======================= */
 app.use(express.static(__dirname));
 
 app.get("/", (req, res) => {
@@ -39,6 +105,75 @@ app.get("/", (req, res) => {
 });
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
+
+/* =======================
+   ✅ JWT helpers (HttpOnly Cookie)
+======================= */
+function mustHaveJwtSecret() {
+  if (!process.env.JWT_SECRET) {
+    throw new Error("Missing JWT_SECRET in environment variables");
+  }
+}
+
+function signToken(payload) {
+  mustHaveJwtSecret();
+  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
+}
+
+function setAuthCookie(res, token) {
+  const isProd = process.env.NODE_ENV === "production";
+  res.cookie("wodoh_token", token, {
+    httpOnly: true,
+    secure: isProd, // ✅ Render = HTTPS
+    sameSite: "lax",
+    path: "/",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+}
+
+function clearAuthCookie(res) {
+  res.clearCookie("wodoh_token", { path: "/" });
+}
+
+function requireAuth(req, res, next) {
+  try {
+    mustHaveJwtSecret();
+    const token = req.cookies?.wodoh_token;
+    if (!token) return res.status(401).json({ ok: false, error: "UNAUTH" });
+
+    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    next();
+  } catch {
+    return res.status(401).json({ ok: false, error: "UNAUTH" });
+  }
+}
+
+/* =======================
+   ✅ Auth endpoints (Step 1)
+======================= */
+app.post("/api/auth/dev-login", (req, res) => {
+  try {
+    const token = signToken({
+      id: "demo",
+      name: "Demo User",
+      email: "demo@wodoh",
+      subActive: false,
+    });
+    setAuthCookie(res, token);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e?.message || e) });
+  }
+});
+
+app.get("/api/auth/me", requireAuth, (req, res) => {
+  res.json({ ok: true, user: req.user });
+});
+
+app.post("/api/auth/logout", (req, res) => {
+  clearAuthCookie(res);
+  res.json({ ok: true });
+});
 
 /* =======================
    Prompt builder (AR/EN/HE)
@@ -65,7 +200,6 @@ function buildPrompts({ text, count, mode, lang, previous }) {
 
   const isAr = L === "ar";
   const isHe = L === "he";
-  const isEn = L === "en";
 
   const headerSummary = isAr ? "ملخص" : isHe ? "סיכום" : "Summary";
   const headerMCQ = isAr ? "اختيار من متعدد" : isHe ? "רב־ברירה" : "Multiple Choice";
@@ -94,7 +228,6 @@ ${previous.map((q, i) => `${i + 1}) ${q}`).join("\n")}`)
 
   const plan = summaryPlanByLength(text);
 
-  // ✅ UPDATED: paragraphs + bullets together
   const summaryInstruction = isAr
     ? `1) [${headerSummary}] اكتب ملخصًا مكوّنًا من:
 - فقرات (${plan.minParas} إلى ${plan.maxParas} فقرات). كل فقرة ${plan.sentences} جمل.
@@ -122,7 +255,6 @@ Length should scale with the text (longer text = more detail).`;
       ? `3) [${headerTF}] צור ${safeCount} שאלות ${headerTF}. בשורת התשובה כתוב ${ansLabel}: T או F בלבד.`
       : `3) [${headerTF}] Create ${safeCount} ${headerTF} questions. In the answer line write ${ansLabel}: T or F only.`;
 
-  // ✅ UPDATED example format includes bullets
   const formatBlock = `
 Follow EXACT format:
 
@@ -438,6 +570,29 @@ async function readSubs() {
 async function writeSubs(obj) {
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(SUBS_FILE, JSON.stringify(obj, null, 2), "utf8");
+}
+
+/* =======================
+   Users storage (local)
+======================= */
+const USERS_FILE = path.join(DATA_DIR, "users.json");
+
+async function readUsers() {
+  try {
+    const raw = await fs.readFile(USERS_FILE, "utf8");
+    return JSON.parse(raw || "[]") || [];
+  } catch {
+    return [];
+  }
+}
+
+async function writeUsers(users) {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2), "utf8");
+}
+
+function normEmail(email) {
+  return String(email || "").trim().toLowerCase();
 }
 
 function mapStatusFromEventType(eventType, resource) {

@@ -116,7 +116,7 @@ body{
   padding: 28px;
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  position: relative; /* ✅ needed for landing logo corner */
+  position: relative; /* needed for landing logo corner */
 }
 
 .badge{ display:none; }
@@ -177,27 +177,22 @@ body{
   letter-spacing: .3px;
 }
 
-/* ✅ Landing logo corner — FIXED (smaller + right in RTL / left in LTR + no overlap) */
+/* Landing logo corner */
 .landing-logo-corner{
   position: absolute;
   top: 18px;
-
   width: 170px;
   height: 170px;
   border-radius: 28px;
-
   display:flex;
   align-items:center;
   justify-content:center;
-
   background: rgba(255,255,255,.10);
   border: 1px solid rgba(255,255,255,.18);
-
   box-shadow:
     0 26px 75px rgba(0,0,0,.52),
     0 0 45px rgba(34,211,238,.18),
     inset 0 0 18px rgba(255,255,255,.10);
-
   z-index: 5;
 }
 .landing-logo-img{
@@ -206,7 +201,6 @@ body{
   object-fit: contain;
   display:block;
 }
-
 html[dir="rtl"] .landing-logo-corner{ right: 18px; left: auto; }
 html[dir="ltr"] .landing-logo-corner{ left: 18px; right: auto; }
 
@@ -255,7 +249,6 @@ html[dir="ltr"] .landing-logo-corner{ left: 18px; right: auto; }
   gap:12px;
   min-width:0;
 }
-
 html[dir="rtl"] .brand{ padding-right: 96px; padding-left: 0; }
 html[dir="ltr"] .brand{ padding-left: 96px; padding-right: 0; }
 
@@ -317,19 +310,15 @@ html[dir="ltr"] .brand{ padding-left: 96px; padding-right: 0; }
 .header-logo-corner{
   position:absolute;
   top:14px;
-
   width: 84px;
   height: 84px;
   border-radius: 18px;
-
   display:flex;
   align-items:center;
   justify-content:center;
-
   background: rgba(255,255,255,.06);
   border: 1px solid rgba(255,255,255,.12);
   box-shadow: 0 0 22px rgba(0,0,0,.25);
-
   z-index: 5;
   pointer-events:none;
 }
@@ -529,7 +518,7 @@ textarea:focus{
   transition: all .15s ease;
 }
 
-/* ✅ تعديل hover هنا: محايد بدون أزرق */
+/* hover محايد */
 .q button[data-opt]:hover{
   background: rgba(255,255,255,.08);
   border-color: rgba(255,255,255,.22);
@@ -562,22 +551,495 @@ textarea:focus{
   transition: filter .2s ease, opacity .2s ease, transform .2s ease;
 }
 
-/* ==========================================================
-   ✅ OVERRIDES (ضعها آخر الملف) — تمنع أي أزرق نهائيًا بالأسئلة
-   - لا تغيير إلا داخل خيارات quiz
-========================================================== */
+/* OVERRIDES: تمنع أي أزرق بالأسئلة */
 .q button[data-opt]{
   outline: none !important;
   box-shadow: none !important;
   -webkit-tap-highlight-color: transparent;
 }
-
 .q button[data-opt]:focus,
 .q button[data-opt]:focus-visible{
   outline: none !important;
   box-shadow: none !important;
 }
+.q button[data-opt]:active{ transform: translateY(0px); }
 
-.q button[data-opt]:active{
-  transform: translateY(0px);
+/* More button */
+.more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #EAF0FF;
+  font-family: "Cairo", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(6px);
 }
+.more-btn .plus {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7C3AED, #22D3EE);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+}
+.more-btn:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(124, 58, 237, 0.25),
+    rgba(34, 211, 238, 0.25)
+  );
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+}
+.more-btn:active { transform: scale(0.96); }
+
+/* FORCE instant feedback */
+.q button[data-opt].wrong,
+.q .opt.wrong{
+  background: rgba(239,68,68,.16) !important;
+  border-color: rgba(239,68,68,.55) !important;
+  color: #FEF2F2 !important;
+}
+.q button[data-opt].correct,
+.q .opt.correct{
+  background: rgba(34,197,94,.18) !important;
+  border-color: rgba(34,197,94,.55) !important;
+  color: #ECFDF5 !important;
+}
+.q button[data-opt].wrong:hover,
+.q .opt.wrong:hover,
+.q button[data-opt].correct:hover,
+.q .opt.correct:hover{ transform: none !important; }
+
+/* =========================
+   Pro Auth Modal
+========================= */
+.modal-card.auth-pro{
+  padding: 18px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(11,16,32,.96), rgba(11,16,32,.90));
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow: 0 26px 80px rgba(0,0,0,.55);
+}
+
+.auth-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom: 10px;
+}
+.auth-title{
+  font-weight:1000;
+  font-size:18px;
+  margin:0;
+}
+.auth-subtitle{
+  margin:6px 0 0;
+  font-size:13px;
+  color: rgba(170,183,230,.85);
+  line-height: 1.6;
+}
+
+.auth-close{
+  width:38px;
+  height:38px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.05);
+  color: rgba(234,240,255,.92);
+  cursor:pointer;
+}
+.auth-close:hover{ background: rgba(255,255,255,.08); }
+
+.auth-form{
+  display:grid;
+  gap:12px;
+  margin-top: 10px;
+}
+
+.field{ display:grid; gap:8px; }
+.field-label{
+  font-weight:900;
+  color: rgba(234,240,255,.92);
+  font-size: 13px;
+}
+.field-control{ position: relative; }
+
+.field input{
+  width:100%;
+  padding: 12px 44px 12px 14px; /* LTR */
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.05);
+  color: rgba(234,240,255,.95);
+  outline:none;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+html[dir="rtl"] .field input{ padding: 12px 14px 12px 44px; }
+
+.field input:focus{
+  border-color: rgba(255,255,255,.22);
+  box-shadow: 0 0 0 4px rgba(255,255,255,.06);
+  background: rgba(255,255,255,.06);
+}
+
+.icon-btn{
+  position:absolute;
+  top:50%;
+  transform: translateY(-50%);
+  width:34px;
+  height:34px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.05);
+  color: rgba(234,240,255,.88);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+html[dir="ltr"] .icon-btn{ right: 8px; }
+html[dir="rtl"] .icon-btn{ left: 8px; }
+
+.icon-btn:hover{ background: rgba(255,255,255,.08); }
+.icon-btn:focus{ outline:none; box-shadow:none; }
+
+.auth-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+
+.check{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size: 13px;
+  color: rgba(170,183,230,.9);
+  user-select:none;
+}
+.check input{ width: 16px; height: 16px; }
+
+.link-btn{
+  background: none;
+  border: none;
+  color: rgba(234,240,255,.9);
+  cursor:pointer;
+  font-weight: 800;
+  font-size: 13px;
+  padding: 0;
+  opacity: .9;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.link-btn:hover{ opacity: 1; }
+
+.auth-alert{
+  display:none;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.04);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.auth-alert.err{
+  display:block;
+  border-color: rgba(239,68,68,.35);
+  background: rgba(239,68,68,.10);
+}
+.auth-alert.ok{
+  display:block;
+  border-color: rgba(34,197,94,.35);
+  background: rgba(34,197,94,.10);
+}
+
+.auth-actions{
+  display:flex;
+  gap:10px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.auth-actions .btn{ flex:1; }
+.auth-actions .btn-secondary{
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.05);
+}
+
+.auth-divider{
+  margin: 10px 0 0;
+  height: 1px;
+  background: rgba(255,255,255,.10);
+}
+
+.logout-area{
+  margin-top: 10px;
+  display:none;
+}
+.logout-area.show{ display:block; }
+
+/* Name fields in 2 columns when signup */
+.auth-names{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+@media (max-width: 520px){
+  .auth-names{ grid-template-columns: 1fr; }
+}
+.auth-form .field{ margin-bottom: 10px; }
+
+/* =========================
+   ✅ FIXED: Modal Center + Tabs
+   (هنا الإصلاح النهائي بدون تكرار)
+========================= */
+
+/* overlay */
+.modal{
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  display: none;               /* JS يفتحها flex */
+  align-items: center;
+  justify-content: center;
+
+  padding: 18px;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.modal[style*="display: flex"]{
+  display: flex !important;
+}
+
+.modal .modal-card{
+  width: min(560px, 92vw);
+  max-height: min(78vh, 720px);
+  overflow: auto;
+
+  border-radius: 22px;
+  margin: 0 !important;
+}
+
+/* Tabs (Login / Signup) */
+.auth-tabs{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 18px;
+}
+.auth-tabs button{
+  flex: 1;
+  max-width: 160px;
+  padding: 10px 14px;
+  border-radius: 14px;
+
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.16);
+  color: #EAF0FF;
+
+  font-weight: 900;
+  cursor: pointer;
+  transition: all .2s ease;
+
+  position: relative; /* حماية من أي absolute */
+  top: auto;
+  left: auto;
+  right: auto;
+}
+.auth-tabs button:hover{
+  background: rgba(255,255,255,.10);
+}
+.auth-tabs button.active{
+  background: linear-gradient(135deg, var(--p1), var(--p2));
+  border-color: transparent;
+  box-shadow: 0 10px 30px rgba(124,58,237,.35);
+}
+html[dir="rtl"] .auth-tabs{ flex-direction: row-reverse; }
+/* =========================
+   Account modal — better tabs/buttons
+========================= */
+#accountModal .modal-card{
+  max-width: 520px;
+}
+
+#accountModal .modal-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+#accountModal #accountClose{
+  width:40px;
+  height:40px;
+  border-radius:999px;
+  padding:0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.05);
+  color: var(--text);
+  transition: transform .12s ease, background .12s ease, border-color .12s ease;
+}
+#accountModal #accountClose:hover{
+  background:rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.16);
+  transform: translateY(-1px);
+}
+
+/* ✅ Segmented tabs (Login/Signup) */
+#accountModal .tab-row{
+  margin-top: 10px;
+  display:flex;
+  gap:0;
+  padding:6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow: 0 10px 28px rgba(0,0,0,.25);
+  width: fit-content;
+}
+
+#accountModal .tab-row .tab{
+  appearance:none;
+  border:0;
+  background:transparent;
+  color: rgba(234,240,255,.85);
+  padding:10px 16px;
+  border-radius: 999px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  cursor:pointer;
+  transition: background .15s ease, color .15s ease, transform .12s ease, box-shadow .15s ease;
+  min-width: 140px;
+  text-align:center;
+}
+
+#accountModal .tab-row .tab:hover{
+  background: rgba(255,255,255,.06);
+  transform: translateY(-1px);
+}
+
+#accountModal .tab-row .tab.active{
+  color: var(--text);
+  background: linear-gradient(90deg, rgba(124,58,237,.75), rgba(34,211,238,.55));
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
+
+/* ✅ Make auth primary button nicer inside modal */
+#accountModal #authSubmit.btn{
+  border-radius: 16px;
+  height: 46px;
+  font-weight: 900;
+  letter-spacing: .2px;
+}
+
+/* ✅ Inputs inside modal look cleaner */
+#accountModal .auth-form .field input{
+  height: 44px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.04);
+  color: var(--text);
+}
+#accountModal .auth-form .field input:focus{
+  outline: none;
+  border-color: rgba(124,58,237,.55);
+  box-shadow: 0 0 0 4px rgba(124,58,237,.18);
+}
+/* FORCE style for account tabs */
+#accountModal .tab-row{
+  margin-top: 10px !important;
+  display:flex !important;
+  gap:0 !important;
+  padding:6px !important;
+  border-radius:999px !important;
+  background: rgba(255,255,255,.06) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  width: 100% !important;
+}
+
+#accountModal .tab-row .tab{
+  flex:1 !important;
+  border:0 !important;
+  background: transparent !important;
+  color: rgba(234,240,255,.86) !important;
+  padding:10px 14px !important;
+  border-radius:999px !important;
+  font-weight:800 !important;
+  cursor:pointer !important;
+  text-align:center !important;
+}
+
+#accountModal .tab-row .tab:hover{
+  background: rgba(255,255,255,.07) !important;
+}
+
+#accountModal .tab-row .tab.active{
+  background: linear-gradient(90deg, rgba(124,58,237,.85), rgba(34,211,238,.60)) !important;
+  color: #fff !important;
+}
+body{ outline: 10px solid lime !important; }
+/* =========================
+   Account Modal Tabs (matches your HTML: .auth-tabs)
+========================= */
+#accountModal .auth-tabs{
+  display:flex;
+  gap: 0;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow: 0 10px 28px rgba(0,0,0,.25);
+  width: 100%;
+  justify-content: center;
+  margin: 12px 0 18px;
+}
+
+#accountModal .auth-tabs button{
+  flex: 1;
+  min-width: 140px;
+  border: 0;
+  background: transparent;
+  color: rgba(234,240,255,.86);
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, transform .12s ease, box-shadow .15s ease;
+}
+
+#accountModal .auth-tabs button:hover{
+  background: rgba(255,255,255,.07);
+  transform: translateY(-1px);
+}
+
+#accountModal .auth-tabs button.active{
+  background: linear-gradient(90deg, rgba(124,58,237,.85), rgba(34,211,238,.60));
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
+
+html[dir="rtl"] #accountModal .auth-tabs{ flex-direction: row-reverse; }
+
