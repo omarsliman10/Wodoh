@@ -252,45 +252,55 @@
     </div>
   </div>
 
-  <!-- ✅ Subscribe Modal (PayPal Subscriptions: Monthly + Yearly) -->
-  <div id="subscribeModal" class="modal" style="display:none;">
-    <div class="modal-card">
-      <div class="modal-head">
-        <h3 id="subTitle" data-i18n="subscribeBtnTop">⭐ الاشتراك</h3>
-        <button id="subClose" class="btn btn-ghost" type="button" aria-label="close">✕</button>
-      </div>
+  <!-- ✅ Subscribe Modal (Premium UI) -->
+<div id="subscribeModal" class="modal" style="display:none;">
+  <div class="modal-card modal-card--subscribe" role="dialog" aria-modal="true">
 
-      <p class="sub-text" id="subText" data-i18n="subText">
+    <button id="subClose" class="sub-x" type="button" aria-label="close">✕</button>
+
+    <div class="sub-head">
+      <h3 id="subTitle" class="sub-title" data-i18n="subscribeBtnTop">⭐ الاشتراك</h3>
+      <p class="sub-subtitle" id="subText" data-i18n="subText">
         اختر الخطة. عند الاشتراك يصبح الاستخدام بلا حدود.
       </p>
+    </div>
 
-      <div class="plan-grid">
-        <button class="plan active" data-plan="monthly" type="button">
+    <!-- خطط -->
+    <div class="sub-plans" dir="ltr">
+      <button class="plan active" data-plan="monthly" type="button">
+        <div class="plan-top">
           <div class="plan-name">Monthly</div>
-          <div class="plan-price">PayPal Plan</div>
-          <div class="plan-desc">Unlimited</div>
-        </button>
-
-        <button class="plan" data-plan="yearly" type="button">
-          <div class="plan-name">Yearly</div>
-          <div class="plan-price">PayPal Plan</div>
-          <div class="plan-desc">Best value</div>
-        </button>
-      </div>
-
-      <div class="paypal-box">
-        <div class="paypal-note" id="paypalNote" data-i18n="paypalNote">
-          ادفع عبر PayPal لتفعيل الاشتراك.
+          <div class="plan-badge">Unlimited</div>
         </div>
+        <div class="plan-price">PayPal Plan</div>
+        <div class="plan-desc">Unlimited access</div>
+      </button>
 
-        <div id="paypalButtons" style="margin-top:12px;"></div>
+      <button class="plan" data-plan="yearly" type="button">
+        <div class="plan-top">
+          <div class="plan-name">Yearly</div>
+          <div class="plan-badge best">Best value</div>
+        </div>
+        <div class="plan-price">PayPal Plan</div>
+        <div class="plan-desc">Save more yearly</div>
+      </button>
+    </div>
+
+    <!-- PayPal -->
+    <div class="sub-pay">
+      <div class="paypal-note" id="paypalNote" data-i18n="paypalNote">
+        ادفع عبر PayPal لتفعيل الاشتراك.
       </div>
 
-      <div class="tiny-hint" id="subHint" data-i18n="subHint">
+      <div id="paypalButtons" class="paypal-box" style="margin-top:12px;"></div>
+
+      <div class="tiny-hint" id="subHint" data-i18n="subHint" style="margin-top:10px;">
         عند تفعيل الاشتراك سيتم إزالة حد 3 مرات/اليوم.
       </div>
     </div>
+
   </div>
+</div>
 
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();

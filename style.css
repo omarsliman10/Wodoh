@@ -968,3 +968,181 @@ html[dir="rtl"] #accountModal .auth-tabs{ flex-direction: row-reverse; }
   border-color: rgba(124,58,237,.55);
   box-shadow: 0 0 0 4px rgba(124,58,237,.18);
 }
+/* =========================
+   Subscribe Modal – Premium UI
+========================= */
+.modal{
+  position: fixed;
+  inset: 0;
+  display: none;               /* أنت تستعمل openModal => flex */
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0,0,0,.58);
+  backdrop-filter: blur(10px);
+  z-index: 9999;
+}
+
+.modal-card{
+  width: min(560px, 100%);
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(10,14,30,.72);
+  box-shadow: 0 22px 70px rgba(0,0,0,.55);
+  padding: 18px;
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-card::before{
+  content:"";
+  position:absolute;
+  inset:-2px;
+  background: radial-gradient(900px 240px at 10% 0%,
+    rgba(124,58,237,.22), transparent 55%),
+    radial-gradient(900px 240px at 90% 0%,
+    rgba(34,211,238,.18), transparent 55%);
+  pointer-events:none;
+  filter: blur(0px);
+}
+
+.modal-x{
+  position: absolute;
+  top: 12px;
+  inset-inline-start: 12px; /* RTL/LTR friendly */
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.92);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: transform .15s ease, background .15s ease, border-color .15s ease;
+}
+.modal-x:hover{
+  transform: scale(1.03);
+  background: rgba(255,255,255,.09);
+  border-color: rgba(255,255,255,.18);
+}
+
+.sub-head{
+  padding: 10px 10px 6px;
+  margin-inline-start: 44px; /* space for X button */
+}
+.sub-title{
+  font-weight: 900;
+  font-size: 22px;
+  letter-spacing: .2px;
+  color: rgba(255,255,255,.96);
+}
+.sub-subtitle{
+  margin-top: 6px;
+  opacity: .80;
+  line-height: 1.6;
+}
+
+.sub-plans{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.plan{
+  text-align: left;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.05);
+  cursor: pointer;
+  transition: transform .15s ease, border-color .15s ease, background .15s ease;
+  position: relative;
+  overflow: hidden;
+}
+.plan:hover{
+  transform: translateY(-1px);
+  border-color: rgba(255,255,255,.18);
+  background: rgba(255,255,255,.07);
+}
+.plan.active{
+  border-color: rgba(34,211,238,.45);
+  box-shadow: 0 10px 40px rgba(34,211,238,.12);
+}
+.plan-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+}
+.plan-name{
+  font-weight: 800;
+  color: rgba(255,255,255,.95);
+}
+.plan-badge{
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  opacity: .95;
+}
+.plan-badge.best{
+  border-color: rgba(124,58,237,.35);
+  background: rgba(124,58,237,.14);
+}
+.plan-price{
+  margin-top: 10px;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: .3px;
+}
+.plan-price span{
+  font-size: 13px;
+  opacity: .75;
+  font-weight: 700;
+  margin-left: 4px;
+}
+.plan-desc{
+  margin-top: 6px;
+  font-size: 13px;
+  opacity: .80;
+}
+
+.sub-pay{
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.18);
+}
+.sub-pay-title{
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+.paypal-box{
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+/* PayPal iframe/buttons spacing */
+#paypalButtons > div{
+  margin: 0 auto;
+}
+
+/* Footer text */
+.sub-foot{
+  margin-top: 10px;
+  font-size: 13px;
+  opacity: .78;
+  line-height: 1.6;
+}
+
+/* Mobile */
+@media (max-width: 520px){
+  .sub-plans{ grid-template-columns: 1fr; }
+  .sub-head{ margin-inline-start: 44px; }
+}
