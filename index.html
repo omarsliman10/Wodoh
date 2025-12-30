@@ -176,6 +176,13 @@
         <button id="tabSignup" class="tab" type="button" data-i18n="tabSignup">إنشاء حساب</button>
       </div>
 
+      <!-- ✅ NEW: profile card when logged in (UI only, safe addition) -->
+      <div id="authProfile" style="display:none;margin:10px 0 12px;padding:12px;border-radius:14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
+        <div id="authProfileName" style="font-weight:800;margin-bottom:6px;">—</div>
+        <div id="authProfileEmail" style="opacity:.85;font-size:13px;">—</div>
+        <div id="authProfileSub" style="opacity:.85;font-size:13px;margin-top:6px;">—</div>
+      </div>
+
       <div class="auth-form">
         <label class="field" data-auth-name>
           <span class="field-label" id="firstNameLabel" data-i18n="firstNameLabel">الاسم الأول</span>
@@ -253,8 +260,7 @@
     document.getElementById("year").textContent = new Date().getFullYear();
   </script>
 
-  <!-- ✅ PayPal SDK (SUBSCRIPTIONS)
-       ملاحظة: لا نحدد currency هنا حتى لا يصير تعارض مع عملة الخطة داخل PayPal -->
+  <!-- ✅ PayPal SDK (SUBSCRIPTIONS) -->
   <script
     src="https://www.paypal.com/sdk/js?client-id=AQhaA8WOxv9FdWToZccgDLITuazgbSw1bRwSpKARLc1c4bidUFTzsOAjUVf97rVFcw0RaGq0awF9_WhB&vault=true&intent=subscription&components=buttons">
   </script>

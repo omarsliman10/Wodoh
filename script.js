@@ -65,25 +65,67 @@ function consumeOneUse(){
 
 /* =======================
    Auth + Subscription (Local state)
+   ✅ UPDATED: store subscriptionId
 ======================= */
 const LS_USER_KEY = "wodoh_user_v1";
+/* =======================
+   Users DB (Local) ✅ NEW
+======================= */
+const LS_USERS_DB_KEY = "wodoh_users_db_v1";
+
+function loadUsersDB(){
+  try { return JSON.parse(localStorage.getItem(LS_USERS_DB_KEY) || "[]"); }
+  catch { return []; }
+}
+function saveUsersDB(list){
+  localStorage.setItem(LS_USERS_DB_KEY, JSON.stringify(Array.isArray(list) ? list : []));
+}
+function normalizeEmail(email){
+  return String(email || "").trim().toLowerCase();
+}
+function findUserByEmail(email){
+  const e = normalizeEmail(email);
+  return loadUsersDB().find(u => normalizeEmail(u.email) === e) || null;
+}
+function createUser({ email, pass, firstName, lastName }){
+  const list = loadUsersDB();
+  const e = normalizeEmail(email);
+  if (list.some(u => normalizeEmail(u.email) === e)) return { ok:false, error:"EMAIL_EXISTS" };
+
+  list.push({
+    email: e,
+    pass: String(pass || ""), // ⚠️ plaintext (MVP only)
+    firstName: String(firstName || "").trim(),
+    lastName: String(lastName || "").trim(),
+    createdAt: new Date().toISOString()
+  });
+  saveUsersDB(list);
+  return { ok:true };
+}
+function verifyLogin(email, pass){
+  const user = findUserByEmail(email);
+  if (!user) return { ok:false, error:"NOT_FOUND" };
+  if (String(user.pass) !== String(pass || "")) return { ok:false, error:"BAD_PASS" };
+  return { ok:true, user };
+}
 
 function getUser(){
   try{
     const raw = localStorage.getItem(LS_USER_KEY);
-    if (!raw) return { loggedIn:false, subscribed:false, email:"", firstName:"", lastName:"" };
+    if (!raw) return { loggedIn:false, subscribed:false, subscriptionId:"", email:"", firstName:"", lastName:"" };
     const obj = JSON.parse(raw);
     return obj && typeof obj === "object"
       ? {
           loggedIn: !!obj.loggedIn,
           subscribed: !!obj.subscribed,
+          subscriptionId: obj.subscriptionId || "",
           email: obj.email || "",
           firstName: obj.firstName || "",
           lastName: obj.lastName || ""
         }
-      : { loggedIn:false, subscribed:false, email:"", firstName:"", lastName:"" };
+      : { loggedIn:false, subscribed:false, subscriptionId:"", email:"", firstName:"", lastName:"" };
   }catch{
-    return { loggedIn:false, subscribed:false, email:"", firstName:"", lastName:"" };
+    return { loggedIn:false, subscribed:false, subscriptionId:"", email:"", firstName:"", lastName:"" };
   }
 }
 function setUser(obj){
@@ -91,6 +133,7 @@ function setUser(obj){
   localStorage.setItem(LS_USER_KEY, JSON.stringify({
     loggedIn: !!safe.loggedIn,
     subscribed: !!safe.subscribed,
+    subscriptionId: safe.subscriptionId || "",
     email: safe.email || "",
     firstName: safe.firstName || "",
     lastName: safe.lastName || ""
@@ -98,6 +141,7 @@ function setUser(obj){
 }
 function isLoggedIn(){ return !!getUser().loggedIn; }
 function isSubscribed(){ return !!getUser().subscribed; }
+function getSubscriptionId(){ return String(getUser().subscriptionId || ""); }
 
 /* =======================
    DOM Elements
@@ -200,6 +244,7 @@ const I18N = {
     toastSubOn: "⭐ تم تفعيل الاشتراك — بلا حدود!",
     toastSubAlready: "⭐ أنت مشترك بالفعل",
     toastPayPalNotReady: "⚠️ PayPal لم يتم تحميله بعد. حدّث الصفحة وحاول.",
+    toastSubVerifyFail: "⚠️ تم الدفع لكن لم يتم تأكيد الاشتراك من السيرفر. تواصل معي.",
 
     firstNameLabel: "الاسم الأول",
     lastNameLabel: "اسم العائلة",
@@ -250,6 +295,7 @@ const I18N = {
     toastSubOn: "⭐ Subscription enabled — Unlimited!",
     toastSubAlready: "⭐ You are already subscribed",
     toastPayPalNotReady: "⚠️ PayPal not loaded yet. Refresh and try again.",
+    toastSubVerifyFail: "⚠️ Paid but server did not confirm. Contact support.",
 
     firstNameLabel: "First name",
     lastNameLabel: "Last name",
@@ -392,10 +438,11 @@ function closeModal(el){ if (el) el.style.display = "none"; }
 function refreshHeaderButtons(){
   const u = getUser();
 
+  // ✅ Show name (username) not email
   if (headerAccountBtn){
     const fullName = `${u.firstName || ""} ${u.lastName || ""}`.trim();
     if (u.loggedIn){
-      headerAccountBtn.textContent = fullName ? `👤 ${fullName}` : (u.email ? `👤 ${u.email}` : t("accountBtnTop"));
+      headerAccountBtn.textContent = fullName ? `👤 ${fullName}` : t("accountBtnTop");
     } else {
       headerAccountBtn.textContent = t("accountBtnTop");
     }
@@ -409,6 +456,22 @@ function refreshHeaderButtons(){
       headerSubscribeBtn.textContent = t("subscribeBtnTop");
       headerSubscribeBtn.disabled = false;
     }
+  }
+}
+
+/* ✅ Server-verified subscription check helper */
+async function serverVerifySubscription(subscriptionId){
+  try{
+    if (!subscriptionId) return { ok:false, active:false };
+    const r = await fetch("/api/subscription/verify",{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ subscriptionId })
+    });
+    const data = await r.json().catch(()=> ({}));
+    return { ok: !!data?.ok, active: !!data?.active, status: data?.status || "" };
+  }catch{
+    return { ok:false, active:false };
   }
 }
 
@@ -485,6 +548,9 @@ function openAccount(mode="login"){
     logoutBtn.textContent = currentLang==="ar" ? "تسجيل خروج" : "Log out";
   }
   openModal(accountModal);
+
+  // ✅ small UX: focus email
+  setTimeout(()=>{ authEmail?.focus?.(); }, 50);
 }
 function closeAccount(){ closeModal(accountModal); }
 
@@ -495,22 +561,67 @@ accountModal?.addEventListener("click", (e)=>{ if (e.target === accountModal) cl
 tabLogin?.addEventListener("click", ()=> setAccountTab("login"));
 tabSignup?.addEventListener("click", ()=> setAccountTab("signup"));
 
+// ✅ submit on Enter
+[authEmail, authPass, authFirstName, authLastName].forEach(el=>{
+  el?.addEventListener?.("keydown",(e)=>{
+    if (e.key === "Enter") authSubmit?.click?.();
+  });
+});
+
 authSubmit?.addEventListener("click", ()=>{
-  const email = (authEmail?.value || "").trim();
+  const emailRaw = (authEmail?.value || "").trim();
   const pass = (authPass?.value || "").trim();
 
   const firstName = (authFirstName?.value || "").trim();
   const lastName  = (authLastName?.value || "").trim();
+
+  if (!emailRaw || !pass){
+    showToast(currentLang==="ar" ? "⚠️ أدخل الإيميل وكلمة المرور" : "⚠️ Enter email & password", "err");
+    return;
+  }
+
+  const email = normalizeEmail(emailRaw);
 
   if (accountMode === "signup"){
     if (!firstName || !lastName){
       showToast(t("toastNeedName"), "err");
       return;
     }
+
+    // ✅ منع إنشاء حساب بنفس الإيميل
+    const created = createUser({ email, pass, firstName, lastName });
+    if (!created.ok && created.error === "EMAIL_EXISTS"){
+      showToast(currentLang==="ar" ? "⚠️ هذا الإيميل مسجل بالفعل. سجّل دخول بدلًا من ذلك." : "⚠️ Email already exists. Please log in.", "err", 3500);
+      return;
+    }
+
+    const u = getUser();
+    setUser({
+      loggedIn: true,
+      subscribed: u.subscribed,
+      subscriptionId: u.subscriptionId || "",
+      email,
+      firstName,
+      lastName
+    });
+
+    // ✅ clear fields
+    if (authPass) authPass.value = "";
+
+    closeAccount();
+    refreshHeaderButtons();
+    showToast(t("toastSignedUp"));
+    return;
   }
 
-  if (!email || !pass){
-    showToast(currentLang==="ar" ? "⚠️ أدخل الإيميل وكلمة المرور" : "⚠️ Enter email & password", "err");
+  // ✅ login
+  const res = verifyLogin(email, pass);
+  if (!res.ok){
+    if (res.error === "NOT_FOUND"){
+      showToast(currentLang==="ar" ? "⚠️ هذا الإيميل غير مسجل. أنشئ حسابًا أولًا." : "⚠️ Email not found. Please sign up.", "err", 3500);
+    } else {
+      showToast(currentLang==="ar" ? "⚠️ كلمة المرور غير صحيحة." : "⚠️ Wrong password.", "err", 3000);
+    }
     return;
   }
 
@@ -518,27 +629,31 @@ authSubmit?.addEventListener("click", ()=>{
   setUser({
     loggedIn: true,
     subscribed: u.subscribed,
+    subscriptionId: u.subscriptionId || "",
     email,
-    firstName: (accountMode === "signup") ? firstName : (u.firstName || ""),
-    lastName:  (accountMode === "signup") ? lastName  : (u.lastName  || "")
+    firstName: res.user.firstName || "",
+    lastName: res.user.lastName || ""
   });
+
+  // ✅ clear password
+  if (authPass) authPass.value = "";
 
   closeAccount();
   refreshHeaderButtons();
-  showToast(accountMode==="login" ? t("toastLoggedIn") : t("toastSignedUp"));
+  showToast(t("toastLoggedIn"));
 });
+
 
 logoutBtn?.addEventListener("click", ()=>{
   const u = getUser();
-  setUser({ loggedIn:false, subscribed: u.subscribed, email:"", firstName:"", lastName:"" });
+  setUser({ loggedIn:false, subscribed: u.subscribed, subscriptionId: u.subscriptionId || "", email:"", firstName:"", lastName:"" });
   closeAccount();
   refreshHeaderButtons();
   showToast(t("toastLoggedOut"));
 });
 
 /* =======================
-   Subscribe modal (PayPal REAL) ✅ FIXED
-   - Fix: if modal opens before PayPal SDK loads, we auto-wait and render once ready
+   Subscribe modal (PayPal REAL) ✅ FIXED + SERVER VERIFY ✅
 ======================= */
 let selectedPlan = "monthly";
 let paypalRendered = false;
@@ -577,7 +692,6 @@ document.querySelectorAll(".plan").forEach(btn=>{
     document.querySelectorAll(".plan").forEach(x=> x.classList.remove("active"));
     btn.classList.add("active");
     selectedPlan = btn.getAttribute("data-plan") || "monthly";
-    // لا نحتاج إعادة Render للأزرار لأن createSubscription يقرأ selectedPlan وقت الضغط
   });
 });
 
@@ -592,7 +706,6 @@ function ensurePayPalButtons(){
 
   // ✅ If PayPal SDK not ready yet, wait and render automatically when ready
   if (!isReady()){
-    // show a friendly loading toast once
     showToast(
       currentLang === "ar"
         ? "⏳ جاري تحميل PayPal... انتظر ثوانٍ"
@@ -601,12 +714,9 @@ function ensurePayPalButtons(){
       2200
     );
 
-    // avoid multiple timers
     if (paypalWaitTimer) return;
 
-    // poll for readiness
     paypalWaitTimer = setInterval(()=>{
-      // if user closed modal, stop
       if (!subscribeModal || subscribeModal.style.display !== "flex"){
         clearInterval(paypalWaitTimer);
         paypalWaitTimer = null;
@@ -616,7 +726,6 @@ function ensurePayPalButtons(){
       if (isReady()){
         clearInterval(paypalWaitTimer);
         paypalWaitTimer = null;
-        // try render now
         ensurePayPalButtons();
       }
     }, 250);
@@ -635,17 +744,25 @@ function ensurePayPalButtons(){
 
       createSubscription: function(data, actions) {
         const planId = getSelectedPlanId();
-        return actions.subscription.create({
-          plan_id: planId
-        });
+        return actions.subscription.create({ plan_id: planId });
       },
 
-      onApprove: function(data, actions) {
-        // ✅ تم الاشتراك — فعّل اللا محدود محليًا (لاحقًا نربطه بسيرفر + Webhook)
+      onApprove: async function(data, actions) {
+        // ✅ IMPORTANT: server verify before enabling unlimited
+        const subscriptionId = data?.subscriptionID || "";
+        const verify = await serverVerifySubscription(subscriptionId);
+
+        if (!verify.ok || !verify.active){
+          console.error("Verify failed:", verify);
+          showToast(t("toastSubVerifyFail"), "err", 4500);
+          return;
+        }
+
         const u = getUser();
         setUser({
           loggedIn: u.loggedIn,
           subscribed: true,
+          subscriptionId,
           email: u.email || "",
           firstName: u.firstName || "",
           lastName: u.lastName || ""
@@ -654,9 +771,6 @@ function ensurePayPalButtons(){
         closeSubscribe();
         refreshHeaderButtons();
         showToast(t("toastSubOn"), "ok", 2600);
-
-        // optional: حفظ subscription id للعرض
-        // console.log("Subscription ID:", data.subscriptionID);
       },
 
       onError: function(err){
@@ -665,7 +779,6 @@ function ensurePayPalButtons(){
       },
 
       onCancel: function(){
-        // المستخدم ألغى الدفع
         showToast(currentLang==="ar" ? "تم إلغاء العملية." : "Checkout canceled.", "err", 2000);
       }
 
@@ -1046,7 +1159,12 @@ generateBtn?.addEventListener("click", async ()=>{
       `);
     }
 
-    const summaryText = (parsed.summary || []).join("\n\n");
+    // ✅ Summary: paragraphs + bullets together in saved text
+    const paras = (parsed.summaryParas || parsed.summary || []);
+    const bullets = (parsed.summaryBullets || []);
+    const summaryText =
+      (paras.join("\n\n") + (bullets.length ? `\n\n${bullets.map(b=>`- ${b}`).join("\n")}` : "")).trim();
+
     const questions = [
       ...parsed.mcq.map(q => ({ type:"mcq", question:q.question, options:q.options, answer:q.correct })),
       ...parsed.tf.map(q => ({ type:"tf", statement:q.statement, answer:q.correct }))
@@ -1151,25 +1269,46 @@ document.addEventListener("click", async (e)=>{
 });
 
 /* =======================
-   Answer selection
+   Answer selection ✅ UPDATED (طلبك 100%)
+   - إذا اختار غلط: يقدر يغيّر
+   - إذا اختار صح: يقفل السؤال ولا يمكن الضغط مجددًا
 ======================= */
 document.addEventListener("click",(e)=>{
   const opt = e.target.closest("[data-opt]");
   if (!opt) return;
 
   const q = opt.closest(".q");
-  if (!q || q.dataset.answered) return;
-  q.dataset.answered = "1";
+  if (!q) return;
+
+  // ✅ if locked (already answered correctly) => ignore
+  if (q.dataset.locked === "1") return;
 
   const chosen = opt.dataset.opt;
   const correct = q.dataset.correct;
 
+  // ✅ Clear previous marks (allow changing when wrong)
   q.querySelectorAll("[data-opt]").forEach(b=>{
-    b.disabled = true;
-    b.classList.add("disabled");
-    if (b.dataset.opt === correct) b.classList.add("correct");
-    if (b.dataset.opt === chosen && chosen !== correct) b.classList.add("wrong");
+    b.classList.remove("wrong","correct","disabled");
+    b.disabled = false;
   });
+
+  // ✅ Mark current choice
+  if (chosen === correct){
+    // ✅ correct => lock forever
+    q.dataset.locked = "1";
+    q.querySelectorAll("[data-opt]").forEach(b=>{
+      b.disabled = true;
+      b.classList.add("disabled");
+      if (b.dataset.opt === correct) b.classList.add("correct");
+    });
+  } else {
+    // ✅ wrong => allow retry
+    opt.classList.add("wrong");
+    // show correct (optional) but keep enabled:
+    // q.querySelectorAll("[data-opt]").forEach(b=>{
+    //   if (b.dataset.opt === correct) b.classList.add("correct");
+    // });
+  }
 
   saveSession();
 });
@@ -1181,12 +1320,20 @@ function renderUI(p){
   const L = outLang();
   const rtl = (L === "ar" || L === "he");
 
+  const paras = (p.summaryParas || p.summary || []);
+  const bullets = (p.summaryBullets || []);
+
   return `
-    ${p.summary.length ? `
+    ${paras.length || bullets.length ? `
       <div class="card" dir="${rtl ? "rtl" : "ltr"}">
         <h3>📌 ${outT("summaryTitle")}</h3>
         <div class="sum-paras">
-          ${p.summary.map(x=>`<p style="margin:0 0 10px;line-height:1.75;opacity:.95">${escapeHtml(x)}</p>`).join("")}
+          ${paras.map(x=>`<p style="margin:0 0 10px;line-height:1.75;opacity:.95">${escapeHtml(x)}</p>`).join("")}
+          ${bullets.length ? `
+            <ul style="margin:8px 0 0;padding-${rtl ? "right" : "left"}:18px;line-height:1.7;opacity:.95">
+              ${bullets.map(b=> `<li>${escapeHtml(b)}</li>`).join("")}
+            </ul>
+          ` : ""}
         </div>
       </div>` : ""
     }
@@ -1245,13 +1392,14 @@ function renderTF(q){
 }
 
 /* =======================
-   Parser
+   Parser ✅ UPDATED (Summary paragraphs + bullets)
 ======================= */
 function parseGeminiText(text){
   const raw = String(text || "").replace(/\r/g, "");
   const lines = raw.split("\n");
 
-  const summary = [];
+  const summaryParas = [];
+  const summaryBullets = [];
   const mcq = [];
   const tf = [];
 
@@ -1264,12 +1412,39 @@ function parseGeminiText(text){
   let section = "";
   let buffer = [];
 
+  const isBulletLine = (s) => /^(\-|\*|•)\s+/.test(String(s||"").trim());
+
   function flushSummaryBuffer(){
     const joined = buffer.join("\n").trim();
     buffer = [];
     if (!joined) return;
-    const paras = joined.split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean);
-    summary.push(...paras);
+
+    // Split into blocks by blank lines
+    const blocks = joined.split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean);
+
+    for (const block of blocks){
+      const blines = block.split("\n").map(x=>x.trim()).filter(Boolean);
+
+      // If block is all bullets -> bullets
+      if (blines.length && blines.every(isBulletLine)){
+        blines.forEach(line=>{
+          summaryBullets.push(line.replace(/^(\-|\*|•)\s+/, "").trim());
+        });
+        continue;
+      }
+
+      // Mixed: collect bullet lines separately, rest as paragraph
+      const paraLines = [];
+      blines.forEach(line=>{
+        if (isBulletLine(line)){
+          summaryBullets.push(line.replace(/^(\-|\*|•)\s+/, "").trim());
+        } else {
+          paraLines.push(line);
+        }
+      });
+      const para = paraLines.join(" ").trim();
+      if (para) summaryParas.push(para);
+    }
   }
 
   let cur = null;
@@ -1324,7 +1499,10 @@ function parseGeminiText(text){
 
   if (section === "summary") flushSummaryBuffer();
 
-  return { summary, mcq, tf, raw };
+  // Backward compatible "summary" array (paragraphs only)
+  const summary = [...summaryParas];
+
+  return { summary, summaryParas, summaryBullets, mcq, tf, raw };
 }
 
 /* =======================

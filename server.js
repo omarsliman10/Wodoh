@@ -27,7 +27,6 @@ app.use(
   express.json({
     limit: "2mb",
     verify: (req, res, buf) => {
-      // Keep exact raw bytes (useful for PayPal verification/debug)
       req.rawBody = buf;
     },
   })
@@ -55,12 +54,9 @@ function normalizeLang(lang) {
 function summaryPlanByLength(text) {
   const n = String(text || "").trim().length;
 
-  // short text
-  if (n < 1200) return { minParas: 3, maxParas: 4, sentences: "3–5" };
-  // medium text
-  if (n < 3000) return { minParas: 4, maxParas: 6, sentences: "3–6" };
-  // long text
-  return { minParas: 6, maxParas: 8, sentences: "3–7" };
+  if (n < 1200) return { minParas: 3, maxParas: 4, sentences: "3–5", bullets: 6 };
+  if (n < 3000) return { minParas: 4, maxParas: 6, sentences: "3–6", bullets: 8 };
+  return { minParas: 6, maxParas: 8, sentences: "3–7", bullets: 10 };
 }
 
 function buildPrompts({ text, count, mode, lang, previous }) {
@@ -98,11 +94,21 @@ ${previous.map((q, i) => `${i + 1}) ${q}`).join("\n")}`)
 
   const plan = summaryPlanByLength(text);
 
+  // ✅ UPDATED: paragraphs + bullets together
   const summaryInstruction = isAr
-    ? `1) [${headerSummary}] اكتب ملخصًا على شكل فقرات (${plan.minParas} إلى ${plan.maxParas} فقرات). كل فقرة ${plan.sentences} جمل. اجعل الطول يتناسب مع طول النص (النص الأطول = تفاصيل أكثر).`
+    ? `1) [${headerSummary}] اكتب ملخصًا مكوّنًا من:
+- فقرات (${plan.minParas} إلى ${plan.maxParas} فقرات). كل فقرة ${plan.sentences} جمل.
+- ثم اكتب بعد الفقرات مباشرة نقاطًا مختصرة (Bullet Points) عددها ${plan.bullets} على الأقل، تبدأ كل نقطة بـ "- ".
+اجعل الطول يتناسب مع طول النص (النص الأطول = تفاصيل أكثر).`
     : isHe
-      ? `1) [${headerSummary}] כתוב סיכום בפסקאות (${plan.minParas}–${plan.maxParas} פסקאות). בכל פסקה ${plan.sentences} משפטים. האורך צריך להתאים לאורך הטקסט (טקסט ארוך יותר = יותר פירוט).`
-      : `1) [${headerSummary}] Write a paragraph-style summary (${plan.minParas}–${plan.maxParas} paragraphs). Each paragraph ${plan.sentences} sentences. Length should scale with the text (longer text = more detail).`;
+      ? `1) [${headerSummary}] כתוב סיכום שמורכב מ:
+- פסקאות (${plan.minParas}–${plan.maxParas} פסקאות). בכל פסקה ${plan.sentences} משפטים.
+- ואז מיד לאחר הפסקאות, כתוב נקודות Bullet קצרות (לפחות ${plan.bullets}), כל נקודה מתחילה ב "- ".
+האורך צריך להתאים לאורך הטקסט (טקסט ארוך יותר = יותר פירוט).`
+      : `1) [${headerSummary}] Write a summary consisting of:
+- Paragraphs (${plan.minParas}–${plan.maxParas} paragraphs). Each paragraph ${plan.sentences} sentences.
+- Then immediately after the paragraphs, add bullet points (at least ${plan.bullets}), each bullet must start with "- ".
+Length should scale with the text (longer text = more detail).`;
 
   const mcqInstruction = isAr
     ? `2) [${headerMCQ}] أنشئ ${safeCount} سؤال اختيار من متعدد بصيغة A/B/C/D وحدد ${ansCorrectLabel}: A`
@@ -116,6 +122,7 @@ ${previous.map((q, i) => `${i + 1}) ${q}`).join("\n")}`)
       ? `3) [${headerTF}] צור ${safeCount} שאלות ${headerTF}. בשורת התשובה כתוב ${ansLabel}: T או F בלבד.`
       : `3) [${headerTF}] Create ${safeCount} ${headerTF} questions. In the answer line write ${ansLabel}: T or F only.`;
 
+  // ✅ UPDATED example format includes bullets
   const formatBlock = `
 Follow EXACT format:
 
@@ -123,6 +130,9 @@ Follow EXACT format:
 Paragraph 1...
 
 Paragraph 2...
+
+- Bullet point 1
+- Bullet point 2
 
 [${headerMCQ}]
 1) ...
@@ -339,7 +349,6 @@ function paypalBase() {
   return mode === "sandbox" ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
 }
 
-// ✅ Quick env check
 app.get("/api/paypal/webhook-health", (req, res) => {
   res.json({
     ok: true,
@@ -445,7 +454,6 @@ function mapStatusFromEventType(eventType, resource) {
       return String(resource?.status || "UPDATED").toUpperCase();
     case "BILLING.SUBSCRIPTION.CREATED":
       return "CREATED";
-    // Support both variants (seen differences in some docs/tools)
     case "BILLING.SUBSCRIPTION.RE-ACTIVATED":
     case "BILLING.SUBSCRIPTION.REACTIVATED":
       return "ACTIVE";
@@ -454,7 +462,6 @@ function mapStatusFromEventType(eventType, resource) {
   }
 }
 
-// PayPal webhook receiver
 app.post("/api/paypal/webhook", async (req, res) => {
   try {
     const headers = Object.fromEntries(
@@ -490,7 +497,6 @@ app.post("/api/paypal/webhook", async (req, res) => {
   }
 });
 
-// Verify subscription by calling PayPal directly
 app.post("/api/subscription/verify", async (req, res) => {
   try {
     const subscriptionId = String(req.body?.subscriptionId || "").trim();
@@ -523,7 +529,6 @@ app.post("/api/subscription/verify", async (req, res) => {
   }
 });
 
-// Local status check
 app.get("/api/subscription/status", async (req, res) => {
   const subId = String(req.query?.subId || "").trim();
   if (!subId) return res.status(400).json({ ok: false, error: "Missing subId" });
