@@ -182,7 +182,7 @@ body{
   position: absolute;
   top: 18px;
 
-  width: 170px;          /* ✅ أصغر من 260 عشان ما يدخل بالنص */
+  width: 170px;
   height: 170px;
   border-radius: 28px;
 
@@ -207,9 +207,7 @@ body{
   display:block;
 }
 
-/* RTL: يمين */
 html[dir="rtl"] .landing-logo-corner{ right: 18px; left: auto; }
-/* LTR: يسار */
 html[dir="ltr"] .landing-logo-corner{ left: 18px; right: auto; }
 
 /* Landing big brand */
@@ -248,7 +246,7 @@ html[dir="ltr"] .landing-logo-corner{ left: 18px; right: auto; }
   -webkit-backdrop-filter: blur(14px);
   margin-bottom: 14px;
 
-  position: relative; /* ✅ for logo corner */
+  position: relative;
 }
 
 .brand{
@@ -258,7 +256,6 @@ html[dir="ltr"] .landing-logo-corner{ left: 18px; right: auto; }
   min-width:0;
 }
 
-/* ✅ reserve space ONLY for the brand text so layout doesn't break */
 html[dir="rtl"] .brand{ padding-right: 96px; padding-left: 0; }
 html[dir="ltr"] .brand{ padding-left: 96px; padding-right: 0; }
 
@@ -317,7 +314,6 @@ html[dir="ltr"] .brand{ padding-left: 96px; padding-right: 0; }
   flex:0 0 auto;
 }
 
-/* ✅ Header logo corner — RTL right / LTR left (NO BREAK) */
 .header-logo-corner{
   position:absolute;
   top:14px;
@@ -337,9 +333,7 @@ html[dir="ltr"] .brand{ padding-left: 96px; padding-right: 0; }
   z-index: 5;
   pointer-events:none;
 }
-/* RTL يمين */
 html[dir="rtl"] .header-logo-corner{ right: 14px; left: auto; }
-/* LTR يسار */
 html[dir="ltr"] .header-logo-corner{ left: 14px; right: auto; }
 
 .header-logo-img{
@@ -482,7 +476,6 @@ textarea:focus{
   .btn-wide{ width:100%; }
   .brand-desc{ max-width: 100%; }
 
-  /* Landing logo on mobile */
   .landing-logo-corner{
     width: 120px;
     height: 120px;
@@ -492,7 +485,6 @@ textarea:focus{
   html[dir="rtl"] .landing-logo-corner{ right: 14px; left: auto; }
   html[dir="ltr"] .landing-logo-corner{ left: 14px; right: auto; }
 
-  /* Header logo on mobile */
   .header-logo-corner{
     width: 70px;
     height: 70px;
@@ -502,7 +494,6 @@ textarea:focus{
   html[dir="rtl"] .header-logo-corner{ right: 12px; left: auto; }
   html[dir="ltr"] .header-logo-corner{ left: 12px; right: auto; }
 
-  /* brand spacing mobile */
   html[dir="rtl"] .brand{ padding-right: 82px; }
   html[dir="ltr"] .brand{ padding-left: 82px; }
 }
@@ -537,11 +528,14 @@ textarea:focus{
   font-weight: 700;
   transition: all .15s ease;
 }
+
+/* ✅ تعديل hover هنا: محايد بدون أزرق */
 .q button[data-opt]:hover{
-  background: rgba(34,211,238,0.15);
-  border-color: rgba(34,211,238,0.4);
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.22);
   transform: translateY(-1px);
 }
+
 .q button.correct{
   background: rgba(34,197,94,0.20);
   border-color: rgba(34,197,94,0.5);
@@ -557,183 +551,6 @@ textarea:focus{
   opacity: .85;
 }
 
-/* More button */
-.more-inline{
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  margin-top: 14px;
-}
-.more-btn{
-  border: 1px solid rgba(255,255,255,.18);
-  background: linear-gradient(135deg, rgba(124,58,237,.22), rgba(34,211,238,.18));
-  color: #EAF0FF;
-  padding: 10px 18px;
-  border-radius: 999px;
-  font-weight: 900;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  box-shadow: 0 14px 40px rgba(0,0,0,.28), 0 0 22px rgba(34,211,238,.18);
-  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
-}
-.more-btn:hover{
-  transform: translateY(-1px);
-  box-shadow: 0 18px 55px rgba(0,0,0,.34), 0 0 30px rgba(34,211,238,.28);
-}
-.more-btn::before{
-  content:"+";
-  width: 28px;
-  height: 28px;
-  border-radius: 10px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background: rgba(255,255,255,.10);
-  border: 1px solid rgba(255,255,255,.14);
-  font-weight: 1000;
-}
-.more-btn:disabled{
-  opacity:.7;
-  cursor:not-allowed;
-  transform:none;
-  box-shadow: 0 12px 30px rgba(0,0,0,.22);
-}
-
-/* =========================
-   My Summaries
-========================= */
-.sum-item{
-  padding: 12px;
-  border-radius: 14px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.sum-meta{ display:flex; flex-direction:column; gap:4px; }
-.sum-title{ font-weight: 700; font-size: 14px; }
-.sum-date{ font-size: 12px; opacity: 0.8; }
-.sum-actions{ display:flex; gap: 8px; }
-
-/* =========================
-   MODALS + FORMS + PLANS
-========================= */
-.modal{
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,.55);
-  display:flex; align-items:center; justify-content:center;
-  padding: 16px;
-  z-index: 9999;
-}
-.modal-card{
-  width: min(560px, 100%);
-  border-radius: 18px;
-  padding: 16px;
-  background: rgba(11,16,32,.95);
-  border: 1px solid rgba(255,255,255,.12);
-  box-shadow: 0 20px 60px rgba(0,0,0,.35);
-}
-.modal-actions{
-  margin-top: 14px;
-  display:flex; gap:10px; flex-wrap:wrap;
-}
-.modal-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  margin-bottom: 10px;
-}
-
-.tab-row{
-  display:flex;
-  gap:10px;
-  margin: 10px 0 12px;
-}
-.tab{
-  flex:1;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.06);
-  padding: 10px 12px;
-  font-weight: 900;
-  color: rgba(234,240,255,.92);
-  cursor:pointer;
-}
-.tab.active{
-  border:none;
-  background: linear-gradient(135deg, rgba(124,58,237,.45), rgba(34,211,238,.32));
-  box-shadow: 0 14px 40px rgba(0,0,0,.28);
-}
-
-.auth-form{ display:grid; gap:12px; margin-top:6px; }
-.field{ display:grid; gap:8px; }
-.field-label{ font-weight:900; color: rgba(234,240,255,.92); }
-input{
-  width:100%;
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.05);
-  color: rgba(234,240,255,.95);
-  outline:none;
-}
-input:focus{
-  border-color: rgba(34,211,238,.45);
-  box-shadow: 0 0 0 4px rgba(34,211,238,.12);
-}
-.tiny-hint{
-  font-size: 12px;
-  color: rgba(170,183,230,.85);
-  line-height: 1.6;
-}
-
-.sub-text{
-  margin: 6px 0 10px;
-  color: rgba(170,183,230,.92);
-  line-height: 1.7;
-}
-.plan-grid{
-  display:grid;
-  grid-template-columns: repeat(2, minmax(0,1fr));
-  gap:10px;
-  margin-top: 10px;
-}
-.plan{
-  text-align: start;
-  border-radius: 18px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.05);
-  padding: 14px;
-  cursor:pointer;
-}
-.plan.active{
-  border: 1px solid rgba(34,211,238,.45);
-  background: rgba(34,211,238,.08);
-  box-shadow: 0 16px 50px rgba(0,0,0,.32);
-}
-.plan-name{ font-weight: 1000; }
-.plan-price{ font-size: 22px; font-weight: 1000; margin-top: 4px; }
-.plan-desc{ opacity:.85; margin-top: 2px; }
-
-.paypal-box{
-  margin-top: 12px;
-  border-radius: 18px;
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(0,0,0,.16);
-  padding: 12px;
-  display:grid;
-  gap:10px;
-}
-.paypal-note{ font-size: 13px; color: rgba(170,183,230,.92); }
-
-@media (max-width: 560px){
-  .plan-grid{ grid-template-columns: 1fr; }
-}
 /* Generate button loading state */
 #generateBtn.is-loading{
   filter: brightness(0.8);
@@ -741,7 +558,26 @@ input:focus{
   cursor: wait;
   transform: translateY(1px);
 }
-
 #generateBtn{
   transition: filter .2s ease, opacity .2s ease, transform .2s ease;
+}
+
+/* ==========================================================
+   ✅ OVERRIDES (ضعها آخر الملف) — تمنع أي أزرق نهائيًا بالأسئلة
+   - لا تغيير إلا داخل خيارات quiz
+========================================================== */
+.q button[data-opt]{
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.q button[data-opt]:focus,
+.q button[data-opt]:focus-visible{
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.q button[data-opt]:active{
+  transform: translateY(0px);
 }
