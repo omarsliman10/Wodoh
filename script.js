@@ -1164,6 +1164,14 @@ function renderSkeleton(){
 }
 
 /* =======================
+   Strict Summary (Send to server)
+   ✅ يجعل التلخيص فعلاً تلخيص
+======================= */
+const SUMMARY_STYLE = "strict";          // "strict" | "normal"
+const SUMMARY_BULLETS = 6;               // عدد نقاط التلخيص
+const SUMMARY_WORDS_PER_BULLET = 10;     // أقصى كلمات لكل نقطة
+
+/* =======================
    API
 ======================= */
 async function callAPI({text,mode,count}){
@@ -1178,6 +1186,11 @@ async function callAPI({text,mode,count}){
       count,
       previous: previousQuestions,
       lang: detected,
+
+      // ✅ NEW: strict summary options
+      summaryStyle: SUMMARY_STYLE,
+      summaryBullets: SUMMARY_BULLETS,
+      summaryWordsPerBullet: SUMMARY_WORDS_PER_BULLET
     })
   });
 
@@ -1394,12 +1407,15 @@ function renderUI(p){
   const paras = (p.summaryParas || p.summary || []);
   const bullets = (p.summaryBullets || []);
 
+  // ✅ إذا في نقاط، تجاهل الفقرات (حتى يكون تلخيص فعلي)
+  const showParas = bullets.length ? [] : paras;
+
   return `
-    ${paras.length || bullets.length ? `
+    ${showParas.length || bullets.length ? `
       <div class="card" dir="${rtl ? "rtl" : "ltr"}">
         <h3>📌 ${outT("summaryTitle")}</h3>
         <div class="sum-paras">
-          ${paras.map(x=>`<p style="margin:0 0 10px;line-height:1.75;opacity:.95">${escapeHtml(x)}</p>`).join("")}
+          ${showParas.map(x=>`<p style="margin:0 0 10px;line-height:1.75;opacity:.95">${escapeHtml(x)}</p>`).join("")}
           ${bullets.length ? `
             <ul style="margin:8px 0 0;padding-${rtl ? "right" : "left"}:18px;line-height:1.7;opacity:.95">
               ${bullets.map(b=> `<li>${escapeHtml(b)}</li>`).join("")}
