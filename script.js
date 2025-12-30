@@ -30,7 +30,7 @@ let currentFile = null;
 /* =======================
    Daily limit
 ======================= */
-const FREE_DAILY_LIMIT = 3;
+const FREE_DAILY_LIMIT = 2;
 const LS_USAGE_KEY = "wodoh_daily_usage_v1";
 
 function todayKey(){
@@ -263,7 +263,8 @@ const I18N = {
     toastNeedName: "⚠️ أدخل الاسم الأول واسم العائلة",
 
     paywallTitle: "🔒 انتهت المحاولات المجانية اليوم",
-    paywallText: "لديك 3 مرات يوميًا مجانًا. اشترك للمتابعة بلا حدود.",
+    // ✅ FIX: لا تذكر 3 (خليها عامة) — لأن العرض الفعلي ديناميكي في showPaywall()
+    paywallText: "انتهت المحاولات المجانية. اشترك للمتابعة بلا حدود.",
 
     emailLabel: "الإيميل",
     passLabel: "كلمة المرور",
@@ -314,7 +315,8 @@ const I18N = {
     toastNeedName: "⚠️ Enter first & last name",
 
     paywallTitle: "🔒 Free limit reached today",
-    paywallText: "You have 3 free tries per day. Subscribe for unlimited.",
+    // ✅ FIX: لا تذكر 3
+    paywallText: "Free limit reached. Subscribe for unlimited.",
 
     emailLabel: "Email",
     passLabel: "Password",
@@ -726,7 +728,13 @@ authSubmit?.addEventListener("click", ()=>{
 
     const created = createUser({ email, pass, firstName, lastName });
     if (!created.ok && created.error === "EMAIL_EXISTS"){
-      showToast(currentLang==="ar" ? "⚠️ هذا الإيميل مسجل بالفعل. سجّل دخول بدلًا من ذلك." : "⚠️ Email already exists. Please log in.", "err", 3500);
+      showToast(
+        currentLang==="ar"
+          ? "⚠️ هذا الحساب موجود بالفعل. روح لتبويب (دخول) وسجّل دخول."
+          : "⚠️ Account already exists. Switch to (Log in).",
+        "err",
+        4000
+      );
       return;
     }
 
@@ -747,13 +755,25 @@ authSubmit?.addEventListener("click", ()=>{
     return;
   }
 
-  // login
+  // ✅ login (FIXED + proper braces)
   const res = verifyLogin(email, pass);
   if (!res.ok){
     if (res.error === "NOT_FOUND"){
-      showToast(currentLang==="ar" ? "⚠️ هذا الإيميل غير مسجل. أنشئ حسابًا أولًا." : "⚠️ Email not found. Please sign up.", "err", 3500);
+      showToast(
+        currentLang==="ar"
+          ? "⚠️ هذا الإيميل غير مسجل. أنشئ حسابًا أولًا."
+          : "⚠️ Email not found. Please sign up.",
+        "err",
+        3500
+      );
     } else {
-      showToast(currentLang==="ar" ? "⚠️ كلمة المرور غير صحيحة." : "⚠️ Wrong password.", "err", 3000);
+      showToast(
+        currentLang==="ar"
+          ? "❌ كلمة المرور خاطئة. حاول مرة ثانية."
+          : "❌ Incorrect password. Please try again.",
+        "err",
+        3200
+      );
     }
     return;
   }
@@ -772,11 +792,18 @@ authSubmit?.addEventListener("click", ()=>{
   closeAccount();
   refreshHeaderButtons();
   showToast(t("toastLoggedIn"));
-});
+}); // ✅ IMPORTANT: close authSubmit listener
 
 logoutBtn?.addEventListener("click", ()=>{
   const u = getUser();
-  setUser({ loggedIn:false, subscribed: u.subscribed, subscriptionId: u.subscriptionId || "", email:"", firstName:"", lastName:"" });
+  setUser({
+    loggedIn:false,
+    subscribed: u.subscribed,
+    subscriptionId: u.subscriptionId || "",
+    email:"",
+    firstName:"",
+    lastName:""
+  });
   closeAccount();
   refreshHeaderButtons();
   showToast(t("toastLoggedOut"));
@@ -793,21 +820,36 @@ function getSelectedPlanId(){
   return PAYPAL_PLAN_IDS[selectedPlan] || PAYPAL_PLAN_IDS.monthly;
 }
 
-function openSubscribe(){
-  if (isSubscribed()){
-    showToast(t("toastSubAlready"), "ok", 1800);
-    return;
-  }
-  openModal(subscribeModal);
-  ensurePayPalButtons();
-}
-
+/* ✅ FIX: define closeSubscribe (كان ناقص) */
 function closeSubscribe(){
   if (paypalWaitTimer){
     clearInterval(paypalWaitTimer);
     paypalWaitTimer = null;
   }
   closeModal(subscribeModal);
+}
+
+function openSubscribe(){
+  // ✅ لازم يكون مسجل دخول قبل الاشتراك
+  if (!isLoggedIn()){
+    showToast(
+      currentLang === "ar"
+        ? "🔒 لازم تسوي حساب/تسجل دخول قبل الاشتراك."
+        : "🔒 Please sign up / log in before subscribing.",
+      "err",
+      3200
+    );
+    openAccount("signup"); // تقدر تخليها login لو بدك
+    return;
+  }
+
+  if (isSubscribed()){
+    showToast(t("toastSubAlready"), "ok", 1800);
+    return;
+  }
+
+  openModal(subscribeModal);
+  ensurePayPalButtons();
 }
 
 headerSubscribeBtn?.addEventListener("click", openSubscribe);
@@ -868,6 +910,18 @@ function ensurePayPalButtons(){
       },
 
       onApprove: async function(data) {
+        if (!isLoggedIn()){
+          showToast(
+            currentLang==="ar"
+              ? "🔒 لازم تسوي حساب/تسجل دخول قبل تفعيل الاشتراك."
+              : "🔒 Please sign up / log in before activating subscription.",
+            "err",
+            3500
+          );
+          openAccount("login");
+          return;
+        }
+
         const subscriptionId = data?.subscriptionID || "";
         const verify = await serverVerifySubscription(subscriptionId);
 
@@ -947,16 +1001,11 @@ function applyLang(){
 
 /* =======================
    Session Save/Restore
-   ✅ المطلوب:
-   - بعد الريفرش نمسح النص/النتائج/الملف
-   - لكن اللغة تبقى (اختياري)
-   - تسجيل الدخول + الاشتراك يبقوا (LS_USER_KEY مستقل)
 ======================= */
 const LS_SESSION_KEY = "wodoh_last_session_v5";
 
 function saveSession(){
   try{
-    // نخزن فقط اللغة (بدون نص/نتائج/ملف)
     localStorage.setItem(LS_SESSION_KEY, JSON.stringify({
       lang: currentLang,
       ts: Date.now()
@@ -965,7 +1014,6 @@ function saveSession(){
 }
 
 function restoreSession(){
-  // ✅ دائماً: نظّف الواجهة عند الريفرش
   if (textInput) textInput.value = "";
   if (output) output.innerHTML = "";
   previousQuestions = [];
@@ -973,7 +1021,6 @@ function restoreSession(){
   lastOutputLang = "";
   clearFile();
 
-  // ✅ رجّع اللغة فقط إن وجدت
   try{
     const raw = localStorage.getItem(LS_SESSION_KEY);
     if (!raw) return;
@@ -1003,7 +1050,6 @@ applyLang();
 refreshHeaderButtons();
 setAccountTab("login");
 
-// نخزن اللغة فقط
 textInput?.addEventListener("input", saveSession);
 
 /* ✅ keep subscription but verify it on every refresh */
@@ -1165,7 +1211,6 @@ function renderSkeleton(){
 
 /* =======================
    Strict Summary (Send to server)
-   ✅ يجعل التلخيص فعلاً تلخيص
 ======================= */
 const SUMMARY_STYLE = "strict";          // "strict" | "normal"
 const SUMMARY_BULLETS = 6;               // عدد نقاط التلخيص
@@ -1187,7 +1232,6 @@ async function callAPI({text,mode,count}){
       previous: previousQuestions,
       lang: detected,
 
-      // ✅ NEW: strict summary options
       summaryStyle: SUMMARY_STYLE,
       summaryBullets: SUMMARY_BULLETS,
       summaryWordsPerBullet: SUMMARY_WORDS_PER_BULLET
@@ -1407,7 +1451,6 @@ function renderUI(p){
   const paras = (p.summaryParas || p.summary || []);
   const bullets = (p.summaryBullets || []);
 
-  // ✅ إذا في نقاط، تجاهل الفقرات (حتى يكون تلخيص فعلي)
   const showParas = bullets.length ? [] : paras;
 
   return `
@@ -1752,7 +1795,6 @@ document.addEventListener("keydown",(e)=>{
 
 /* =======================
    Language toggle (UI only)
-   ✅ لا نمسح شيء هنا
 ======================= */
 langBtn?.addEventListener("click", ()=>{
   currentLang = currentLang === "ar" ? "en" : "ar";
