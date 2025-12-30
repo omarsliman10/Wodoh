@@ -268,6 +268,14 @@ const I18N = {
 
     emailLabel: "الإيميل",
     passLabel: "كلمة المرور",
+
+    planMonthly: "شهري",
+    planYearly: "سنوي",
+    planUnlimited: "استخدام بلا حدود",
+    planBest: "أفضل قيمة",
+    subText: "اختر الخطة. عند الاشتراك يصبح الاستخدام بلا حدود.",
+    paypalNote: "ادفع عبر PayPal أو البطاقة لتفعيل الاشتراك.",
+    subHint: "عند تفعيل الاشتراك سيتم إزالة حد الاستخدام اليومي."
   },
 
   en: {
@@ -320,6 +328,14 @@ const I18N = {
 
     emailLabel: "Email",
     passLabel: "Password",
+
+    planMonthly: "Monthly",
+    planYearly: "Yearly",
+    planUnlimited: "Unlimited",
+    planBest: "Best value",
+    subText: "Choose a plan. Subscription gives you unlimited usage.",
+    paypalNote: "Pay via PayPal or card to activate your subscription.",
+    subHint: "Subscription removes the daily free limit."
   },
 
   he: {
