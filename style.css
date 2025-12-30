@@ -1000,7 +1000,7 @@ html[dir="rtl"] .auth-tabs{ flex-direction: row-reverse; }
   background: linear-gradient(90deg, rgba(124,58,237,.85), rgba(34,211,238,.60)) !important;
   color: #fff !important;
 }
-body{ outline: 10px solid lime !important; }
+
 /* =========================
    Account Modal Tabs (matches your HTML: .auth-tabs)
 ========================= */
