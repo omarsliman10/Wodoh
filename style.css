@@ -807,7 +807,6 @@ html[dir="rtl"] .icon-btn{ left: 8px; }
 
 /* =========================
    ✅ FIXED: Modal Center + Tabs
-   (هنا الإصلاح النهائي بدون تكرار)
 ========================= */
 
 /* overlay */
@@ -839,7 +838,7 @@ html[dir="rtl"] .icon-btn{ left: 8px; }
   margin: 0 !important;
 }
 
-/* Tabs (Login / Signup) */
+/* Tabs (Login / Signup) - generic */
 .auth-tabs{
   display: flex;
   justify-content: center;
@@ -861,7 +860,7 @@ html[dir="rtl"] .icon-btn{ left: 8px; }
   cursor: pointer;
   transition: all .2s ease;
 
-  position: relative; /* حماية من أي absolute */
+  position: relative;
   top: auto;
   left: auto;
   right: auto;
@@ -875,8 +874,9 @@ html[dir="rtl"] .icon-btn{ left: 8px; }
   box-shadow: 0 10px 30px rgba(124,58,237,.35);
 }
 html[dir="rtl"] .auth-tabs{ flex-direction: row-reverse; }
+
 /* =========================
-   Account modal — better tabs/buttons
+   Account modal — better tabs/buttons (FINAL)
 ========================= */
 #accountModal .modal-card{
   max-width: 520px;
@@ -908,102 +908,7 @@ html[dir="rtl"] .auth-tabs{ flex-direction: row-reverse; }
   transform: translateY(-1px);
 }
 
-/* ✅ Segmented tabs (Login/Signup) */
-#accountModal .tab-row{
-  margin-top: 10px;
-  display:flex;
-  gap:0;
-  padding:6px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.05);
-  border:1px solid rgba(255,255,255,.10);
-  box-shadow: 0 10px 28px rgba(0,0,0,.25);
-  width: fit-content;
-}
-
-#accountModal .tab-row .tab{
-  appearance:none;
-  border:0;
-  background:transparent;
-  color: rgba(234,240,255,.85);
-  padding:10px 16px;
-  border-radius: 999px;
-  font-weight: 800;
-  letter-spacing: .2px;
-  cursor:pointer;
-  transition: background .15s ease, color .15s ease, transform .12s ease, box-shadow .15s ease;
-  min-width: 140px;
-  text-align:center;
-}
-
-#accountModal .tab-row .tab:hover{
-  background: rgba(255,255,255,.06);
-  transform: translateY(-1px);
-}
-
-#accountModal .tab-row .tab.active{
-  color: var(--text);
-  background: linear-gradient(90deg, rgba(124,58,237,.75), rgba(34,211,238,.55));
-  box-shadow: 0 10px 30px rgba(0,0,0,.35);
-}
-
-/* ✅ Make auth primary button nicer inside modal */
-#accountModal #authSubmit.btn{
-  border-radius: 16px;
-  height: 46px;
-  font-weight: 900;
-  letter-spacing: .2px;
-}
-
-/* ✅ Inputs inside modal look cleaner */
-#accountModal .auth-form .field input{
-  height: 44px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(255,255,255,.04);
-  color: var(--text);
-}
-#accountModal .auth-form .field input:focus{
-  outline: none;
-  border-color: rgba(124,58,237,.55);
-  box-shadow: 0 0 0 4px rgba(124,58,237,.18);
-}
-/* FORCE style for account tabs */
-#accountModal .tab-row{
-  margin-top: 10px !important;
-  display:flex !important;
-  gap:0 !important;
-  padding:6px !important;
-  border-radius:999px !important;
-  background: rgba(255,255,255,.06) !important;
-  border: 1px solid rgba(255,255,255,.14) !important;
-  width: 100% !important;
-}
-
-#accountModal .tab-row .tab{
-  flex:1 !important;
-  border:0 !important;
-  background: transparent !important;
-  color: rgba(234,240,255,.86) !important;
-  padding:10px 14px !important;
-  border-radius:999px !important;
-  font-weight:800 !important;
-  cursor:pointer !important;
-  text-align:center !important;
-}
-
-#accountModal .tab-row .tab:hover{
-  background: rgba(255,255,255,.07) !important;
-}
-
-#accountModal .tab-row .tab.active{
-  background: linear-gradient(90deg, rgba(124,58,237,.85), rgba(34,211,238,.60)) !important;
-  color: #fff !important;
-}
-
-/* =========================
-   Account Modal Tabs (matches your HTML: .auth-tabs)
-========================= */
+/* ✅ Account tabs (matches your HTML: #accountModal .auth-tabs) */
 #accountModal .auth-tabs{
   display:flex;
   gap: 0;
@@ -1019,7 +924,6 @@ html[dir="rtl"] .auth-tabs{ flex-direction: row-reverse; }
 
 #accountModal .auth-tabs button{
   flex: 1;
-  min-width: 140px;
   border: 0;
   background: transparent;
   color: rgba(234,240,255,.86);
@@ -1043,3 +947,24 @@ html[dir="rtl"] .auth-tabs{ flex-direction: row-reverse; }
 
 html[dir="rtl"] #accountModal .auth-tabs{ flex-direction: row-reverse; }
 
+/* ✅ Make auth primary button nicer inside modal */
+#accountModal #authSubmit.btn{
+  border-radius: 16px;
+  height: 46px;
+  font-weight: 900;
+  letter-spacing: .2px;
+}
+
+/* ✅ Inputs inside modal look cleaner */
+#accountModal .auth-form .field input{
+  height: 44px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.04);
+  color: var(--text);
+}
+#accountModal .auth-form .field input:focus{
+  outline: none;
+  border-color: rgba(124,58,237,.55);
+  box-shadow: 0 0 0 4px rgba(124,58,237,.18);
+}
