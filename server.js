@@ -35,12 +35,27 @@ app.set("trust proxy", 1); // Render / proxies
 app.disable("x-powered-by");
 
 /* =======================
+   ✅ Plan settings (Free vs Pro)
+======================= */
+const FREE_DAILY_LIMIT = 2; // ✅ 2 attempts/day
+const FREE_MAX_QUESTIONS = 5; // ✅ limited questions
+const FREE_COOLDOWN_MS = 25_000; // ✅ "انتظار" للـ Free فقط (25 ثانية)
+
+const DATA_DIR = path.join(__dirname, "data");
+const USAGE_FILE = path.join(DATA_DIR, "usage.json");
+const RESULTS_FILE = path.join(DATA_DIR, "results.json");
+
+/* =======================
    CORS
-   (ضيف localhost لو بتجرب محليًا)
 ======================= */
 app.use(
   cors({
-    origin: ["https://wodoh.onrender.com", "http://localhost:3000"],
+    origin: [
+      "https://wodoh.onrender.com",
+      "https://wodoh.org",
+      "https://www.wodoh.org",
+      "http://localhost:3000",
+    ],
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -80,7 +95,7 @@ app.use(
 ======================= */
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 min
-  max: 120, // 120 requests / 15min لكل IP
+  max: 120,
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -124,7 +139,7 @@ function setAuthCookie(res, token) {
   const isProd = process.env.NODE_ENV === "production";
   res.cookie("wodoh_token", token, {
     httpOnly: true,
-    secure: isProd, // ✅ Render = HTTPS
+    secure: isProd,
     sameSite: "lax",
     path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -148,6 +163,23 @@ function requireAuth(req, res, next) {
   }
 }
 
+// ✅ Optional auth: لا يكسر أي شيء (لو ما في كوكي يكمل عادي)
+function optionalAuth(req, _res, next) {
+  try {
+    mustHaveJwtSecret();
+    const token = req.cookies?.wodoh_token;
+    if (!token) {
+      req.user = null;
+      return next();
+    }
+    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    return next();
+  } catch {
+    req.user = null;
+    return next();
+  }
+}
+
 /* =======================
    ✅ Auth endpoints (Step 1)
 ======================= */
@@ -157,7 +189,7 @@ app.post("/api/auth/dev-login", (req, res) => {
       id: "demo",
       name: "Demo User",
       email: "demo@wodoh",
-      subActive: false,
+      subActive: false, // ✅ Free by default
     });
     setAuthCookie(res, token);
     res.json({ ok: true });
@@ -176,6 +208,125 @@ app.post("/api/auth/logout", (req, res) => {
 });
 
 /* =======================
+   ✅ Plan helpers
+======================= */
+function isProUser(req) {
+  return !!(req.user && req.user.subActive === true);
+}
+
+function clientKey(req) {
+  const uid = req.user?.id ? String(req.user.id) : "";
+  if (uid) return `u:${uid}`;
+  const ip =
+    (req.headers["x-forwarded-for"] ? String(req.headers["x-forwarded-for"]).split(",")[0] : "") ||
+    req.ip ||
+    "unknown";
+  return `ip:${ip.trim()}`;
+}
+
+function todayKey() {
+  const d = new Date();
+  // key per UTC date is fine; if you prefer local server date, keep as is.
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+async function readJsonSafe(filePath, fallback) {
+  try {
+    const raw = await fs.readFile(filePath, "utf8");
+    return JSON.parse(raw || "") ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+async function writeJsonSafe(filePath, obj) {
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, JSON.stringify(obj, null, 2), "utf8");
+}
+
+// ✅ Free: 2 attempts/day + cooldown
+async function enforceFreeLimits(req, res) {
+  if (isProUser(req)) return { ok: true };
+
+  const key = clientKey(req);
+  const day = todayKey();
+
+  const usage = await readJsonSafe(USAGE_FILE, {});
+  usage[day] = usage[day] || {};
+  usage[day][key] = usage[day][key] || { count: 0, lastAt: 0 };
+
+  const row = usage[day][key];
+
+  // cooldown
+  const now = Date.now();
+  if (row.lastAt && now - row.lastAt < FREE_COOLDOWN_MS) {
+    const waitMs = FREE_COOLDOWN_MS - (now - row.lastAt);
+    return {
+      ok: false,
+      status: 429,
+      body: {
+        ok: false,
+        error: "WAIT",
+        message: "Please wait before trying again.",
+        retryAfterMs: waitMs,
+      },
+    };
+  }
+
+  // daily limit
+  if ((row.count || 0) >= FREE_DAILY_LIMIT) {
+    return {
+      ok: false,
+      status: 402,
+      body: {
+        ok: false,
+        error: "FREE_LIMIT",
+        message: "Daily free limit reached.",
+        limit: FREE_DAILY_LIMIT,
+      },
+    };
+  }
+
+  // reserve attempt now (so parallel requests still count)
+  row.count = (row.count || 0) + 1;
+  row.lastAt = now;
+
+  usage[day][key] = row;
+  await writeJsonSafe(USAGE_FILE, usage);
+
+  return { ok: true };
+}
+
+async function maybeSaveResult(req, payload) {
+  // ✅ Pro only + explicitly requested
+  if (!isProUser(req)) return;
+  const save = String(payload?.save || "").toLowerCase();
+  if (save !== "1" && save !== "true" && save !== "yes") return;
+
+  const results = await readJsonSafe(RESULTS_FILE, []);
+  results.push({
+    id: crypto.randomUUID(),
+    userId: req.user?.id || null,
+    createdAt: new Date().toISOString(),
+    lang: payload?.lang || "ar",
+    meta: {
+      questionMode: payload?.questionMode ?? null,
+      questionCount: payload?.questionCount ?? null,
+      mode: payload?.mode ?? "full",
+    },
+    sourceText: payload?.sourceText || "",
+    outputText: payload?.outputText || "",
+  });
+
+  // keep file not too big
+  if (results.length > 2000) results.splice(0, results.length - 2000);
+  await writeJsonSafe(RESULTS_FILE, results);
+}
+
+/* =======================
    Prompt builder (AR/EN/HE)
 ======================= */
 function normalizeLang(lang) {
@@ -183,6 +334,12 @@ function normalizeLang(lang) {
   if (l === "he" || l.startsWith("he")) return "he";
   if (l === "en" || l.startsWith("en")) return "en";
   return "ar";
+}
+
+function normalizeQuestionMode(qm) {
+  const m = String(qm || "").toLowerCase().trim();
+  if (m === "mcq" || m === "tf" || m === "both") return m;
+  return "both";
 }
 
 // ✅ Make summaries longer (scale better)
@@ -194,9 +351,32 @@ function summaryPlanByLength(text) {
   return { minParas: 6, maxParas: 8, sentences: "3–7", bullets: 10 };
 }
 
-function buildPrompts({ text, count, mode, lang, previous }) {
-  const safeCount = Math.min(Math.max(Number(count || 5), 1), 20);
+/**
+ * Backward compatible inputs:
+ * - Old:
+ *   - count (number) => questions count
+ *   - mode ("full" | "more")
+ * - New:
+ *   - questionCount (number) => overrides count when provided (Pro only)
+ *   - questionMode ("both" | "mcq" | "tf") => (Pro only)
+ */
+function buildPrompts({ text, count, questionCount, mode, questionMode, lang, previous, isPro }) {
   const L = normalizeLang(lang);
+
+  // ✅ Free: ignore questionCount/questionMode (limited)
+  const effectiveQuestionMode = isPro ? normalizeQuestionMode(questionMode) : "both";
+
+  const resolvedCountRaw = isPro
+    ? (questionCount !== undefined && questionCount !== null && String(questionCount).trim() !== ""
+        ? Number(questionCount)
+        : Number(count || 5))
+    : Number(count || 5);
+
+  const cappedCount = isPro
+    ? Math.min(Math.max(Number(resolvedCountRaw || 5), 1), 20)
+    : Math.min(Math.max(Number(resolvedCountRaw || 5), 1), FREE_MAX_QUESTIONS);
+
+  const safeCount = cappedCount;
 
   const isAr = L === "ar";
   const isHe = L === "he";
@@ -255,56 +435,65 @@ Length should scale with the text (longer text = more detail).`;
       ? `3) [${headerTF}] צור ${safeCount} שאלות ${headerTF}. בשורת התשובה כתוב ${ansLabel}: T או F בלבד.`
       : `3) [${headerTF}] Create ${safeCount} ${headerTF} questions. In the answer line write ${ansLabel}: T or F only.`;
 
-  const formatBlock = `
-Follow EXACT format:
+  const wantsMCQ = effectiveQuestionMode === "both" || effectiveQuestionMode === "mcq";
+  const wantsTF = effectiveQuestionMode === "both" || effectiveQuestionMode === "tf";
+  const includeSummary = mode !== "more";
 
-[${headerSummary}]
+  const sectionsExample = [
+    includeSummary
+      ? `[${headerSummary}]
 Paragraph 1...
 
 Paragraph 2...
 
 - Bullet point 1
-- Bullet point 2
+- Bullet point 2`
+      : null,
 
-[${headerMCQ}]
+    wantsMCQ
+      ? `[${headerMCQ}]
 1) ...
 A) ...
 B) ...
 C) ...
 D) ...
-${ansCorrectLabel}: A
+${ansCorrectLabel}: A`
+      : null,
 
-[${headerTF}]
+    wantsTF
+      ? `[${headerTF}]
 1) ... (${headerTF})
-${ansLabel}: T
-`.trim();
+${ansLabel}: T`
+      : null,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
-  const promptFull = `
-You are an educational assistant.
-${baseRules}
+  // full prompt
+  if (mode !== "more") {
+    const parts = [];
+    parts.push("You are an educational assistant.");
+    parts.push(baseRules);
+    parts.push("");
+    parts.push("Requirements:");
+    if (includeSummary) parts.push(summaryInstruction);
+    if (wantsMCQ) parts.push(mcqInstruction);
+    if (wantsTF) parts.push(tfInstruction);
+    parts.push("");
+    parts.push("Follow EXACT format:");
+    parts.push("");
+    parts.push(sectionsExample);
+    parts.push("");
+    parts.push("Text:");
+    parts.push(text);
 
-Requirements:
-${summaryInstruction}
-${mcqInstruction}
-${tfInstruction}
+    return { prompt: parts.join("\n").trim(), lang: L };
+  }
 
-${formatBlock}
-
-Text:
-${text}
-`.trim();
-
-  const moreReq = isAr
-    ? `المطلوب (أسئلة فقط بدون ملخص):
-1) [${headerMCQ}] أنشئ ${safeCount} سؤال جديد تمامًا (A/B/C/D) وحدد ${ansCorrectLabel}: A
-2) [${headerTF}] أنشئ ${safeCount} سؤال ${headerTF}. في سطر الإجابة اكتب ${ansLabel}: T أو F فقط.`
-    : isHe
-      ? `דרישות (שאלות בלבד ללא סיכום):
-1) [${headerMCQ}] צור ${safeCount} שאלות חדשות לחלוטין (A/B/C/D) וציין ${ansCorrectLabel}: A
-2) [${headerTF}] צור ${safeCount} שאלות ${headerTF}. בשורת התשובה כתוב ${ansLabel}: T או F בלבד.`
-      : `Requirements (questions only, no summary):
-1) [${headerMCQ}] Create ${safeCount} brand-new MCQ (A/B/C/D) and specify ${ansCorrectLabel}: A
-2) [${headerTF}] Create ${safeCount} brand-new ${headerTF}. In the answer line write ${ansLabel}: T or F only.`;
+  // more prompt (questions only)
+  const moreReq = [];
+  if (wantsMCQ) moreReq.push(mcqInstruction);
+  if (wantsTF) moreReq.push(tfInstruction);
 
   const noRepeatLine = isAr
     ? "✋ ممنوع التكرار أو إعادة الصياغة لنفس الفكرة."
@@ -318,29 +507,20 @@ ${baseRules}
 
 ${forbidRepeat}
 
-${moreReq}
+Requirements (questions only, no summary):
+${moreReq.join("\n")}
 
 ${noRepeatLine}
 
 Follow EXACT format:
 
-[${headerMCQ}]
-1) ...
-A) ...
-B) ...
-C) ...
-D) ...
-${ansCorrectLabel}: A
-
-[${headerTF}]
-1) ... (${headerTF})
-${ansLabel}: T
+${sectionsExample}
 
 Text:
 ${text}
 `.trim();
 
-  return { prompt: mode === "more" ? promptMore : promptFull, lang: L };
+  return { prompt: promptMore, lang: L };
 }
 
 function errMsg(lang, type) {
@@ -378,12 +558,24 @@ async function callGemini(prompt, apiKey) {
 
 /* =======================
    JSON: /api/generate
+   ✅ Plan split applied here
 ======================= */
-app.post("/api/generate", async (req, res) => {
+app.post("/api/generate", optionalAuth, async (req, res) => {
   try {
+    // ✅ enforce Free limits
+    const limit = await enforceFreeLimits(req, res);
+    if (!limit.ok) return res.status(limit.status).json(limit.body);
+
     const text = String(req.body?.text || "").trim();
     const mode = String(req.body?.mode || "full");
+
+    // old param
     const count = Number(req.body?.count || 5);
+
+    // new params (Pro only)
+    const questionCount = req.body?.questionCount;
+    const questionMode = req.body?.questionMode;
+
     const lang = normalizeLang(req.body?.lang || "ar");
     const previous = Array.isArray(req.body?.previous) ? req.body.previous : [];
 
@@ -392,7 +584,17 @@ app.post("/api/generate", async (req, res) => {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) return res.status(500).json({ error: errMsg(lang, "noKey") });
 
-    const { prompt } = buildPrompts({ text, count, mode, lang, previous });
+    const { prompt } = buildPrompts({
+      text,
+      count,
+      questionCount,
+      mode,
+      questionMode,
+      lang,
+      previous,
+      isPro: isProUser(req),
+    });
+
     const { response, data } = await callGemini(prompt, apiKey);
 
     if (!response.ok) {
@@ -403,7 +605,18 @@ app.post("/api/generate", async (req, res) => {
     const result = data?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!result) return res.status(500).json({ error: errMsg(lang, "noText") });
 
-    res.json({ text: result, sourceText: text });
+    // ✅ Pro: save results if requested
+    await maybeSaveResult(req, {
+      save: req.body?.save,
+      lang,
+      mode,
+      questionMode,
+      questionCount,
+      sourceText: text,
+      outputText: result,
+    });
+
+    res.json({ text: result, sourceText: text, pro: isProUser(req) });
   } catch (err) {
     res.status(500).json({ error: "Server error", details: String(err) });
   }
@@ -411,17 +624,29 @@ app.post("/api/generate", async (req, res) => {
 
 /* =======================
    FILE: /api/generate-file
+   ✅ Plan split applied here too
 ======================= */
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
 });
 
-app.post("/api/generate-file", upload.single("file"), async (req, res) => {
+app.post("/api/generate-file", optionalAuth, upload.single("file"), async (req, res) => {
   try {
+    // ✅ enforce Free limits
+    const limit = await enforceFreeLimits(req, res);
+    if (!limit.ok) return res.status(limit.status).json(limit.body);
+
     const file = req.file;
     const mode = String(req.body?.mode || "full");
+
+    // old param
     const count = Number(req.body?.count || 5);
+
+    // new params (Pro only)
+    const questionCount = req.body?.questionCount;
+    const questionMode = req.body?.questionMode;
+
     const lang = normalizeLang(req.body?.lang || "ar");
 
     let previous = [];
@@ -456,7 +681,17 @@ app.post("/api/generate-file", upload.single("file"), async (req, res) => {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) return res.status(500).json({ error: errMsg(lang, "noKey") });
 
-    const { prompt } = buildPrompts({ text, count, mode, lang, previous });
+    const { prompt } = buildPrompts({
+      text,
+      count,
+      questionCount,
+      mode,
+      questionMode,
+      lang,
+      previous,
+      isPro: isProUser(req),
+    });
+
     const { response, data } = await callGemini(prompt, apiKey);
 
     if (!response.ok) {
@@ -467,7 +702,18 @@ app.post("/api/generate-file", upload.single("file"), async (req, res) => {
     const result = data?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!result) return res.status(500).json({ error: errMsg(lang, "noText") });
 
-    res.json({ text: result, sourceText: text });
+    // ✅ Pro: save results if requested
+    await maybeSaveResult(req, {
+      save: req.body?.save,
+      lang,
+      mode,
+      questionMode,
+      questionCount,
+      sourceText: text,
+      outputText: result,
+    });
+
+    res.json({ text: result, sourceText: text, pro: isProUser(req) });
   } catch (err) {
     res.status(500).json({ error: "Server error", details: String(err) });
   }
@@ -555,7 +801,6 @@ async function verifyPayPalWebhookSignature(reqHeaders, webhookEvent) {
 }
 
 /* local storage (simple) */
-const DATA_DIR = path.join(__dirname, "data");
 const SUBS_FILE = path.join(DATA_DIR, "subscriptions.json");
 
 async function readSubs() {

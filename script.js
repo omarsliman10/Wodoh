@@ -17,20 +17,25 @@ let lastSourceText = "";
 // ✅ store output language (ar/en/he) used for last generation
 let lastOutputLang = ""; // "ar" | "en" | "he" | ""
 
-/* timing */
+/* timing (Free has delay; Pro minimal delay) */
 let lastRequestTime = 0;
-const MIN_DELAY = 2500;
+const MIN_DELAY_FREE = 2500;
+const MIN_DELAY_PRO  = 250; // "بدون انتظار" عمليًا، لكن نحمي السيرفر من spam
 
-const COOLDOWN_SECONDS = 30;
+/* Free cooldown for "More"; Pro no cooldown */
+const COOLDOWN_SECONDS_FREE = 30;
 let nextMoreAllowedAt = 0;
 let moreCountdownTimer = null;
 
 let currentFile = null;
 
 /* =======================
-   Daily limit
+   Free vs Pro limits
 ======================= */
 const FREE_DAILY_LIMIT = 2;
+const FREE_MAX_QUESTIONS = 5;
+const PRO_MAX_QUESTIONS = 20;
+
 const LS_USAGE_KEY = "wodoh_daily_usage_v1";
 
 function todayKey(){
@@ -128,7 +133,7 @@ function getUser(){
     return { loggedIn:false, subscribed:false, subscriptionId:"", email:"", firstName:"", lastName:"" };
   }
 }
-function setUser(obj){
+function _setUser(obj){
   const safe = obj && typeof obj === "object" ? obj : {};
   localStorage.setItem(LS_USER_KEY, JSON.stringify({
     loggedIn: !!safe.loggedIn,
@@ -139,6 +144,7 @@ function setUser(obj){
     lastName: safe.lastName || ""
   }));
 }
+let setUser = _setUser; // will be wrapped later
 function isLoggedIn(){ return !!getUser().loggedIn; }
 function isSubscribed(){ return !!getUser().subscribed; }
 function getSubscriptionId(){ return String(getUser().subscriptionId || ""); }
@@ -151,6 +157,22 @@ const output = document.getElementById("output");
 const generateBtn = document.getElementById("generateBtn");
 const langBtn = document.getElementById("langBtn");
 const toast = document.getElementById("toast");
+
+/* NEW controls */
+const questionTypeEl = document.getElementById("questionType");
+const questionCountEl = document.getElementById("questionCount");
+const proLockHint1 = document.getElementById("proLockHint1");
+const proLockHint2 = document.getElementById("proLockHint2");
+
+/* NEW: Pro controls container (from updated index) */
+const proControlsWrap = document.getElementById("proControls");
+const proLockBox = document.getElementById("proLockBox");
+const openSubscribeFromControls = document.getElementById("openSubscribeFromControls");
+const controlsPlanBadge = document.getElementById("controlsPlanBadge");
+
+/* NEW: header plan pill (from updated index) */
+const planPill = document.getElementById("planPill");
+const planPillText = document.getElementById("planPillText");
 
 /* Landing */
 const landing = document.getElementById("landing");
@@ -219,6 +241,21 @@ const logoutBtn = document.getElementById("logoutBtn");
 ======================= */
 const I18N = {
   ar: {
+    brandAr: "وضوح",
+    brandEn: "Wodoh",
+    brandDescAr: "حوّل المحتوى إلى فهم — ملخصات وأسئلة تفاعلية",
+    brandDescEn: "Turn content into understanding — summaries & interactive questions",
+
+    landingTitle: "تعلّم أوضح، أسرع، وبشكل تفاعلي",
+    landingSubtitle: "الصق نصًا أو ارفع ملفًا، واحصل على ملخص وأسئلة — بالعربية أو الإنجليزية.",
+    landingNoteAr: "منصّة ذكية لتحويل المحتوى إلى فهم حقيقي",
+    landingNoteEn: "A smart platform that turns content into real understanding",
+
+    featFast: "⚡ سريع",
+    featInteractive: "🧠 تفاعلي",
+    featFiles: "📄 يدعم ملفات",
+    featLangs: "🌐 لغات",
+
     langBtn: "🌐 English",
     mySummariesBtn: "📚 ملخصاتي",
     accountBtnTop: "👤 الحساب",
@@ -231,6 +268,14 @@ const I18N = {
     clearFileBtn: "مسح الملف ✖",
     fileHint: "اسحب الملف هنا أو اضغط “اختيار ملف” (TXT / PDF / DOCX)",
     textPlaceholder: "الصق النص هنا...",
+
+    qTypeLabel: "نوع الأسئلة",
+    qTypeBoth: "اختيار من متعدد + صح/خطأ",
+    qTypeMcq: "اختيار من متعدد فقط",
+    qTypeTf: "صح/خطأ فقط",
+    qCountLabel: "عدد الأسئلة",
+    proLockHint: "🔒 التحكم الكامل متاح للمشترك",
+    freeLimitHint: "🆓 المجاني: حد أقصى 5 أسئلة",
 
     startBtn: "ابدأ الآن",
     skipBtn: "تخطي",
@@ -248,6 +293,7 @@ const I18N = {
     toastBadType: "⚠️ نوع ملف غير مدعوم",
     toastNeedLibs: "⚠️ لتشغيل PDF/DOCX أضف pdf.js و mammoth في index.html",
     toastNeedSub: "🔒 انتهت المحاولات المجانية. اشترك للاستخدام بلا حدود.",
+    toastNeedProHistory: "🔒 الحفظ (ملخصاتي) للمشترك فقط.",
     toastLoggedIn: "✅ تم تسجيل الدخول",
     toastSignedUp: "✅ تم إنشاء الحساب",
     toastLoggedOut: "✅ تم تسجيل الخروج",
@@ -263,11 +309,19 @@ const I18N = {
     toastNeedName: "⚠️ أدخل الاسم الأول واسم العائلة",
 
     paywallTitle: "🔒 انتهت المحاولات المجانية اليوم",
-    // ✅ FIX: لا تذكر 3 (خليها عامة) — لأن العرض الفعلي ديناميكي في showPaywall()
     paywallText: "انتهت المحاولات المجانية. اشترك للمتابعة بلا حدود.",
 
     emailLabel: "الإيميل",
     passLabel: "كلمة المرور",
+
+    tabLogin: "تسجيل دخول",
+    tabSignup: "إنشاء حساب",
+    rememberMe: "تذكرني",
+    forgotPass: "نسيت كلمة المرور؟",
+    authSubtitle: "سجّل دخولك أو أنشئ حسابك خلال ثوانٍ.",
+    authSubmit: "دخول",
+    cancelBtn: "إغلاق",
+    logoutBtn: "تسجيل خروج",
 
     planMonthly: "شهري",
     planYearly: "سنوي",
@@ -275,10 +329,32 @@ const I18N = {
     planBest: "أفضل قيمة",
     subText: "اختر الخطة. عند الاشتراك يصبح الاستخدام بلا حدود.",
     paypalNote: "ادفع عبر PayPal أو البطاقة لتفعيل الاشتراك.",
-    subHint: "عند تفعيل الاشتراك سيتم إزالة حد الاستخدام اليومي."
+    subHint: "عند تفعيل الاشتراك سيتم إزالة حد الاستخدام اليومي.",
+
+    footerBrand: "Wodoh – وضوح",
+
+    // ✅ NEW
+    planFree: "Free",
+    planPro: "Wodoh Pro",
+    upgradeBtn: "ترقية ⭐"
   },
 
   en: {
+    brandAr: "وضوح",
+    brandEn: "Wodoh",
+    brandDescAr: "حوّل المحتوى إلى فهم — ملخصات وأسئلة تفاعلية",
+    brandDescEn: "Turn content into understanding — summaries & interactive questions",
+
+    landingTitle: "Learn clearer, faster, and interactively",
+    landingSubtitle: "Paste text or upload a file, get a summary + questions — Arabic or English.",
+    landingNoteAr: "منصّة ذكية لتحويل المحتوى إلى فهم حقيقي",
+    landingNoteEn: "A smart platform that turns content into real understanding",
+
+    featFast: "⚡ Fast",
+    featInteractive: "🧠 Interactive",
+    featFiles: "📄 File support",
+    featLangs: "🌐 Languages",
+
     langBtn: "🌐 العربية",
     mySummariesBtn: "📚 My Summaries",
     accountBtnTop: "👤 Account",
@@ -291,6 +367,14 @@ const I18N = {
     clearFileBtn: "Clear file ✖",
     fileHint: "Drag & drop a file here or click “Choose file” (TXT / PDF / DOCX)",
     textPlaceholder: "Paste the text here...",
+
+    qTypeLabel: "Question type",
+    qTypeBoth: "MCQ + True/False",
+    qTypeMcq: "MCQ only",
+    qTypeTf: "True/False only",
+    qCountLabel: "Questions count",
+    proLockHint: "🔒 Full control is for Pro",
+    freeLimitHint: "🆓 Free: max 5 questions",
 
     startBtn: "Start now",
     skipBtn: "Skip",
@@ -308,6 +392,7 @@ const I18N = {
     toastBadType: "⚠️ Unsupported file type",
     toastNeedLibs: "⚠️ To use PDF/DOCX add pdf.js and mammoth to index.html",
     toastNeedSub: "🔒 Free limit reached. Subscribe for unlimited.",
+    toastNeedProHistory: "🔒 Saving (My Summaries) is for Pro only.",
     toastLoggedIn: "✅ Logged in",
     toastSignedUp: "✅ Account created",
     toastLoggedOut: "✅ Logged out",
@@ -323,11 +408,19 @@ const I18N = {
     toastNeedName: "⚠️ Enter first & last name",
 
     paywallTitle: "🔒 Free limit reached today",
-    // ✅ FIX: لا تذكر 3
     paywallText: "Free limit reached. Subscribe for unlimited.",
 
     emailLabel: "Email",
     passLabel: "Password",
+
+    tabLogin: "Log in",
+    tabSignup: "Sign up",
+    rememberMe: "Remember me",
+    forgotPass: "Forgot password?",
+    authSubtitle: "Log in or create an account in seconds.",
+    authSubmit: "Log in",
+    cancelBtn: "Close",
+    logoutBtn: "Log out",
 
     planMonthly: "Monthly",
     planYearly: "Yearly",
@@ -335,7 +428,14 @@ const I18N = {
     planBest: "Best value",
     subText: "Choose a plan. Subscription gives you unlimited usage.",
     paypalNote: "Pay via PayPal or card to activate your subscription.",
-    subHint: "Subscription removes the daily free limit."
+    subHint: "Subscription removes the daily free limit.",
+
+    footerBrand: "Wodoh – وضوح",
+
+    // ✅ NEW
+    planFree: "Free",
+    planPro: "Wodoh Pro",
+    upgradeBtn: "Upgrade ⭐"
   },
 
   he: {
@@ -464,7 +564,7 @@ function openModal(el){ if (el) el.style.display = "flex"; }
 function closeModal(el){ if (el) el.style.display = "none"; }
 
 /* =======================
-   File helpers (needed by restoreSession)
+   File helpers
 ======================= */
 function clearFile(){
   currentFile = null;
@@ -520,8 +620,27 @@ function formatBytes(bytes){
 }
 
 /* =======================
-   Header buttons
+   Header buttons + Plan pill
 ======================= */
+function setPlanPillUI(){
+  const pro = isSubscribed();
+  const dict = I18N[currentLang] || I18N.ar;
+
+  if (planPill){
+    planPill.classList.toggle("pro", pro);
+    planPill.classList.toggle("free", !pro);
+  }
+  if (planPillText){
+    planPillText.textContent = pro ? (dict.planPro || "Wodoh Pro") : (dict.planFree || "Free");
+  }
+
+  if (controlsPlanBadge){
+    controlsPlanBadge.classList.toggle("pro", pro);
+    controlsPlanBadge.classList.toggle("free", !pro);
+    controlsPlanBadge.textContent = pro ? (dict.planPro || "Wodoh Pro") : (dict.planFree || "Free");
+  }
+}
+
 function refreshHeaderButtons(){
   const u = getUser();
 
@@ -544,7 +663,56 @@ function refreshHeaderButtons(){
       headerSubscribeBtn.disabled = false;
     }
   }
+
+  setPlanPillUI();
+  updateProLocks();
 }
+
+function updateProLocks(){
+  const pro = isSubscribed();
+
+  // hints
+  if (proLockHint1) proLockHint1.style.display = pro ? "none" : "block";
+  if (proLockHint2) proLockHint2.style.display = pro ? "none" : "block";
+
+  // ✅ Pro controls box (upgrade) from updated index
+  if (proControlsWrap){
+    proControlsWrap.classList.toggle("locked", !pro);
+  }
+  if (proLockBox){
+    proLockBox.style.display = pro ? "none" : "flex";
+  }
+
+  // ✅ FREE: force question type to BOTH + lock control
+  if (questionTypeEl){
+    if (!pro){
+      questionTypeEl.value = "both";
+      questionTypeEl.disabled = true;
+    } else {
+      questionTypeEl.disabled = false;
+    }
+  }
+
+  // ✅ Count limits
+  if (questionCountEl){
+    const max = pro ? PRO_MAX_QUESTIONS : FREE_MAX_QUESTIONS;
+    questionCountEl.max = String(max);
+
+    let n = Number(questionCountEl.value || 5);
+    if (!Number.isFinite(n) || n < 1) n = 5;
+    if (n > max) n = max;
+
+    questionCountEl.value = String(n);
+
+    // optional: lock count input for Free? (keep it editable but capped)
+    questionCountEl.disabled = false;
+  }
+
+  setPlanPillUI();
+}
+
+/* ✅ upgrade button inside controls => open subscribe */
+openSubscribeFromControls?.addEventListener("click", ()=> headerSubscribeBtn?.click?.());
 
 /* ✅ Server-verified subscription check helper */
 async function serverVerifySubscription(subscriptionId){
@@ -654,7 +822,7 @@ tabSignup?.addEventListener("click", ()=> setAccountTab("signup"));
 });
 
 /* =======================
-   Pro Auth UX (SAFE ORDER)
+   Pro Auth UX
 ======================= */
 function showAuthAlert(msg, type="err"){
   if (!authAlert) return;
@@ -697,7 +865,7 @@ try{
   }
 }catch{}
 
-// Wrap openAccount safely (after it exists)
+// Wrap openAccount safely
 const _oldOpenAccount = openAccount;
 openAccount = function(mode="login"){
   _oldOpenAccount(mode);
@@ -706,7 +874,7 @@ openAccount = function(mode="login"){
   if (logoutArea) logoutArea.classList.toggle("show", !!u.loggedIn);
 };
 
-// Wrap setUser safely (after it exists)
+// Wrap setUser safely
 const _oldSetUser = setUser;
 setUser = function(obj){
   _oldSetUser(obj);
@@ -771,7 +939,7 @@ authSubmit?.addEventListener("click", ()=>{
     return;
   }
 
-  // ✅ login (FIXED + proper braces)
+  // ✅ login
   const res = verifyLogin(email, pass);
   if (!res.ok){
     if (res.error === "NOT_FOUND"){
@@ -808,7 +976,7 @@ authSubmit?.addEventListener("click", ()=>{
   closeAccount();
   refreshHeaderButtons();
   showToast(t("toastLoggedIn"));
-}); // ✅ IMPORTANT: close authSubmit listener
+});
 
 logoutBtn?.addEventListener("click", ()=>{
   const u = getUser();
@@ -836,7 +1004,6 @@ function getSelectedPlanId(){
   return PAYPAL_PLAN_IDS[selectedPlan] || PAYPAL_PLAN_IDS.monthly;
 }
 
-/* ✅ FIX: define closeSubscribe (كان ناقص) */
 function closeSubscribe(){
   if (paypalWaitTimer){
     clearInterval(paypalWaitTimer);
@@ -846,7 +1013,6 @@ function closeSubscribe(){
 }
 
 function openSubscribe(){
-  // ✅ لازم يكون مسجل دخول قبل الاشتراك
   if (!isLoggedIn()){
     showToast(
       currentLang === "ar"
@@ -855,7 +1021,7 @@ function openSubscribe(){
       "err",
       3200
     );
-    openAccount("signup"); // تقدر تخليها login لو بدك
+    openAccount("signup");
     return;
   }
 
@@ -1018,7 +1184,7 @@ function applyLang(){
 /* =======================
    Session Save/Restore
 ======================= */
-const LS_SESSION_KEY = "wodoh_last_session_v5";
+const LS_SESSION_KEY = "wodoh_last_session_v6";
 
 function saveSession(){
   try{
@@ -1072,7 +1238,7 @@ textInput?.addEventListener("input", saveSession);
 (async function verifySubOnLoad(){
   try{
     const u = getUser();
-    if (!u?.subscriptionId) return;
+    if (!u?.subscriptionId) { refreshHeaderButtons(); return; }
 
     const v = await serverVerifySubscription(u.subscriptionId);
 
@@ -1087,7 +1253,9 @@ textInput?.addEventListener("input", saveSession);
       });
     }
     refreshHeaderButtons();
-  }catch{}
+  }catch{
+    refreshHeaderButtons();
+  }
 })();
 
 /* =======================
@@ -1172,13 +1340,17 @@ async function handleFile(file){
 ======================= */
 function canRequest(){
   const now = Date.now();
-  if (now - lastRequestTime < MIN_DELAY) return false;
+  const minDelay = isSubscribed() ? MIN_DELAY_PRO : MIN_DELAY_FREE;
+  if (now - lastRequestTime < minDelay) return false;
   lastRequestTime = now;
   return true;
 }
 
 function startMoreCooldown(){
-  nextMoreAllowedAt = Date.now() + COOLDOWN_SECONDS * 1000;
+  if (isSubscribed()) return; // ✅ Pro: no cooldown
+
+  const seconds = COOLDOWN_SECONDS_FREE;
+  nextMoreAllowedAt = Date.now() + seconds * 1000;
   if (moreCountdownTimer) clearInterval(moreCountdownTimer);
 
   const tick = ()=>{
@@ -1228,14 +1400,33 @@ function renderSkeleton(){
 /* =======================
    Strict Summary (Send to server)
 ======================= */
-const SUMMARY_STYLE = "strict";          // "strict" | "normal"
-const SUMMARY_BULLETS = 6;               // عدد نقاط التلخيص
-const SUMMARY_WORDS_PER_BULLET = 10;     // أقصى كلمات لكل نقطة
+const SUMMARY_STYLE = "strict";
+const SUMMARY_BULLETS = 6;
+const SUMMARY_WORDS_PER_BULLET = 10;
+
+/* =======================
+   Read question controls (Free vs Pro)
+======================= */
+function getQuestionPrefs(){
+  const pro = isSubscribed();
+
+  // Free forced:
+  let mode = pro ? (questionTypeEl?.value || "both") : "both";
+  if (!["both","mcq","tf"].includes(mode)) mode = "both";
+
+  let n = Number(questionCountEl?.value || 5);
+  if (!Number.isFinite(n) || n < 1) n = 5;
+
+  const max = pro ? PRO_MAX_QUESTIONS : FREE_MAX_QUESTIONS;
+  if (n > max) n = max;
+
+  return { questionMode: mode, questionCount: n };
+}
 
 /* =======================
    API
 ======================= */
-async function callAPI({text,mode,count}){
+async function callAPI({text,mode,count,questionMode,questionCount}){
   const detected = detectLangFromText(text);
 
   const r = await fetch("/api/generate",{
@@ -1247,6 +1438,10 @@ async function callAPI({text,mode,count}){
       count,
       previous: previousQuestions,
       lang: detected,
+
+      // ✅ new
+      questionMode,
+      questionCount,
 
       summaryStyle: SUMMARY_STYLE,
       summaryBullets: SUMMARY_BULLETS,
@@ -1280,6 +1475,8 @@ generateBtn?.addEventListener("click", async ()=>{
     return;
   }
 
+  const prefs = getQuestionPrefs();
+
   previousQuestions = [];
   lastSourceText = text;
 
@@ -1288,7 +1485,13 @@ generateBtn?.addEventListener("click", async ()=>{
   setGenerateBusy(true);
 
   try{
-    const { r, data, detected } = await callAPI({ text, mode:"full", count: FULL_COUNT });
+    const { r, data, detected } = await callAPI({
+      text,
+      mode:"full",
+      count: FULL_COUNT,
+      questionMode: prefs.questionMode,
+      questionCount: prefs.questionCount
+    });
     lastOutputLang = detected;
 
     if (!r.ok){
@@ -1313,28 +1516,32 @@ generateBtn?.addEventListener("click", async ()=>{
       `);
     }
 
-    const paras = (parsed.summaryParas || parsed.summary || []);
-    const bullets = (parsed.summaryBullets || []);
-    const summaryText =
-      (paras.join("\n\n") + (bullets.length ? `\n\n${bullets.map(b=>`- ${b}`).join("\n")}` : "")).trim();
+    // ✅ SAVE only for PRO
+    if (isSubscribed()){
+      const paras = (parsed.summaryParas || parsed.summary || []);
+      const bullets = (parsed.summaryBullets || []);
+      const summaryText =
+        (paras.join("\n\n") + (bullets.length ? `\n\n${bullets.map(b=>`- ${b}`).join("\n")}` : "")).trim();
 
-    const questions = [
-      ...parsed.mcq.map(q => ({ type:"mcq", question:q.question, options:q.options, answer:q.correct })),
-      ...parsed.tf.map(q => ({ type:"tf", statement:q.statement, answer:q.correct }))
-    ];
+      const questions = [
+        ...parsed.mcq.map(q => ({ type:"mcq", question:q.question, options:q.options, answer:q.correct })),
+        ...parsed.tf.map(q => ({ type:"tf", statement:q.statement, answer:q.correct }))
+      ];
 
-    const L = outLang();
-    const titlePrefix = (L==="ar") ? "ملخص" : (L==="he" ? "סיכום" : "Summary");
+      const L = outLang();
+      const titlePrefix = (L==="ar") ? "ملخص" : (L==="he" ? "סיכום" : "Summary");
 
-    addSummaryItem({
-      title: `${titlePrefix} • ${new Date().toLocaleDateString()}`,
-      summaryText,
-      questions
-    });
+      addSummaryItem({
+        title: `${titlePrefix} • ${new Date().toLocaleDateString()}`,
+        summaryText,
+        questions
+      });
+
+      showToast(t("toastAdded"), "ok", 2200);
+    }
 
     saveSession();
     showToast(t("toastGenerated"));
-    showToast(t("toastAdded"), "ok", 2200);
   }catch(e){
     console.error(e);
     showToast(t("toastConnErr"), "err");
@@ -1362,9 +1569,12 @@ document.addEventListener("click", async (e)=>{
     return;
   }
 
-  if (Date.now() < nextMoreAllowedAt){
-    showToast(t("toastTimer"), "err");
-    return;
+  // Free cooldown only
+  if (!isSubscribed()){
+    if (Date.now() < nextMoreAllowedAt){
+      showToast(t("toastTimer"), "err");
+      return;
+    }
   }
 
   if (!canRequest()){
@@ -1374,6 +1584,8 @@ document.addEventListener("click", async (e)=>{
 
   startMoreCooldown();
 
+  const prefs = getQuestionPrefs();
+
   const skeletonHolder = document.createElement("div");
   skeletonHolder.innerHTML = renderSkeleton();
   skeletonHolder.style.marginTop = "14px";
@@ -1382,7 +1594,13 @@ document.addEventListener("click", async (e)=>{
   anchor.insertAdjacentElement("afterend", skeletonHolder);
 
   try{
-    const { r, data, detected } = await callAPI({ text:lastSourceText, mode:"more", count: MORE_COUNT });
+    const { r, data, detected } = await callAPI({
+      text:lastSourceText,
+      mode:"more",
+      count: MORE_COUNT,
+      questionMode: prefs.questionMode,
+      questionCount: prefs.questionCount
+    });
     lastOutputLang = detected;
 
     skeletonHolder.remove();
@@ -1413,7 +1631,6 @@ document.addEventListener("click", async (e)=>{
 
     saveSession();
     startMoreCooldown();
-    showToast(t("toastAdded"));
   }catch(e){
     console.error(e);
     skeletonHolder.remove();
@@ -1538,7 +1755,7 @@ function renderTF(q){
 }
 
 /* =======================
-   Parser (Summary paragraphs + bullets)
+   Parser
 ======================= */
 function parseGeminiText(text){
   const raw = String(text || "").replace(/\r/g, "");
@@ -1659,7 +1876,7 @@ function escapeHtml(str){
 }
 
 /* =======================
-   My Summaries
+   My Summaries (PRO ONLY usage)
 ======================= */
 const LS_SUMMARIES_KEY = "wodoh_summaries_v1";
 
@@ -1801,6 +2018,11 @@ function openSummary(id){
 }
 
 mySummariesBtn?.addEventListener("click", ()=>{
+  if (!isSubscribed()){
+    showToast(t("toastNeedProHistory"), "err", 2800);
+    openSubscribe();
+    return;
+  }
   showSummariesView();
   renderMySummaries();
 });
@@ -1817,3 +2039,8 @@ langBtn?.addEventListener("click", ()=>{
   applyLang();
   saveSession();
 });
+
+/* keep locks synced */
+questionCountEl?.addEventListener("input", ()=> updateProLocks());
+questionTypeEl?.addEventListener("change", ()=> updateProLocks());
+updateProLocks();

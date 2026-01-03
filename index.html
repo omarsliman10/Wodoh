@@ -56,7 +56,7 @@
         <div class="feat" data-i18n="featFast">⚡ سريع</div>
         <div class="feat" data-i18n="featInteractive">🧠 تفاعلي</div>
         <div class="feat" data-i18n="featFiles">📄 يدعم ملفات</div>
-        <div class="feat" data-i18n="featLangs">🌐 لغتين</div>
+        <div class="feat" data-i18n="featLangs">🌐 لغات</div>
       </div>
 
       <div class="cta">
@@ -95,6 +95,14 @@
       </div>
 
       <div class="header-actions">
+        <!-- ✅ NEW: Plan pill (Free/Pro) -->
+        <div class="header-plan" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span id="planPill" class="plan-pill free" title="Plan">
+            <span class="dot"></span>
+            <span id="planPillText" data-i18n="planFree">Free</span>
+          </span>
+        </div>
+
         <button id="mySummariesBtn" class="btn btn-soft" type="button" data-i18n="mySummariesBtn">📚 ملخصاتي</button>
 
         <button id="headerAccountBtn" class="btn btn-soft" type="button" data-i18n="accountBtnTop">👤 الحساب</button>
@@ -135,8 +143,63 @@
         </div>
       </div>
 
-      <div class="controls">
-        <button id="generateBtn" type="button" class="btn btn-primary btn-wide" data-i18n="generateBtn">تلخيص + أسئلة</button>
+      <!-- ✅ NEW: Question controls (type + count) -->
+      <!-- (IDs محفوظة حتى ما نكسر script.js: questionType / questionCount) -->
+      <div class="pro-controls locked" id="proControls">
+        <div class="row" style="justify-content:space-between;">
+          <div>
+            <p class="title" style="margin:0;" data-i18n="proControlsTitle">تحكم بالأسئلة</p>
+            <div class="muted" data-i18n="proControlsDesc">اختر النوع والعدد (لـ Pro تحكم كامل).</div>
+          </div>
+
+          <!-- hint badge (optional) -->
+          <span id="controlsPlanBadge" class="plan-pill free" style="padding:7px 10px;">
+            <span class="dot"></span>
+            <span data-i18n="planFree">Free</span>
+          </span>
+        </div>
+
+        <div class="row" style="align-items:flex-end;">
+          <div style="flex:1;min-width:180px;">
+            <label class="label" style="margin-bottom:6px;" data-i18n="qTypeLabel">نوع الأسئلة</label>
+
+            <!-- Keep your select (no breaking) -->
+            <select id="questionType" class="select" style="width:100%;">
+              <option value="both" data-i18n="qTypeBoth">اختيار من متعدد + صح/خطأ</option>
+              <option value="mcq" data-i18n="qTypeMcq">اختيار من متعدد فقط</option>
+              <option value="tf" data-i18n="qTypeTf">صح/خطأ فقط</option>
+            </select>
+
+            <div id="proLockHint1" style="margin-top:8px;display:none;" class="limit-hint">
+              <strong data-i18n="lockedTitle">🔒 Pro فقط</strong>
+              <div data-i18n="proLockHint">التحكم الكامل متاح للمشترك.</div>
+            </div>
+          </div>
+
+          <div style="width:180px;min-width:160px;">
+            <label class="label" style="margin-bottom:6px;" data-i18n="qCountLabel">عدد الأسئلة</label>
+            <input id="questionCount" type="number" min="1" max="20" value="5" class="input" style="width:100%;" />
+
+            <div id="proLockHint2" style="margin-top:8px;display:none;" class="limit-hint">
+              <strong data-i18n="freeLimitTitle">🆓 المجاني</strong>
+              <div data-i18n="freeLimitHint">حد أقصى 5 أسئلة.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pro-lock" id="proLockBox" style="display:none;">
+          <div class="txt">
+            <b data-i18n="proLockBoxTitle">Wodoh Pro</b>
+            <span data-i18n="proLockBoxDesc">يعطيك تحكم بالنوع والعدد + بدون انتظار + حفظ النتائج.</span>
+          </div>
+          <button id="openSubscribeFromControls" class="btn btn-primary" type="button" data-i18n="upgradeBtn">ترقية ⭐</button>
+        </div>
+      </div>
+
+      <div class="controls" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:12px;">
+        <button id="generateBtn" type="button" class="btn btn-primary btn-wide" style="flex:1;min-width:200px;" data-i18n="generateBtn">
+          تلخيص + أسئلة
+        </button>
       </div>
 
       <div id="toast" class="toast" style="display:none;"></div>
@@ -154,8 +217,39 @@
   <div id="paywallModal" class="modal" style="display:none;">
     <div class="modal-card">
       <h3 id="paywallTitle" data-i18n="paywallTitle">🔒 انتهت المحاولات المجانية اليوم</h3>
-      <p id="paywallText" data-i18n="paywallText">لديك 3 مرات يوميًا مجانًا. اشترك للمتابعة بلا حدود.</p>
-      <div class="modal-actions">
+      <p id="paywallText" data-i18n="paywallText">انتهت المحاولات المجانية. اشترك للمتابعة بلا حدود.</p>
+
+      <!-- ✅ NEW: Quick comparison inside paywall -->
+      <div class="pricing-compare" style="margin-top:12px;">
+        <div class="tier free">
+          <div class="tier-head">
+            <div class="tier-name">Free</div>
+            <div class="tier-badge">Basic</div>
+          </div>
+          <ul>
+            <li>2 محاولات يوميًا <span class="tag limit">Limit</span></li>
+            <li>أسئلة محدودة <span class="tag limit">5</span></li>
+            <li>بدون حفظ</li>
+            <li>مع انتظار</li>
+          </ul>
+        </div>
+
+        <div class="tier pro">
+          <div class="tier-head">
+            <div class="tier-name">Wodoh Pro</div>
+            <div class="tier-badge">Unlimited</div>
+          </div>
+          <ul>
+            <li>غير محدود <span class="tag pro">Pro</span></li>
+            <li>حفظ النتائج <span class="tag pro">Pro</span></li>
+            <li>تحكم بالنوع والعدد <span class="tag pro">Pro</span></li>
+            <li>بدون انتظار <span class="tag pro">Pro</span></li>
+            <li>دعم كامل للغات <span class="tag pro">Pro</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
         <button id="paywallAccountBtn" class="btn btn-soft" type="button" data-i18n="accountBtnTop">👤 الحساب</button>
         <button id="paywallSubscribeBtn" class="btn btn-primary" type="button" data-i18n="subscribeBtnTop">⭐ اشترك</button>
         <button id="closePaywall" class="btn btn-ghost" type="button" data-i18n="closeBtn">إغلاق</button>
@@ -163,7 +257,7 @@
     </div>
   </div>
 
-  <!-- ✅ Account Modal (UPDATED to match your CSS + script.js ids) -->
+  <!-- ✅ Account Modal -->
   <div id="accountModal" class="modal" style="display:none;">
     <div class="modal-card auth-pro">
 
@@ -177,17 +271,14 @@
         <button id="accountClose" class="auth-close" type="button" aria-label="close">✕</button>
       </div>
 
-      <!-- ✅ Tabs (match .auth-tabs styling) -->
       <div class="auth-tabs">
         <button id="tabLogin" class="active" type="button" data-i18n="tabLogin">تسجيل دخول</button>
         <button id="tabSignup" type="button" data-i18n="tabSignup">إنشاء حساب</button>
       </div>
 
-      <!-- ✅ Alert (used by script.js) -->
       <div id="authAlert" class="auth-alert"></div>
 
       <form class="auth-form" onsubmit="return false;">
-        <!-- ✅ Names row (shown only on signup via [data-auth-name]) -->
         <div class="auth-names" data-auth-name>
           <label class="field">
             <span class="field-label" id="firstNameLabel" data-i18n="firstNameLabel">الاسم الأول</span>
@@ -215,12 +306,10 @@
           <span class="field-label" id="passLabel" data-i18n="passLabel">كلمة المرور</span>
           <div class="field-control">
             <input id="authPass" type="password" placeholder="********" autocomplete="current-password" />
-            <!-- ✅ Toggle pass (used by script.js) -->
             <button id="togglePass" class="icon-btn" type="button" aria-label="toggle password">👁</button>
           </div>
         </label>
 
-        <!-- ✅ remember + forgot (ids used by script.js) -->
         <div class="auth-row">
           <label class="check">
             <input id="rememberMe" type="checkbox" />
@@ -243,7 +332,6 @@
           ملاحظة: تسجيل الدخول وحده لا يعطيك لا محدود. اللا محدود فقط للمشترك.
         </div>
 
-        <!-- ✅ logout area (used by script.js) -->
         <div id="logoutArea" class="logout-area">
           <button id="logoutBtn" class="btn btn-danger" type="button" data-i18n="logoutBtn">تسجيل خروج</button>
         </div>
@@ -252,58 +340,96 @@
     </div>
   </div>
 
-  <!-- ✅ Subscribe Modal (Premium UI) -->
-<div id="subscribeModal" class="modal" style="display:none;">
-  <div class="modal-card modal-card--subscribe" role="dialog" aria-modal="true">
+  <!-- ✅ Subscribe Modal -->
+  <div id="subscribeModal" class="modal" style="display:none;">
+    <div class="modal-card modal-card--subscribe" role="dialog" aria-modal="true">
 
-    <button id="subClose" class="sub-x" type="button" aria-label="close">✕</button>
+      <button id="subClose" class="sub-x" type="button" aria-label="close">✕</button>
 
-    <div class="sub-head">
-      <h3 id="subTitle" class="sub-title" data-i18n="subscribeBtnTop">⭐ الاشتراك</h3>
-      <p class="sub-subtitle" id="subText" data-i18n="subText">
-        اختر الخطة. عند الاشتراك يصبح الاستخدام بلا حدود.
-      </p>
-    </div>
-
-    <!-- خطط -->
-    <div class="sub-plans" dir="ltr">
-      <button class="plan active" data-plan="monthly" type="button">
-        <div class="plan-top">
-          <div class="plan-name" data-i18n="planMonthly">Monthly</div>
-          <div class="plan-desc" data-i18n="planUnlimited">Unlimited</div>
-        </div>
-        <div class="plan-price">PayPal Plan</div>
-        <div class="plan-desc">Unlimited access</div>
-      </button>
-
-      <button class="plan" data-plan="yearly" type="button">
-        <div class="plan-top">
-          <div class="plan-name">Yearly</div>
-          <div class="plan-badge best">Best value</div>
-        </div>
-        <div class="plan-price">PayPal Plan</div>
-        <div class="plan-desc">Save more yearly</div>
-      </button>
-    </div>
-
-    <!-- PayPal -->
-    <div class="sub-pay">
-      <div class="paypal-note" id="paypalNote" data-i18n="paypalNote">
-        ادفع عبر PayPal لتفعيل الاشتراك.
+      <div class="sub-head">
+        <h3 id="subTitle" class="sub-title" data-i18n="subscribeBtnTop">⭐ الاشتراك</h3>
+        <p class="sub-subtitle" id="subText" data-i18n="subText">
+          اختر الخطة. عند الاشتراك يصبح الاستخدام بلا حدود.
+        </p>
       </div>
 
-      <div id="paypalButtons" class="paypal-box" style="margin-top:12px;"></div>
+      <!-- ✅ NEW: Free vs Pro comparison (simple + convincing) -->
+      <div class="pricing-compare">
+        <div class="tier free">
+          <div class="tier-head">
+            <div class="tier-name">Free</div>
+            <div class="tier-badge">Basic</div>
+          </div>
+          <ul>
+            <li>2 محاولات يوميًا <span class="tag limit">Limit</span></li>
+            <li>أسئلة محدودة <span class="tag limit">5</span></li>
+            <li>بدون حفظ</li>
+            <li>مع انتظار</li>
+          </ul>
+        </div>
 
-      <div class="tiny-hint" id="subHint" data-i18n="subHint" style="margin-top:10px;">
-        عند تفعيل الاشتراك سيتم إزالة حد 3 مرات/اليوم.
+        <div class="tier pro">
+          <div class="tier-head">
+            <div class="tier-name">Wodoh Pro</div>
+            <div class="tier-badge">Unlimited</div>
+          </div>
+          <ul>
+            <li>غير محدود <span class="tag pro">Pro</span></li>
+            <li>حفظ النتائج <span class="tag pro">Pro</span></li>
+            <li>تحكم بنوع وعدد الأسئلة <span class="tag pro">Pro</span></li>
+            <li>بدون انتظار <span class="tag pro">Pro</span></li>
+            <li>دعم كامل للغات <span class="tag pro">Pro</span></li>
+          </ul>
+        </div>
       </div>
-    </div>
 
+      <div class="sub-plans" dir="ltr">
+        <button class="plan active" data-plan="monthly" type="button">
+          <div class="plan-top">
+            <div class="plan-name" data-i18n="planMonthly">Monthly</div>
+            <div class="plan-desc" data-i18n="planUnlimited">Unlimited</div>
+          </div>
+          <div class="plan-price">PayPal Plan</div>
+          <div class="plan-desc">Unlimited access</div>
+        </button>
+
+        <button class="plan" data-plan="yearly" type="button">
+          <div class="plan-top">
+            <div class="plan-name" data-i18n="planYearly">Yearly</div>
+            <div class="plan-badge best" data-i18n="planBest">Best value</div>
+          </div>
+          <div class="plan-price">PayPal Plan</div>
+          <div class="plan-desc">Save more yearly</div>
+        </button>
+      </div>
+
+      <div class="sub-pay">
+        <div class="paypal-note" id="paypalNote" data-i18n="paypalNote">
+          ادفع عبر PayPal لتفعيل الاشتراك.
+        </div>
+
+        <div id="paypalButtons" class="paypal-box" style="margin-top:12px;"></div>
+
+        <div class="tiny-hint" id="subHint" data-i18n="subHint" style="margin-top:10px;">
+          عند تفعيل الاشتراك سيتم إزالة حد 2 مرات/اليوم.
+        </div>
+      </div>
+
+    </div>
   </div>
-</div>
 
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
+
+    // ✅ Optional: open subscribe modal from controls upgrade button (if you wire it in script.js later)
+    // This doesn't break anything if you don't.
+    (function(){
+      const btn = document.getElementById("openSubscribeFromControls");
+      const headerBtn = document.getElementById("headerSubscribeBtn");
+      if (btn && headerBtn) {
+        btn.addEventListener("click", () => headerBtn.click());
+      }
+    })();
   </script>
 
   <!-- ✅ PayPal SDK (SUBSCRIPTIONS) -->

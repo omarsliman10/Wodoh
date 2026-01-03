@@ -1,6 +1,10 @@
 /* =========================
-   Wodoh — Modern Glow UI
+   Wodoh — Modern Glow UI (CLEAN FULL)
+   - No duplicates
+   - Unified modal system (Account + Subscribe)
+   - RTL/LTR safe
 ========================= */
+
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800&family=Inter:wght@400;600;700;800&display=swap');
 
 :root{
@@ -37,7 +41,9 @@ body{
   overflow-x:hidden;
 }
 
-/* Background glow blobs */
+/* =========================
+   Background glow blobs
+========================= */
 .bg-glow{
   position: fixed;
   inset: auto;
@@ -53,14 +59,18 @@ body{
 .g2{ right:-360px; top:-260px; background: radial-gradient(circle, var(--p2), transparent 60%); opacity:.22; }
 .g3{ left:20%; bottom:-520px; background: radial-gradient(circle, var(--p3), transparent 60%); opacity:.20; }
 
-/* Container */
+/* =========================
+   Container
+========================= */
 .container{
   width:min(980px, 92vw);
   margin: 34px auto;
   padding: 18px;
 }
 
-/* Buttons */
+/* =========================
+   Buttons
+========================= */
 .btn{
   border: 1px solid var(--stroke);
   background: rgba(255,255,255,.06);
@@ -86,8 +96,10 @@ body{
   box-shadow: 0 18px 55px rgba(124,58,237,.22);
 }
 .btn-primary:hover{ box-shadow: 0 22px 68px rgba(124,58,237,.30); }
+
 .btn-ghost{ background: rgba(255,255,255,.04); }
 .btn-soft{ background: rgba(255,255,255,.05); }
+
 .btn-danger{
   background: rgba(239,68,68,.12);
   border-color: rgba(239,68,68,.28);
@@ -96,7 +108,16 @@ body{
   background: rgba(239,68,68,.16);
   border-color: rgba(239,68,68,.40);
 }
+
 .btn-wide{ padding: 12px 18px; }
+
+/* cooldown visual */
+.btn.is-cooldown{
+  opacity: .72;
+  cursor: wait;
+  transform: translateY(1px);
+  filter: brightness(.92);
+}
 
 /* =========================
    Landing
@@ -116,7 +137,7 @@ body{
   padding: 28px;
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  position: relative; /* needed for landing logo corner */
+  position: relative;
 }
 
 .badge{ display:none; }
@@ -307,6 +328,15 @@ html[dir="ltr"] .brand{ padding-left: 96px; padding-right: 0; }
   flex:0 0 auto;
 }
 
+/* plan pill container helper (if you use it in header) */
+.header-plan{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
 .header-logo-corner{
   position:absolute;
   top:14px;
@@ -446,6 +476,18 @@ textarea:focus{
   z-index: 999;
   font-weight: 900;
 }
+.toast.toast-warn{
+  border-color: rgba(255,255,255,.16);
+  background: rgba(20,22,38,.92);
+}
+.toast.toast-err{
+  border-color: rgba(239,68,68,.30);
+  background: rgba(239,68,68,.10);
+}
+.toast.toast-ok{
+  border-color: rgba(34,197,94,.30);
+  background: rgba(34,197,94,.10);
+}
 
 /* Footer */
 .footer{
@@ -455,7 +497,9 @@ textarea:focus{
   font-size: 13px;
 }
 
-/* Responsive */
+/* =========================
+   Responsive
+========================= */
 @media (max-width: 640px){
   .title{ font-size: 26px; }
   .features{ grid-template-columns: 1fr; }
@@ -490,7 +534,7 @@ textarea:focus{
 /* =========================
    QUIZ DESIGN
 ========================= */
-.q {
+.q{
   background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
   border: 1px solid rgba(255,255,255,0.18);
   border-radius: 18px;
@@ -498,17 +542,19 @@ textarea:focus{
   margin-bottom: 18px;
   box-shadow: 0 12px 30px rgba(0,0,0,.35);
 }
-.q > div:first-child {
+.q > div:first-child{
   font-weight: 900;
   font-size: 15px;
   line-height: 1.8;
   margin-bottom: 14px;
   color: #F8FAFF;
 }
-.q .options, .q { display: grid; gap: 10px; }
+.q .options{ display:grid; gap:10px; }
+
+/* option buttons */
 .q button[data-opt]{
   width: 100%;
-  text-align: right;
+  text-align: start; /* ✅ RTL/LTR safe */
   padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid rgba(255,255,255,0.16);
@@ -516,29 +562,46 @@ textarea:focus{
   color: #EAF0FF;
   font-weight: 700;
   transition: all .15s ease;
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent;
+  direction: inherit;
 }
+html[dir="ltr"] .q button[data-opt]{ text-align:left; }
+html[dir="rtl"] .q button[data-opt]{ text-align:right; }
 
-/* hover محايد */
+/* hover neutral */
 .q button[data-opt]:hover{
   background: rgba(255,255,255,.08);
   border-color: rgba(255,255,255,.22);
   transform: translateY(-1px);
 }
-
-.q button.correct{
-  background: rgba(34,197,94,0.20);
-  border-color: rgba(34,197,94,0.5);
-  color: #ECFDF5;
+.q button[data-opt]:focus,
+.q button[data-opt]:focus-visible{
+  outline:none !important;
+  box-shadow:none !important;
 }
-.q button.wrong{
-  background: rgba(239,68,68,0.18);
-  border-color: rgba(239,68,68,0.45);
-  color: #FEF2F2;
+.q button[data-opt]:active{ transform: translateY(0px); }
+
+.q button.correct,
+.q button[data-opt].correct{
+  background: rgba(34,197,94,0.20) !important;
+  border-color: rgba(34,197,94,0.55) !important;
+  color: #ECFDF5 !important;
+}
+.q button.wrong,
+.q button[data-opt].wrong{
+  background: rgba(239,68,68,0.18) !important;
+  border-color: rgba(239,68,68,0.55) !important;
+  color: #FEF2F2 !important;
 }
 .q button:disabled{
   cursor: not-allowed;
   opacity: .85;
 }
+/* remove hover motion once answered */
+.q button[data-opt].wrong:hover,
+.q button[data-opt].correct:hover{ transform:none !important; }
 
 /* Generate button loading state */
 #generateBtn.is-loading{
@@ -551,21 +614,8 @@ textarea:focus{
   transition: filter .2s ease, opacity .2s ease, transform .2s ease;
 }
 
-/* OVERRIDES: تمنع أي أزرق بالأسئلة */
-.q button[data-opt]{
-  outline: none !important;
-  box-shadow: none !important;
-  -webkit-tap-highlight-color: transparent;
-}
-.q button[data-opt]:focus,
-.q button[data-opt]:focus-visible{
-  outline: none !important;
-  box-shadow: none !important;
-}
-.q button[data-opt]:active{ transform: translateY(0px); }
-
 /* More button */
-.more-btn {
+.more-btn{
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -581,7 +631,7 @@ textarea:focus{
   transition: all 0.25s ease;
   backdrop-filter: blur(6px);
 }
-.more-btn .plus {
+.more-btn .plus{
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -593,7 +643,7 @@ textarea:focus{
   font-size: 16px;
   font-weight: bold;
 }
-.more-btn:hover {
+.more-btn:hover{
   background: linear-gradient(
     135deg,
     rgba(124, 58, 237, 0.25),
@@ -602,28 +652,90 @@ textarea:focus{
   transform: translateY(-2px);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
 }
-.more-btn:active { transform: scale(0.96); }
-
-/* FORCE instant feedback */
-.q button[data-opt].wrong,
-.q .opt.wrong{
-  background: rgba(239,68,68,.16) !important;
-  border-color: rgba(239,68,68,.55) !important;
-  color: #FEF2F2 !important;
-}
-.q button[data-opt].correct,
-.q .opt.correct{
-  background: rgba(34,197,94,.18) !important;
-  border-color: rgba(34,197,94,.55) !important;
-  color: #ECFDF5 !important;
-}
-.q button[data-opt].wrong:hover,
-.q .opt.wrong:hover,
-.q button[data-opt].correct:hover,
-.q .opt.correct:hover{ transform: none !important; }
+.more-btn:active{ transform: scale(0.96); }
 
 /* =========================
-   Pro Auth Modal
+   Unified MODAL System
+   - works for account modal & subscribe modal
+========================= */
+.modal{
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;              /* JS يفتحها display:flex */
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0,0,0,.58);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* allow two patterns: inline style or class */
+.modal[style*="display: flex"],
+.modal.is-open{
+  display: flex !important;
+}
+
+/* base card */
+.modal .modal-card{
+  width: min(560px, 92vw);
+  max-height: min(78vh, 720px);
+  overflow: auto;
+
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(10,14,30,.72);
+  box-shadow: 0 22px 70px rgba(0,0,0,.55);
+  padding: 18px;
+  position: relative;
+  margin: 0 !important;
+}
+
+/* soft glow */
+.modal .modal-card::before{
+  content:"";
+  position:absolute;
+  inset:-2px;
+  background:
+    radial-gradient(900px 240px at 10% 0%,
+      rgba(124,58,237,.22), transparent 55%),
+    radial-gradient(900px 240px at 90% 0%,
+      rgba(34,211,238,.18), transparent 55%);
+  pointer-events:none;
+}
+
+/* Close buttons (supports multiple ids/classes) */
+.modal-x,
+#subClose,
+#accountClose,
+.sub-x{
+  position: absolute;
+  top: 12px;
+  inset-inline-start: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.92);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: transform .15s ease, background .15s ease, border-color .15s ease;
+  z-index: 5;
+}
+.modal-x:hover,
+#subClose:hover,
+#accountClose:hover,
+.sub-x:hover{
+  transform: scale(1.03);
+  background: rgba(255,255,255,.09);
+  border-color: rgba(255,255,255,.18);
+}
+
+/* =========================
+   Account (Auth) Modal
 ========================= */
 .modal-card.auth-pro{
   padding: 18px;
@@ -712,7 +824,6 @@ html[dir="rtl"] .field input{ padding: 12px 14px 12px 44px; }
 }
 html[dir="ltr"] .icon-btn{ right: 8px; }
 html[dir="rtl"] .icon-btn{ left: 8px; }
-
 .icon-btn:hover{ background: rgba(255,255,255,.08); }
 .icon-btn:focus{ outline:none; box-shadow:none; }
 
@@ -805,40 +916,7 @@ html[dir="rtl"] .icon-btn{ left: 8px; }
 }
 .auth-form .field{ margin-bottom: 10px; }
 
-/* =========================
-   ✅ FIXED: Modal Center + Tabs
-========================= */
-
-/* overlay */
-.modal{
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-
-  display: none;               /* JS يفتحها flex */
-  align-items: center;
-  justify-content: center;
-
-  padding: 18px;
-  background: rgba(0,0,0,.55);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
-.modal[style*="display: flex"]{
-  display: flex !important;
-}
-
-.modal .modal-card{
-  width: min(560px, 92vw);
-  max-height: min(78vh, 720px);
-  overflow: auto;
-
-  border-radius: 22px;
-  margin: 0 !important;
-}
-
-/* Tabs (Login / Signup) - generic */
+/* Generic Tabs */
 .auth-tabs{
   display: flex;
   justify-content: center;
@@ -851,23 +929,15 @@ html[dir="rtl"] .icon-btn{ left: 8px; }
   max-width: 160px;
   padding: 10px 14px;
   border-radius: 14px;
-
   background: rgba(255,255,255,.06);
   border: 1px solid rgba(255,255,255,.16);
   color: #EAF0FF;
-
   font-weight: 900;
   cursor: pointer;
   transition: all .2s ease;
-
   position: relative;
-  top: auto;
-  left: auto;
-  right: auto;
 }
-.auth-tabs button:hover{
-  background: rgba(255,255,255,.10);
-}
+.auth-tabs button:hover{ background: rgba(255,255,255,.10); }
 .auth-tabs button.active{
   background: linear-gradient(135deg, var(--p1), var(--p2));
   border-color: transparent;
@@ -875,13 +945,8 @@ html[dir="rtl"] .icon-btn{ left: 8px; }
 }
 html[dir="rtl"] .auth-tabs{ flex-direction: row-reverse; }
 
-/* =========================
-   Account modal — better tabs/buttons (FINAL)
-========================= */
-#accountModal .modal-card{
-  max-width: 520px;
-}
-
+/* Account modal: nicer tabs */
+#accountModal .modal-card{ max-width: 520px; }
 #accountModal .modal-head{
   display:flex;
   align-items:center;
@@ -889,26 +954,16 @@ html[dir="rtl"] .auth-tabs{ flex-direction: row-reverse; }
   gap:10px;
 }
 
+/* override close for account only if you want circle look */
 #accountModal #accountClose{
-  width:40px;
-  height:40px;
-  border-radius:999px;
-  padding:0;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(255,255,255,.05);
-  color: var(--text);
+  border-radius: 999px;
   transition: transform .12s ease, background .12s ease, border-color .12s ease;
 }
 #accountModal #accountClose:hover{
-  background:rgba(255,255,255,.08);
-  border-color: rgba(255,255,255,.16);
   transform: translateY(-1px);
 }
 
-/* ✅ Account tabs (matches your HTML: #accountModal .auth-tabs) */
+/* Account tabs as pill group */
 #accountModal .auth-tabs{
   display:flex;
   gap: 0;
@@ -921,7 +976,6 @@ html[dir="rtl"] .auth-tabs{ flex-direction: row-reverse; }
   justify-content: center;
   margin: 12px 0 18px;
 }
-
 #accountModal .auth-tabs button{
   flex: 1;
   border: 0;
@@ -932,22 +986,20 @@ html[dir="rtl"] .auth-tabs{ flex-direction: row-reverse; }
   font-weight: 900;
   cursor: pointer;
   transition: background .15s ease, color .15s ease, transform .12s ease, box-shadow .15s ease;
+  max-width: none;
 }
-
 #accountModal .auth-tabs button:hover{
   background: rgba(255,255,255,.07);
   transform: translateY(-1px);
 }
-
 #accountModal .auth-tabs button.active{
   background: linear-gradient(90deg, rgba(124,58,237,.85), rgba(34,211,238,.60));
   color: #fff;
   box-shadow: 0 10px 30px rgba(0,0,0,.35);
 }
-
 html[dir="rtl"] #accountModal .auth-tabs{ flex-direction: row-reverse; }
 
-/* ✅ Make auth primary button nicer inside modal */
+/* Auth submit button inside account modal */
 #accountModal #authSubmit.btn{
   border-radius: 16px;
   height: 46px;
@@ -955,7 +1007,7 @@ html[dir="rtl"] #accountModal .auth-tabs{ flex-direction: row-reverse; }
   letter-spacing: .2px;
 }
 
-/* ✅ Inputs inside modal look cleaner */
+/* Inputs inside modal cleaner */
 #accountModal .auth-form .field input{
   height: 44px;
   border-radius: 14px;
@@ -968,89 +1020,37 @@ html[dir="rtl"] #accountModal .auth-tabs{ flex-direction: row-reverse; }
   border-color: rgba(124,58,237,.55);
   box-shadow: 0 0 0 4px rgba(124,58,237,.18);
 }
+
 /* =========================
    Subscribe Modal – Premium UI
 ========================= */
-.modal{
-  position: fixed;
-  inset: 0;
-  display: none;               /* أنت تستعمل openModal => flex */
-  align-items: center;
-  justify-content: center;
-  padding: 18px;
-  background: rgba(0,0,0,.58);
-  backdrop-filter: blur(10px);
-  z-index: 9999;
-}
+#subscribeModal .modal-card{ max-width: 560px; }
 
-.modal-card{
-  width: min(560px, 100%);
-  border-radius: 22px;
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(10,14,30,.72);
-  box-shadow: 0 22px 70px rgba(0,0,0,.55);
-  padding: 18px;
-  position: relative;
-  overflow: hidden;
-}
-
-.modal-card::before{
-  content:"";
-  position:absolute;
-  inset:-2px;
-  background: radial-gradient(900px 240px at 10% 0%,
-    rgba(124,58,237,.22), transparent 55%),
-    radial-gradient(900px 240px at 90% 0%,
-    rgba(34,211,238,.18), transparent 55%);
-  pointer-events:none;
-  filter: blur(0px);
-}
-
-.modal-x{
-  position: absolute;
-  top: 12px;
-  inset-inline-start: 12px; /* RTL/LTR friendly */
-  width: 40px;
-  height: 40px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(255,255,255,.06);
-  color: rgba(255,255,255,.92);
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  transition: transform .15s ease, background .15s ease, border-color .15s ease;
-}
-.modal-x:hover{
-  transform: scale(1.03);
-  background: rgba(255,255,255,.09);
-  border-color: rgba(255,255,255,.18);
-}
-
-.sub-head{
+#subscribeModal .sub-head{
   padding: 10px 10px 6px;
-  margin-inline-start: 44px; /* space for X button */
+  margin-inline-start: 54px; /* space for close button */
 }
-.sub-title{
+#subscribeModal .sub-title{
   font-weight: 900;
   font-size: 22px;
   letter-spacing: .2px;
   color: rgba(255,255,255,.96);
 }
-.sub-subtitle{
+#subscribeModal .sub-subtitle{
   margin-top: 6px;
   opacity: .80;
   line-height: 1.6;
 }
 
-.sub-plans{
+/* Plans grid */
+#subscribeModal .sub-plans{
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   margin-top: 14px;
 }
 
-.plan{
+#subscribeModal .plan{
   text-align: left;
   padding: 14px;
   border-radius: 18px;
@@ -1061,26 +1061,26 @@ html[dir="rtl"] #accountModal .auth-tabs{ flex-direction: row-reverse; }
   position: relative;
   overflow: hidden;
 }
-.plan:hover{
+#subscribeModal .plan:hover{
   transform: translateY(-1px);
   border-color: rgba(255,255,255,.18);
   background: rgba(255,255,255,.07);
 }
-.plan.active{
+#subscribeModal .plan.active{
   border-color: rgba(34,211,238,.45);
   box-shadow: 0 10px 40px rgba(34,211,238,.12);
 }
-.plan-top{
+#subscribeModal .plan-top{
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap: 10px;
 }
-.plan-name{
+#subscribeModal .plan-name{
   font-weight: 800;
   color: rgba(255,255,255,.95);
 }
-.plan-badge{
+#subscribeModal .plan-badge{
   font-size: 12px;
   padding: 6px 10px;
   border-radius: 999px;
@@ -1088,61 +1088,477 @@ html[dir="rtl"] #accountModal .auth-tabs{ flex-direction: row-reverse; }
   background: rgba(255,255,255,.06);
   opacity: .95;
 }
-.plan-badge.best{
+#subscribeModal .plan-badge.best{
   border-color: rgba(124,58,237,.35);
   background: rgba(124,58,237,.14);
 }
-.plan-price{
+#subscribeModal .plan-price{
   margin-top: 10px;
   font-size: 26px;
   font-weight: 900;
   letter-spacing: .3px;
 }
-.plan-price span{
+#subscribeModal .plan-price span{
   font-size: 13px;
   opacity: .75;
   font-weight: 700;
   margin-left: 4px;
 }
-.plan-desc{
+#subscribeModal .plan-desc{
   margin-top: 6px;
   font-size: 13px;
   opacity: .80;
 }
 
-.sub-pay{
+#subscribeModal .sub-pay{
   margin-top: 14px;
   padding: 14px;
   border-radius: 18px;
   border: 1px solid rgba(255,255,255,.10);
   background: rgba(0,0,0,.18);
 }
-.sub-pay-title{
+#subscribeModal .sub-pay-title{
   font-weight: 800;
   margin-bottom: 10px;
 }
-.paypal-box{
+#subscribeModal .paypal-box{
   border-radius: 14px;
   padding: 10px;
   background: rgba(255,255,255,.04);
   border: 1px solid rgba(255,255,255,.10);
 }
+#paypalButtons > div{ margin: 0 auto; }
 
-/* PayPal iframe/buttons spacing */
-#paypalButtons > div{
-  margin: 0 auto;
-}
-
-/* Footer text */
-.sub-foot{
+#subscribeModal .sub-foot{
   margin-top: 10px;
   font-size: 13px;
   opacity: .78;
   line-height: 1.6;
 }
 
-/* Mobile */
 @media (max-width: 520px){
-  .sub-plans{ grid-template-columns: 1fr; }
-  .sub-head{ margin-inline-start: 44px; }
+  #subscribeModal .sub-plans{ grid-template-columns: 1fr; }
+  #subscribeModal .sub-head{ margin-inline-start: 54px; }
+}
+
+/* =========================
+   Plan UI (Free / Pro)
+========================= */
+.plan-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(234,240,255,.92);
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: .2px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.plan-pill .dot{
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(170,183,230,.9);
+  box-shadow: 0 0 0 4px rgba(170,183,230,.12);
+}
+.plan-pill.free{ border-color: rgba(255,255,255,.14); }
+.plan-pill.pro{
+  border-color: rgba(34,211,238,.28);
+  background: linear-gradient(135deg, rgba(124,58,237,.18), rgba(34,211,238,.12));
+}
+.plan-pill.pro .dot{
+  background: rgba(34,211,238,.95);
+  box-shadow: 0 0 0 4px rgba(34,211,238,.14);
+}
+
+/* limits hint */
+.limit-hint{
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.18);
+  color: rgba(170,183,230,.92);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.limit-hint strong{
+  color: rgba(234,240,255,.95);
+  font-weight: 900;
+}
+
+/* =========================
+   Pro Controls (questionMode / questionCount)
+========================= */
+.pro-controls{
+  margin-top: 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.04);
+  padding: 12px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.22);
+}
+.pro-controls .row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.pro-controls .row + .row{ margin-top: 10px; }
+
+.pro-controls .title{
+  font-size: 14px;
+  font-weight: 1000;
+  margin: 0;
+  text-align: start;
+  text-shadow: none;
+}
+.pro-controls .muted{
+  font-size: 12px;
+  color: rgba(170,183,230,.85);
+  line-height: 1.5;
+}
+
+.mode-chips{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.mode-chip{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.05);
+  color: rgba(234,240,255,.92);
+  font-weight: 900;
+  font-size: 13px;
+  cursor:pointer;
+  transition: transform .14s ease, background .14s ease, border-color .14s ease;
+  user-select:none;
+}
+.mode-chip:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.20);
+}
+.mode-chip.active{
+  border-color: rgba(34,211,238,.45);
+  background: linear-gradient(135deg, rgba(124,58,237,.22), rgba(34,211,238,.14));
+  box-shadow: 0 12px 30px rgba(34,211,238,.10);
+}
+
+/* questionCount input */
+.count-wrap{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.count-wrap input[type="number"]{
+  width: 110px;
+  height: 44px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.05);
+  color: rgba(234,240,255,.95);
+  font-weight: 900;
+  padding: 0 12px;
+  outline: none;
+}
+.count-wrap input[type="number"]:focus{
+  border-color: rgba(34,211,238,.45);
+  box-shadow: 0 0 0 4px rgba(34,211,238,.12);
+}
+
+/* If Free and locked */
+.pro-controls.locked{
+  opacity: .85;
+  border-style: dashed;
+}
+.pro-lock{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.18);
+}
+.pro-lock .txt{
+  font-size: 13px;
+  color: rgba(170,183,230,.92);
+  line-height: 1.6;
+}
+.pro-lock .txt b{
+  color: rgba(234,240,255,.95);
+}
+.pro-lock .btn{
+  padding: 10px 14px;
+  border-radius: 14px;
+}
+
+/* =========================
+   Comparison card (Free vs Pro)
+========================= */
+.pricing-compare{
+  margin-top: 14px;
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 520px){
+  .pricing-compare{ grid-template-columns: 1fr; }
+}
+.tier{
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.05);
+  padding: 14px;
+  position: relative;
+  overflow:hidden;
+}
+.tier::before{
+  content:"";
+  position:absolute;
+  inset:-2px;
+  background:
+    radial-gradient(700px 200px at 20% 0%,
+      rgba(124,58,237,.18), transparent 55%),
+    radial-gradient(700px 200px at 80% 0%,
+      rgba(34,211,238,.12), transparent 55%);
+  pointer-events:none;
+}
+.tier .tier-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  position: relative;
+}
+.tier .tier-name{
+  font-weight: 1000;
+  font-size: 16px;
+  color: rgba(255,255,255,.96);
+}
+.tier .tier-badge{
+  font-size: 12px;
+  font-weight: 900;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  position: relative;
+}
+.tier.pro{ border-color: rgba(34,211,238,.22); }
+.tier.pro .tier-badge{
+  border-color: rgba(34,211,238,.30);
+  background: rgba(34,211,238,.10);
+}
+.tier.free .tier-badge{ border-color: rgba(255,255,255,.14); }
+.tier ul{
+  margin: 12px 0 0;
+  padding-inline-start: 18px;
+  line-height: 1.9;
+  position: relative;
+}
+.tier li{
+  margin: 6px 0;
+  color: rgba(234,240,255,.92);
+}
+.tier li .tag{
+  display:inline-block;
+  margin-inline-start: 8px;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: rgba(234,240,255,.92);
+}
+.tier li .tag.pro{
+  border-color: rgba(34,211,238,.30);
+  background: rgba(34,211,238,.10);
+}
+.tier li .tag.limit{
+  border-color: rgba(239,68,68,.28);
+  background: rgba(239,68,68,.10);
+}
+
+/* Saved badge */
+.saved-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(34,197,94,.28);
+  background: rgba(34,197,94,.10);
+  color: rgba(236,253,245,.95);
+  font-weight: 900;
+  font-size: 13px;
+}
+.saved-badge .dot{
+  width:10px;
+  height:10px;
+  border-radius:999px;
+  background: rgba(34,197,94,.95);
+  box-shadow: 0 0 0 4px rgba(34,197,94,.12);
+}
+/* =========================
+   FIX: white inputs/selects inside Pro Controls
+   (ضعه آخر ملف CSS)
+========================= */
+
+.pro-controls select,
+.pro-controls input[type="number"]{
+  -webkit-appearance: none;
+  appearance: none;
+
+  background: rgba(0,0,0,.22) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  color: rgba(234,240,255,.95) !important;
+
+  border-radius: 14px;
+  height: 44px;
+  box-shadow: 0 10px 26px rgba(0,0,0,.25);
+}
+
+/* placeholder / value look */
+.pro-controls input[type="number"]::placeholder{
+  color: rgba(170,183,230,.75);
+}
+
+/* focus */
+.pro-controls select:focus,
+.pro-controls input[type="number"]:focus{
+  outline: none !important;
+  border-color: rgba(34,211,238,.45) !important;
+  box-shadow: 0 0 0 4px rgba(34,211,238,.12), 0 10px 26px rgba(0,0,0,.25) !important;
+}
+
+/* dropdown options (most browsers) */
+.pro-controls select option{
+  background: #0B1020;
+  color: #EAF0FF;
+}
+
+/* Remove ugly blue highlight on tap (mobile) */
+.pro-controls select,
+.pro-controls input[type="number"]{
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Make select look nicer (space for arrow) */
+.pro-controls select{
+  padding: 0 40px 0 12px; /* LTR */
+  cursor: pointer;
+}
+html[dir="rtl"] .pro-controls select{
+  padding: 0 12px 0 40px; /* RTL */
+}
+
+/* Custom arrow */
+.pro-controls .select-wrap{
+  position: relative;
+}
+.pro-controls .select-wrap::after{
+  content: "▾";
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(170,183,230,.95);
+  pointer-events: none;
+  font-weight: 900;
+}
+html[dir="ltr"] .pro-controls .select-wrap::after{ right: 14px; }
+html[dir="rtl"] .pro-controls .select-wrap::after{ left: 14px; }
+/* =========================
+   Header layout polish (RTL friendly)
+   ضعها آخر ملف CSS
+========================= */
+
+/* خلي الهيدر Grid: يمين Brand / يسار Actions */
+.header{
+  display: grid;
+  grid-template-columns: 1fr auto; /* brand takes space, actions auto */
+  align-items: center;
+  gap: 14px;
+}
+
+html[dir="rtl"] .header{
+  grid-template-columns: auto 1fr; /* actions left, brand right in RTL */
+}
+
+/* Brand block stays tidy */
+.brand{
+  min-width: 0;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+/* actions become a neat wrap row */
+.header-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+
+  max-width: 520px; /* يمنعها تتمدد زيادة */
+}
+
+/* خلي كل زر نفس الارتفاع وشكل "chip" مرتب */
+.header-actions .btn{
+  height: 42px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+/* توازن عرض الأزرار (اختياري) */
+.header-actions .btn{
+  min-width: 120px;
+  justify-content: center;
+}
+
+/* زر اللغة أصغر شوي */
+.header-actions .btn.lang-btn{
+  min-width: 110px;
+}
+
+/* خلي زر Pro أو "مشترك" يبان كـ pill نظيف */
+.header-actions .btn.is-pill{
+  border-color: rgba(34,211,238,.22);
+  background: rgba(34,211,238,.08);
+}
+
+/* على الموبايل: خلي الأزرار تحت بعض بشكل أجمل */
+@media (max-width: 720px){
+  .header{
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .header-actions{
+    max-width: 100%;
+    justify-content: flex-start;
+  }
+  .header-actions .btn{
+    min-width: unset;
+  }
 }
