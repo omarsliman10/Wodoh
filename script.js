@@ -1470,10 +1470,6 @@ generateBtn?.addEventListener("click", async ()=>{
     return;
   }
 
-  if (!canUseNow()){
-    showPaywall();
-    return;
-  }
 
   const prefs = getQuestionPrefs();
 
@@ -1559,6 +1555,19 @@ document.addEventListener("click", async (e)=>{
 
   hideToast();
 
+    // ✅ Free: لا تسمح بـ "المزيد من الأسئلة"
+  if (!isSubscribed()){
+    showToast(currentLang==="ar"
+      ? "🔒 يجب الاشتراك في Wodoh Pro للحصول على المزيد من الأسئلة"
+      : "🔒 Subscribe to Wodoh Pro to get more questions",
+      "err",
+      3200
+    );
+    openSubscribe();
+    return;
+  }
+
+
   if (!lastSourceText){
     showToast(t("toastTextFirst"), "err");
     return;
@@ -1569,13 +1578,7 @@ document.addEventListener("click", async (e)=>{
     return;
   }
 
-  // Free cooldown only
-  if (!isSubscribed()){
-    if (Date.now() < nextMoreAllowedAt){
-      showToast(t("toastTimer"), "err");
-      return;
-    }
-  }
+
 
   if (!canRequest()){
     showToast(t("toastWait"), "err");
