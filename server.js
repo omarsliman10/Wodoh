@@ -16,6 +16,7 @@ import rateLimit from "express-rate-limit";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 
 dotenv.config();
 
@@ -37,7 +38,7 @@ app.disable("x-powered-by");
 /* =======================
    ✅ Plan settings (Free vs Pro)
 ======================= */
-const FREE_DAILY_LIMIT = 2; // ✅ 2 attempts/day
+const FREE_DAILY_LIMIT = 1; // ✅ 1 attempts/day
 const FREE_MAX_QUESTIONS = 5; // ✅ limited questions
 const FREE_COOLDOWN_MS = 25_000; // ✅ "انتظار" للـ Free فقط (25 ثانية)
 
@@ -136,7 +137,9 @@ function signToken(payload) {
 }
 
 function setAuthCookie(res, token) {
-  const isProd = process.env.NODE_ENV === "production";
+  // ✅ Render + custom domain = HTTPS (خلّيها secure)
+  const isProd = true;
+
   res.cookie("wodoh_token", token, {
     httpOnly: true,
     secure: isProd,
@@ -145,6 +148,7 @@ function setAuthCookie(res, token) {
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 }
+
 
 function clearAuthCookie(res) {
   res.clearCookie("wodoh_token", { path: "/" });
@@ -180,11 +184,79 @@ function optionalAuth(req, _res, next) {
   }
 }
 
+// =======================
+// Feedback (Public) -> data/feedback.json
+// =======================
+const FEEDBACK_FILE = path.join(DATA_DIR, "feedback.json");
+
+async function readFeedback(){
+  return await readJsonSafe(FEEDBACK_FILE, []);
+}
+async function writeFeedback(list){
+  await writeJsonSafe(FEEDBACK_FILE, Array.isArray(list) ? list : []);
+}
+
+// simple rate limit per IP: 1 msg / 60s
+const feedbackRate = new Map(); // key -> lastAt
+
+app.post("/api/feedback", optionalAuth, async (req, res) => {
+  try{
+    const ip =
+      (req.headers["x-forwarded-for"] ? String(req.headers["x-forwarded-for"]).split(",")[0] : "") ||
+      req.ip ||
+      "unknown";
+
+    const key = `fb:${ip.trim()}`;
+    const now = Date.now();
+    const last = feedbackRate.get(key) || 0;
+
+    if (now - last < 60_000){
+      return res.status(429).json({ ok:false, error:"RATE_LIMIT" });
+    }
+    feedbackRate.set(key, now);
+
+    const rating = Number(req.body?.rating || 0);
+    const type = String(req.body?.type || "other").slice(0, 20);
+    const message = String(req.body?.message || "").trim().slice(0, 600);
+
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5){
+      return res.status(400).json({ ok:false, error:"BAD_RATING" });
+    }
+    if (message.length < 8){
+      return res.status(400).json({ ok:false, error:"BAD_MESSAGE" });
+    }
+
+    const list = await readFeedback();
+    list.push({
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+      rating,
+      type,
+      message,
+      userId: req.user?.id || null, // optional
+    });
+
+    // keep file reasonable
+    if (list.length > 5000) list.splice(0, list.length - 5000);
+    await writeFeedback(list);
+
+    return res.json({ ok:true });
+  }catch(e){
+    return res.status(500).json({ ok:false, error:"SERVER_ERR" });
+  }
+});
+
+
 /* =======================
    ✅ Auth endpoints (Step 1)
 ======================= */
 app.post("/api/auth/dev-login", (req, res) => {
   try {
+    // ✅ لا تسمح به في الإنتاج
+    if (process.env.NODE_ENV === "production") {
+      return res.status(404).json({ ok: false });
+    }
+
     const token = signToken({
       id: "demo",
       name: "Demo User",
@@ -196,10 +268,6 @@ app.post("/api/auth/dev-login", (req, res) => {
   } catch (e) {
     res.status(500).json({ ok: false, error: String(e?.message || e) });
   }
-});
-
-app.get("/api/auth/me", requireAuth, (req, res) => {
-  res.json({ ok: true, user: req.user });
 });
 
 app.post("/api/auth/logout", (req, res) => {
@@ -226,7 +294,6 @@ function clientKey(req) {
 
 function todayKey() {
   const d = new Date();
-  // key per UTC date is fine; if you prefer local server date, keep as is.
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
@@ -342,13 +409,13 @@ function normalizeQuestionMode(qm) {
   return "both";
 }
 
-// ✅ Make summaries longer (scale better)
+// ✅ Summary plan: paragraphs always, bullets optional (only if useful)
 function summaryPlanByLength(text) {
   const n = String(text || "").trim().length;
 
-  if (n < 1200) return { minParas: 3, maxParas: 4, sentences: "3–5", bullets: 6 };
-  if (n < 3000) return { minParas: 4, maxParas: 6, sentences: "3–6", bullets: 8 };
-  return { minParas: 6, maxParas: 8, sentences: "3–7", bullets: 10 };
+  if (n < 1200) return { minParas: 2, maxParas: 3, sentences: "2–4", bulletMax: 6 };
+  if (n < 3000) return { minParas: 3, maxParas: 5, sentences: "2–5", bulletMax: 8 };
+  return { minParas: 4, maxParas: 7, sentences: "2–6", bulletMax: 10 };
 }
 
 /**
@@ -408,19 +475,41 @@ ${previous.map((q, i) => `${i + 1}) ${q}`).join("\n")}`)
 
   const plan = summaryPlanByLength(text);
 
+  // ✅ NEW: paragraphs always, bullets only if needed
   const summaryInstruction = isAr
-    ? `1) [${headerSummary}] اكتب ملخصًا مكوّنًا من:
-- فقرات (${plan.minParas} إلى ${plan.maxParas} فقرات). كل فقرة ${plan.sentences} جمل.
-- ثم اكتب بعد الفقرات مباشرة نقاطًا مختصرة (Bullet Points) عددها ${plan.bullets} على الأقل، تبدأ كل نقطة بـ "- ".
+    ? `1) [${headerSummary}] اكتب ملخصًا "حقيقيًا" على شكل فقرات:
+- اكتب من ${plan.minParas} إلى ${plan.maxParas} فقرات.
+- كل فقرة ${plan.sentences} جمل.
+- ممنوع استخدام النقاط (Bullets) كبديل عن الفقرات.
+
+بعد الفقرات فقط:
+- أضف نقاطًا مختصرة (Bullet Points) "فقط إذا كانت تضيف قيمة" مثل: تعريفات/أرقام/خطوات/مصطلحات/نتائج.
+- إذا لم تكن النقاط ضرورية، لا تكتب أي نقاط.
+- إذا استخدمت نقاطًا: اجعلها من 2 إلى ${plan.bulletMax} نقاط، وتبدأ كل نقطة بـ "- ".
+
 اجعل الطول يتناسب مع طول النص (النص الأطول = تفاصيل أكثر).`
     : isHe
-      ? `1) [${headerSummary}] כתוב סיכום שמורכב מ:
-- פסקאות (${plan.minParas}–${plan.maxParas} פסקאות). בכל פסקה ${plan.sentences} משפטים.
-- ואז מיד לאחר הפסקאות, כתוב נקודות Bullet קצרות (לפחות ${plan.bullets}), כל נקודה מתחילה ב "- ".
-האורך צריך להתאים לאורך הטקסט (טקסט ארוך יותר = יותר פירוט).`
-      : `1) [${headerSummary}] Write a summary consisting of:
-- Paragraphs (${plan.minParas}–${plan.maxParas} paragraphs). Each paragraph ${plan.sentences} sentences.
-- Then immediately after the paragraphs, add bullet points (at least ${plan.bullets}), each bullet must start with "- ".
+      ? `1) [${headerSummary}] כתוב סיכום אמיתי בפסקאות:
+- כתוב ${plan.minParas}–${plan.maxParas} פסקאות.
+- בכל פסקה ${plan.sentences} משפטים.
+- אסור להשתמש בבולטים במקום פסקאות.
+
+אחרי הפסקאות בלבד:
+- הוסף נקודות Bullet רק אם הן מוסיפות ערך (הגדרות/מספרים/שלבים/מונחים/מסקנות).
+- אם לא צריך, אל תוסיף נקודות בכלל.
+- אם הוספת: 2–${plan.bulletMax} נקודות, וכל נקודה מתחילה ב "- ".
+
+האורך צריך להתאים לאורך הטקסט.`
+      : `1) [${headerSummary}] Write a REAL summary in paragraphs:
+- Write ${plan.minParas}–${plan.maxParas} paragraphs.
+- Each paragraph ${plan.sentences} sentences.
+- Do NOT use bullet points as a replacement for paragraphs.
+
+After the paragraphs only:
+- Add bullet points ONLY if they add value (definitions/numbers/steps/terms/outcomes).
+- If bullets are not needed, do NOT add any bullets.
+- If you add bullets: write 2–${plan.bulletMax} bullets, each must start with "- ".
+
 Length should scale with the text (longer text = more detail).`;
 
   const mcqInstruction = isAr
@@ -446,6 +535,7 @@ Paragraph 1...
 
 Paragraph 2...
 
+(Optional bullets only if useful)
 - Bullet point 1
 - Bullet point 2`
       : null,
@@ -831,6 +921,153 @@ async function readUsers() {
   }
 }
 
+async function findUserById(id) {
+  const users = await readUsers();
+  return users.find((u) => String(u.id) === String(id)) || null;
+}
+
+async function updateUserById(id, patch) {
+  const users = await readUsers();
+  const i = users.findIndex((u) => String(u.id) === String(id));
+  if (i === -1) return null;
+  users[i] = { ...users[i], ...patch, updatedAt: new Date().toISOString() };
+  await writeUsers(users);
+  return users[i];
+}
+
+function userPublic(u) {
+  if (!u) return null;
+  return {
+    id: u.id,
+    email: u.email,
+    firstName: u.firstName,
+    lastName: u.lastName,
+    subActive: !!u.subActive,
+    subscriptionId: u.subscriptionId || "",
+  };
+}
+
+// =======================
+// ✅ Auth (Real): signup/login using server users.json + bcrypt
+// =======================
+
+function safeName(s) {
+  return String(s || "").trim().slice(0, 50);
+}
+function validateEmail(email) {
+  const e = normEmail(email);
+  return e && e.includes("@") && e.includes(".");
+}
+function validatePassword(pass) {
+  return String(pass || "").length >= 6; // خليها 8 إذا بدك
+}
+
+// ✅ Signup
+app.post("/api/auth/signup", async (req, res) => {
+  try {
+    const email = normEmail(req.body?.email);
+    const pass = String(req.body?.pass || "");
+    const firstName = safeName(req.body?.firstName);
+    const lastName = safeName(req.body?.lastName);
+
+    if (!validateEmail(email)) return res.status(400).json({ ok: false, error: "BAD_EMAIL" });
+    if (!validatePassword(pass)) return res.status(400).json({ ok: false, error: "WEAK_PASS" });
+    if (!firstName || !lastName) return res.status(400).json({ ok: false, error: "NAME_REQUIRED" });
+
+    const users = await readUsers();
+    if (users.some((u) => normEmail(u.email) === email)) {
+      return res.status(409).json({ ok: false, error: "EMAIL_EXISTS" });
+    }
+
+    const passHash = await bcrypt.hash(pass, 12);
+
+    const user = {
+      id: crypto.randomUUID(),
+      email,
+      passHash,
+      firstName,
+      lastName,
+      subActive: false,     // ✅ أضفناها
+      subscriptionId: "",   // ✅ اختياري ممتاز
+      createdAt: new Date().toISOString(),
+    };
+
+    users.push(user);
+    await writeUsers(users);
+
+    // ✅ Auto-login after signup
+    const token = signToken({
+      id: user.id,
+      email: user.email,
+      name: `${user.firstName} ${user.lastName}`.trim(),
+      firstName: user.firstName,
+      lastName: user.lastName,
+      subActive: false,
+    });
+
+    setAuthCookie(res, token);
+
+    return res.json({
+      ok: true,
+      user: userPublic(user),
+    });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: "SERVER_ERR" });
+  }
+});
+
+// ✅ Login
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const email = normEmail(req.body?.email);
+    const pass = String(req.body?.pass || "");
+
+    if (!validateEmail(email) || !pass) {
+      return res.status(400).json({ ok: false, error: "BAD_INPUT" });
+    }
+
+    const users = await readUsers();
+    const user = users.find((u) => normEmail(u.email) === email);
+    if (!user) return res.status(404).json({ ok: false, error: "NOT_FOUND" });
+
+    const ok = await bcrypt.compare(pass, user.passHash || "");
+    if (!ok) return res.status(401).json({ ok: false, error: "BAD_PASS" });
+
+    const token = signToken({
+      id: user.id,
+      email: user.email,
+      name: `${user.firstName} ${user.lastName}`.trim(),
+      firstName: user.firstName,
+      lastName: user.lastName,
+      subActive: !!user.subActive,
+    });
+
+    setAuthCookie(res, token);
+
+    return res.json({
+      ok: true,
+      user: userPublic(user), // ✅ يرجّع subActive الحقيقي (مش false)
+    });
+  } catch {
+    return res.status(500).json({ ok: false, error: "SERVER_ERR" });
+  }
+});
+
+// ✅ Me (optional auth) - so frontend can know session without 401
+app.get("/api/auth/me", optionalAuth, async (req, res) => {
+  try {
+    if (!req.user?.id) return res.json({ ok: true, user: null });
+
+    const dbUser = await findUserById(req.user.id);
+    if (!dbUser) return res.json({ ok: true, user: null });
+
+    // ✅ رجّع حالة الاشتراك من الداتابيس
+    return res.json({ ok: true, user: userPublic(dbUser) });
+  } catch {
+    return res.json({ ok: true, user: null });
+  }
+});
+
 async function writeUsers(users) {
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2), "utf8");
@@ -926,6 +1163,58 @@ app.post("/api/subscription/verify", async (req, res) => {
     res.json({ ok: true, active, status });
   } catch (e) {
     res.status(500).json({ ok: false, error: String(e?.message || e) });
+  }
+});
+
+/* =======================
+   ✅ Activate Pro (Bind subscription -> user)
+   - call this after PayPal approves
+======================= */
+app.post("/api/subscription/activate", requireAuth, async (req, res) => {
+  try {
+    const subscriptionId = String(req.body?.subscriptionId || "").trim();
+    if (!subscriptionId) {
+      return res.status(400).json({ ok: false, error: "Missing subscriptionId" });
+    }
+
+    // 1) Verify from PayPal: must be ACTIVE
+    const token = await getPayPalAccessToken();
+    const resp = await fetch(`${paypalBase()}/v1/billing/subscriptions/${subscriptionId}`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    });
+
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      return res.status(500).json({ ok: false, error: "PayPal verify failed", details: data });
+    }
+
+    const status = String(data?.status || "").toUpperCase();
+    if (status !== "ACTIVE") {
+      return res.status(400).json({ ok: false, error: "NOT_ACTIVE", status });
+    }
+
+    // 2) Update user in users.json
+    const updated = await updateUserById(req.user.id, {
+      subActive: true,
+      subscriptionId,
+    });
+    if (!updated) return res.status(404).json({ ok: false, error: "USER_NOT_FOUND" });
+
+    // 3) Re-issue JWT with subActive:true
+    const newJwt = signToken({
+      id: updated.id,
+      email: updated.email,
+      name: `${updated.firstName} ${updated.lastName}`.trim(),
+      firstName: updated.firstName,
+      lastName: updated.lastName,
+      subActive: true,
+    });
+    setAuthCookie(res, newJwt);
+
+    return res.json({ ok: true, user: userPublic(updated) });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: "SERVER_ERR" });
   }
 });
 

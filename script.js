@@ -32,7 +32,7 @@ let currentFile = null;
 /* =======================
    Free vs Pro limits
 ======================= */
-const FREE_DAILY_LIMIT = 2;
+const FREE_DAILY_LIMIT = 1;
 const FREE_MAX_QUESTIONS = 5;
 const PRO_MAX_QUESTIONS = 20;
 
@@ -69,85 +69,59 @@ function consumeOneUse(){
 }
 
 /* =======================
-   Auth + Subscription (Local state)
+   Auth + Subscription (SERVER state via HttpOnly cookie)
 ======================= */
-const LS_USER_KEY = "wodoh_user_v1";
 
-/* =======================
-   Users DB (Local)
-======================= */
-const LS_USERS_DB_KEY = "wodoh_users_db_v1";
+// Session cache in memory
+let sessionUser = null; // {id,email,firstName,lastName,subActive,subscriptionId}
 
-function loadUsersDB(){
-  try { return JSON.parse(localStorage.getItem(LS_USERS_DB_KEY) || "[]"); }
-  catch { return []; }
-}
-function saveUsersDB(list){
-  localStorage.setItem(LS_USERS_DB_KEY, JSON.stringify(Array.isArray(list) ? list : []));
-}
-function normalizeEmail(email){
-  return String(email || "").trim().toLowerCase();
-}
-function findUserByEmail(email){
-  const e = normalizeEmail(email);
-  return loadUsersDB().find(u => normalizeEmail(u.email) === e) || null;
-}
-function createUser({ email, pass, firstName, lastName }){
-  const list = loadUsersDB();
-  const e = normalizeEmail(email);
-  if (list.some(u => normalizeEmail(u.email) === e)) return { ok:false, error:"EMAIL_EXISTS" };
-
-  list.push({
-    email: e,
-    pass: String(pass || ""), // ⚠️ plaintext (MVP only)
-    firstName: String(firstName || "").trim(),
-    lastName: String(lastName || "").trim(),
-    createdAt: new Date().toISOString()
-  });
-  saveUsersDB(list);
-  return { ok:true };
-}
-function verifyLogin(email, pass){
-  const user = findUserByEmail(email);
-  if (!user) return { ok:false, error:"NOT_FOUND" };
-  if (String(user.pass) !== String(pass || "")) return { ok:false, error:"BAD_PASS" };
-  return { ok:true, user };
-}
+// Helpers
+function isLoggedIn(){ return !!sessionUser; }
+function isSubscribed(){ return !!(sessionUser && sessionUser.subActive === true); }
+function getSubscriptionId(){ return String(sessionUser?.subscriptionId || ""); }
 
 function getUser(){
-  try{
-    const raw = localStorage.getItem(LS_USER_KEY);
-    if (!raw) return { loggedIn:false, subscribed:false, subscriptionId:"", email:"", firstName:"", lastName:"" };
-    const obj = JSON.parse(raw);
-    return obj && typeof obj === "object"
-      ? {
-          loggedIn: !!obj.loggedIn,
-          subscribed: !!obj.subscribed,
-          subscriptionId: obj.subscriptionId || "",
-          email: obj.email || "",
-          firstName: obj.firstName || "",
-          lastName: obj.lastName || ""
-        }
-      : { loggedIn:false, subscribed:false, subscriptionId:"", email:"", firstName:"", lastName:"" };
-  }catch{
+  if (!sessionUser){
     return { loggedIn:false, subscribed:false, subscriptionId:"", email:"", firstName:"", lastName:"" };
   }
+  return {
+    loggedIn:true,
+    subscribed: !!sessionUser.subActive,
+    subscriptionId: sessionUser.subscriptionId || "",
+    email: sessionUser.email || "",
+    firstName: sessionUser.firstName || "",
+    lastName: sessionUser.lastName || ""
+  };
 }
-function _setUser(obj){
-  const safe = obj && typeof obj === "object" ? obj : {};
-  localStorage.setItem(LS_USER_KEY, JSON.stringify({
-    loggedIn: !!safe.loggedIn,
-    subscribed: !!safe.subscribed,
-    subscriptionId: safe.subscriptionId || "",
-    email: safe.email || "",
-    firstName: safe.firstName || "",
-    lastName: safe.lastName || ""
-  }));
+
+// ✅ Always include credentials so cookies are sent
+async function apiJSON(url, body){
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type":"application/json" },
+    credentials: "include",
+    body: JSON.stringify(body || {})
+  });
+  const data = await r.json().catch(()=> ({}));
+  return { r, data };
 }
-let setUser = _setUser; // will be wrapped later
-function isLoggedIn(){ return !!getUser().loggedIn; }
-function isSubscribed(){ return !!getUser().subscribed; }
-function getSubscriptionId(){ return String(getUser().subscriptionId || ""); }
+
+async function apiGET(url){
+  const r = await fetch(url, { method:"GET", credentials:"include" });
+  const data = await r.json().catch(()=> ({}));
+  return { r, data };
+}
+
+async function syncSession(){
+  try{
+    const { data } = await apiGET("/api/auth/me");
+    sessionUser = data?.user || null;
+  }catch{
+    sessionUser = null;
+  }
+  refreshHeaderButtons();
+  return sessionUser;
+}
 
 /* =======================
    DOM Elements
@@ -717,22 +691,27 @@ openSubscribeFromControls?.addEventListener("click", ()=> headerSubscribeBtn?.cl
 /* ✅ Server-verified subscription check helper */
 async function serverVerifySubscription(subscriptionId){
   try{
-    if (!subscriptionId) return { ok:false, active:false };
+    if (!subscriptionId) {
+      return { ok:false, active:false, status:"" };
+    }
+
     const r = await fetch("/api/subscription/verify",{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
+      credentials: "include",
       body: JSON.stringify({ subscriptionId })
     });
-    const data = await r.json().catch(()=> ({}));
-    return { ok: !!data?.ok, active: !!data?.active, status: data?.status || "" };
-  }catch{
-    return { ok:false, active:false };
-  }
-}
 
-function canUseNow(){
-  if (isSubscribed()) return true;
-  return remainingFreeUses() > 0;
+    const data = await r.json().catch(()=> ({}));
+
+    return {
+      ok: data?.ok === true,
+      active: data?.active === true,
+      status: data?.status || ""
+    };
+  }catch{
+    return { ok:false, active:false, status:"" };
+  }
 }
 
 /* =======================
@@ -795,9 +774,12 @@ function setAccountTab(mode){
   }
 }
 
-function openAccount(mode="login"){
+async function openAccount(mode="login"){
   setAccountTab(mode);
+
+  await syncSession(); // ✅ pull from server
   const u = getUser();
+
   if (logoutBtn){
     logoutBtn.style.display = u.loggedIn ? "block" : "none";
     logoutBtn.textContent = currentLang==="ar" ? "تسجيل خروج" : "Log out";
@@ -849,13 +831,13 @@ authCancel?.addEventListener("click", ()=> closeModal(accountModal));
 forgotPass?.addEventListener("click", ()=>{
   showAuthAlert(
     currentLang==="ar"
-      ? "ميزة استرجاع كلمة المرور قريبًا. حاليًا: تواصل مع الدعم أو استخدم إيميل آخر."
-      : "Password reset is coming soon. For now, contact support or use another email.",
+      ? "ميزة استرجاع كلمة المرور قريبًا. حاليًا: تواصل مع الدعم."
+      : "Password reset is coming soon. For now, contact support.",
     "err"
   );
 });
 
-// Remember email
+// Remember email (still local)
 const LS_REMEMBER_KEY = "wodoh_remember_email_v1";
 try{
   const savedEmail = localStorage.getItem(LS_REMEMBER_KEY) || "";
@@ -865,35 +847,23 @@ try{
   }
 }catch{}
 
-// Wrap openAccount safely
+// Wrap openAccount safely (supports async)
 const _oldOpenAccount = openAccount;
-openAccount = function(mode="login"){
-  _oldOpenAccount(mode);
+openAccount = async function(mode="login"){
+  await _oldOpenAccount(mode);
   clearAuthAlert();
   const u = getUser();
   if (logoutArea) logoutArea.classList.toggle("show", !!u.loggedIn);
 };
 
-// Wrap setUser safely
-const _oldSetUser = setUser;
-setUser = function(obj){
-  _oldSetUser(obj);
-  try{
-    if (rememberMe?.checked && obj?.email){
-      localStorage.setItem(LS_REMEMBER_KEY, obj.email);
-    }else{
-      localStorage.removeItem(LS_REMEMBER_KEY);
-    }
-  }catch{}
-};
-
 /* =======================
-   Auth submit / logout
+   Auth submit / logout (SERVER)
 ======================= */
-authSubmit?.addEventListener("click", ()=>{
+authSubmit?.addEventListener("click", async ()=>{
+  clearAuthAlert?.();
+
   const emailRaw = (authEmail?.value || "").trim();
   const pass = (authPass?.value || "").trim();
-
   const firstName = (authFirstName?.value || "").trim();
   const lastName  = (authLastName?.value || "").trim();
 
@@ -902,99 +872,79 @@ authSubmit?.addEventListener("click", ()=>{
     return;
   }
 
-  const email = normalizeEmail(emailRaw);
-
+  // Signup
   if (accountMode === "signup"){
     if (!firstName || !lastName){
       showToast(t("toastNeedName"), "err");
       return;
     }
 
-    const created = createUser({ email, pass, firstName, lastName });
-    if (!created.ok && created.error === "EMAIL_EXISTS"){
-      showToast(
-        currentLang==="ar"
-          ? "⚠️ هذا الحساب موجود بالفعل. روح لتبويب (دخول) وسجّل دخول."
-          : "⚠️ Account already exists. Switch to (Log in).",
-        "err",
-        4000
-      );
+    const { r, data } = await apiJSON("/api/auth/signup", { email: emailRaw, pass, firstName, lastName });
+
+    if (!r.ok){
+      if (data?.error === "EMAIL_EXISTS"){
+        showToast(currentLang==="ar" ? "⚠️ الإيميل مستخدم. روح لتبويب (دخول)." : "⚠️ Email exists. Switch to Log in.", "err", 4000);
+        return;
+      }
+      showToast(t("toastErr"), "err", 3500);
       return;
     }
 
-    const u = getUser();
-    setUser({
-      loggedIn: true,
-      subscribed: u.subscribed,
-      subscriptionId: u.subscriptionId || "",
-      email,
-      firstName,
-      lastName
-    });
+    // remember email if checked
+    try{
+      if (rememberMe?.checked) localStorage.setItem(LS_REMEMBER_KEY, emailRaw);
+      else localStorage.removeItem(LS_REMEMBER_KEY);
+    }catch{}
 
     if (authPass) authPass.value = "";
     closeAccount();
-    refreshHeaderButtons();
+    await syncSession();
     showToast(t("toastSignedUp"));
     return;
   }
 
-  // ✅ login
-  const res = verifyLogin(email, pass);
-  if (!res.ok){
-    if (res.error === "NOT_FOUND"){
-      showToast(
-        currentLang==="ar"
-          ? "⚠️ هذا الإيميل غير مسجل. أنشئ حسابًا أولًا."
-          : "⚠️ Email not found. Please sign up.",
-        "err",
-        3500
-      );
-    } else {
-      showToast(
-        currentLang==="ar"
-          ? "❌ كلمة المرور خاطئة. حاول مرة ثانية."
-          : "❌ Incorrect password. Please try again.",
-        "err",
-        3200
-      );
+  // Login
+  {
+    const { r, data } = await apiJSON("/api/auth/login", { email: emailRaw, pass });
+
+    if (!r.ok){
+      if (data?.error === "NOT_FOUND"){
+        showToast(currentLang==="ar" ? "⚠️ الإيميل غير مسجل. أنشئ حسابًا." : "⚠️ Email not found. Sign up.", "err", 3500);
+        return;
+      }
+      if (data?.error === "BAD_PASS"){
+        showToast(currentLang==="ar" ? "❌ كلمة المرور خاطئة." : "❌ Incorrect password.", "err", 3200);
+        return;
+      }
+      showToast(t("toastErr"), "err", 3500);
+      return;
     }
-    return;
+
+    // remember email if checked
+    try{
+      if (rememberMe?.checked) localStorage.setItem(LS_REMEMBER_KEY, emailRaw);
+      else localStorage.removeItem(LS_REMEMBER_KEY);
+    }catch{}
+
+    if (authPass) authPass.value = "";
+    closeAccount();
+    await syncSession();
+    showToast(t("toastLoggedIn"));
   }
-
-  const u = getUser();
-  setUser({
-    loggedIn: true,
-    subscribed: u.subscribed,
-    subscriptionId: u.subscriptionId || "",
-    email,
-    firstName: res.user.firstName || "",
-    lastName: res.user.lastName || ""
-  });
-
-  if (authPass) authPass.value = "";
-  closeAccount();
-  refreshHeaderButtons();
-  showToast(t("toastLoggedIn"));
 });
 
-logoutBtn?.addEventListener("click", ()=>{
-  const u = getUser();
-  setUser({
-    loggedIn:false,
-    subscribed: u.subscribed,
-    subscriptionId: u.subscriptionId || "",
-    email:"",
-    firstName:"",
-    lastName:""
-  });
+logoutBtn?.addEventListener("click", async ()=>{
+  try{
+    await apiJSON("/api/auth/logout", {});
+  }catch{}
+  sessionUser = null;
   closeAccount();
   refreshHeaderButtons();
   showToast(t("toastLoggedOut"));
 });
 
 /* =======================
-   Subscribe modal (PayPal REAL) + SERVER VERIFY
+   Subscribe modal (PayPal REAL) + SERVER VERIFY + SERVER ACTIVATE
 ======================= */
 let selectedPlan = "monthly";
 let paypalRendered = false;
@@ -1012,7 +962,9 @@ function closeSubscribe(){
   closeModal(subscribeModal);
 }
 
-function openSubscribe(){
+async function openSubscribe(){
+  await syncSession(); // ✅ ensure session
+
   if (!isLoggedIn()){
     showToast(
       currentLang === "ar"
@@ -1034,7 +986,7 @@ function openSubscribe(){
   ensurePayPalButtons();
 }
 
-headerSubscribeBtn?.addEventListener("click", openSubscribe);
+headerSubscribeBtn?.addEventListener("click", ()=> openSubscribe());
 subClose?.addEventListener("click", closeSubscribe);
 subscribeModal?.addEventListener("click",(e)=>{ if (e.target === subscribeModal) closeSubscribe(); });
 
@@ -1092,6 +1044,8 @@ function ensurePayPalButtons(){
       },
 
       onApprove: async function(data) {
+        await syncSession(); // ✅ refresh session before activate
+
         if (!isLoggedIn()){
           showToast(
             currentLang==="ar"
@@ -1105,23 +1059,29 @@ function ensurePayPalButtons(){
         }
 
         const subscriptionId = data?.subscriptionID || "";
-        const verify = await serverVerifySubscription(subscriptionId);
+        if (!subscriptionId){
+          showToast(t("toastErr"), "err", 3000);
+          return;
+        }
 
+        // 1) Verify from server (PayPal)
+        const verify = await serverVerifySubscription(subscriptionId);
         if (!verify.ok || !verify.active){
           console.error("Verify failed:", verify);
           showToast(t("toastSubVerifyFail"), "err", 4500);
           return;
         }
 
-        const u = getUser();
-        setUser({
-          loggedIn: u.loggedIn,
-          subscribed: true,
-          subscriptionId,
-          email: u.email || "",
-          firstName: u.firstName || "",
-          lastName: u.lastName || ""
-        });
+        // 2) Activate on server
+        const act = await apiJSON("/api/subscription/activate", { subscriptionId });
+        if (!act.data?.ok){
+          console.error("Activate failed:", act);
+          showToast(t("toastSubVerifyFail"), "err", 4500);
+          return;
+        }
+
+        // 3) Refresh session => subActive:true
+        await syncSession();
 
         closeSubscribe();
         refreshHeaderButtons();
@@ -1234,28 +1194,9 @@ setAccountTab("login");
 
 textInput?.addEventListener("input", saveSession);
 
-/* ✅ keep subscription but verify it on every refresh */
-(async function verifySubOnLoad(){
-  try{
-    const u = getUser();
-    if (!u?.subscriptionId) { refreshHeaderButtons(); return; }
-
-    const v = await serverVerifySubscription(u.subscriptionId);
-
-    if (!v.ok || !v.active){
-      setUser({
-        loggedIn: u.loggedIn,
-        subscribed: false,
-        subscriptionId: "",
-        email: u.email || "",
-        firstName: u.firstName || "",
-        lastName: u.lastName || ""
-      });
-    }
-    refreshHeaderButtons();
-  }catch{
-    refreshHeaderButtons();
-  }
+// ✅ On load: sync session from server
+(async function initOnLoad(){
+  await syncSession();
 })();
 
 /* =======================
@@ -1400,8 +1341,8 @@ function renderSkeleton(){
 /* =======================
    Strict Summary (Send to server)
 ======================= */
-const SUMMARY_STYLE = "strict";
-const SUMMARY_BULLETS = 6;
+const SUMMARY_STYLE = "mixed";
+const SUMMARY_BULLETS = 4;
 const SUMMARY_WORDS_PER_BULLET = 10;
 
 /* =======================
@@ -1432,6 +1373,7 @@ async function callAPI({text,mode,count,questionMode,questionCount}){
   const r = await fetch("/api/generate",{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
+    credentials: "include",
     body: JSON.stringify({
       text,
       mode,
@@ -1470,6 +1412,11 @@ generateBtn?.addEventListener("click", async ()=>{
     return;
   }
 
+  // ✅ Free: مرة واحدة فقط يوميًا
+  if (!isSubscribed() && !canUseNow()){
+    showPaywall();
+    return;
+  }
 
   const prefs = getQuestionPrefs();
 
@@ -1555,7 +1502,7 @@ document.addEventListener("click", async (e)=>{
 
   hideToast();
 
-    // ✅ Free: لا تسمح بـ "المزيد من الأسئلة"
+  // ✅ Free: لا تسمح بـ "المزيد من الأسئلة"
   if (!isSubscribed()){
     showToast(currentLang==="ar"
       ? "🔒 يجب الاشتراك في Wodoh Pro للحصول على المزيد من الأسئلة"
@@ -1567,7 +1514,6 @@ document.addEventListener("click", async (e)=>{
     return;
   }
 
-
   if (!lastSourceText){
     showToast(t("toastTextFirst"), "err");
     return;
@@ -1577,8 +1523,6 @@ document.addEventListener("click", async (e)=>{
     showPaywall();
     return;
   }
-
-
 
   if (!canRequest()){
     showToast(t("toastWait"), "err");
@@ -1687,7 +1631,7 @@ function renderUI(p){
   const paras = (p.summaryParas || p.summary || []);
   const bullets = (p.summaryBullets || []);
 
-  const showParas = bullets.length ? [] : paras;
+  const showParas = paras; // عرض الفقرات دائمًا
 
   return `
     ${showParas.length || bullets.length ? `
@@ -2047,3 +1991,84 @@ langBtn?.addEventListener("click", ()=>{
 questionCountEl?.addEventListener("input", ()=> updateProLocks());
 questionTypeEl?.addEventListener("change", ()=> updateProLocks());
 updateProLocks();
+// =======================
+// Feedback (Public)
+// =======================
+const fbStars = document.getElementById("fbStars");
+const fbType  = document.getElementById("fbType");
+const fbMsg   = document.getElementById("fbMsg");
+const fbSend  = document.getElementById("fbSend");
+const fbCount = document.getElementById("fbCount");
+const fbWebsite = document.getElementById("fbWebsite");
+
+let fbRating = 0;
+
+function setStarsUI(v){
+  fbRating = v;
+  fbStars?.querySelectorAll(".star").forEach(b=>{
+    const n = Number(b.dataset.v || 0);
+    b.classList.toggle("active", n <= v);
+  });
+}
+
+fbStars?.addEventListener("click", (e)=>{
+  const b = e.target.closest(".star");
+  if (!b) return;
+  setStarsUI(Number(b.dataset.v || 0));
+});
+
+fbMsg?.addEventListener("input", ()=>{
+  if (fbCount) fbCount.textContent = String((fbMsg.value || "").length);
+});
+
+async function sendFeedback(){
+  // honeypot
+  if (fbWebsite && String(fbWebsite.value || "").trim()) return;
+
+  const type = String(fbType?.value || "other");
+  const msg  = String(fbMsg?.value || "").trim();
+
+  if (!fbRating){
+    showToast(currentLang==="ar" ? "⚠️ اختر تقييمًا أولًا" : "⚠️ Please choose a rating", "err", 2500);
+    return;
+  }
+  if (msg.length < 8){
+    showToast(currentLang==="ar" ? "⚠️ اكتب رسالة قصيرة (8 أحرف على الأقل)" : "⚠️ Write a short message (min 8 chars)", "err", 2600);
+    return;
+  }
+
+  fbSend.disabled = true;
+
+  try{
+    const r = await fetch("/api/feedback", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      credentials:"include",
+      body: JSON.stringify({ rating: fbRating, type, message: msg })
+    });
+    const data = await r.json().catch(()=>({}));
+
+    if (!r.ok){
+      if (data?.error === "RATE_LIMIT"){
+        showToast(currentLang==="ar" ? "⏳ أرسلت قبل قليل، جرّب بعد دقيقة" : "⏳ Too fast, try in a minute", "err", 2800);
+      } else {
+        showToast(t("toastErr"), "err", 2600);
+      }
+      return;
+    }
+
+    // reset
+    setStarsUI(0);
+    if (fbMsg) fbMsg.value = "";
+    if (fbCount) fbCount.textContent = "0";
+
+    showToast(currentLang==="ar" ? "🙏 شكرًا! وصلنا رأيك" : "🙏 Thanks! Feedback received", "ok", 2400);
+  }catch(e){
+    console.error(e);
+    showToast(t("toastConnErr"), "err", 2600);
+  }finally{
+    fbSend.disabled = false;
+  }
+}
+
+fbSend?.addEventListener("click", sendFeedback);
