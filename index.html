@@ -481,6 +481,41 @@
     })();
   </script>
 
+<section class="feedback">
+  <h3>اقتراح أو ملاحظة</h3>
+
+  <form
+    id="feedbackForm"
+    action="https://formspree.io/f/mvzgvjwz"
+    method="POST"
+  >
+    <select name="type" required>
+      <option value="">اختر النوع</option>
+      <option value="اقتراح">اقتراح</option>
+      <option value="مشكلة">مشكلة</option>
+      <option value="تحسين">تحسين تجربة الاستخدام</option>
+      <option value="أخرى">أخرى</option>
+    </select>
+
+    <textarea
+      name="message"
+      placeholder="اكتب ملاحظتك هنا..."
+      required
+    ></textarea>
+
+    <!-- معلومات إضافية (اختياري) -->
+    <input type="hidden" name="page" value="Wodoh">
+    <input type="hidden" name="date" value="">
+
+    <button type="submit">إرسال</button>
+  </form>
+
+  <p id="feedbackSuccess" style="display:none;">
+    ✅ شكرًا لك! تم إرسال الملاحظة.
+  </p>
+</section>
+
+
   <!-- ✅ PayPal SDK (SUBSCRIPTIONS) -->
   <script
     src="https://www.paypal.com/sdk/js?client-id=AQhaA8WOxv9FdWToZccgDLITuazgbSw1bRwSpKARLc1c4bidUFTzsOAjUVf97rVFcw0RaGq0awF9_WhB&vault=true&intent=subscription&components=buttons">

@@ -2072,3 +2072,31 @@ async function sendFeedback(){
 }
 
 fbSend?.addEventListener("click", sendFeedback);
+const feedbackForm = document.getElementById("feedbackForm");
+const feedbackSuccess = document.getElementById("feedbackSuccess");
+
+if (feedbackForm) {
+  // ضع التاريخ تلقائيًا
+  feedbackForm.querySelector('input[name="date"]').value =
+    new Date().toLocaleString();
+
+  feedbackForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const res = await fetch(feedbackForm.action, {
+      method: "POST",
+      body: new FormData(feedbackForm),
+      headers: { Accept: "application/json" },
+    });
+
+    if (res.ok) {
+      feedbackForm.reset();
+      feedbackSuccess.style.display = "block";
+      setTimeout(() => {
+        feedbackSuccess.style.display = "none";
+      }, 4000);
+    } else {
+      alert("حدث خطأ، حاول مرة أخرى");
+    }
+  });
+}
