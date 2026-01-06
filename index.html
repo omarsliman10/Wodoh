@@ -163,7 +163,6 @@
           <div style="flex:1;min-width:180px;">
             <label class="label" style="margin-bottom:6px;" data-i18n="qTypeLabel">نوع الأسئلة</label>
 
-            <!-- Keep your select (no breaking) -->
             <select id="questionType" class="select" style="width:100%;">
               <option value="both" data-i18n="qTypeBoth">اختيار من متعدد + صح/خطأ</option>
               <option value="mcq" data-i18n="qTypeMcq">اختيار من متعدد فقط</option>
@@ -208,54 +207,62 @@
     <section class="output" id="output"></section>
     <section id="mySummaries" class="output" style="display:none;"></section>
 
+    <!-- ✅ Feedback (ONE section only) -->
     <section class="feedback" id="feedback">
-  <div class="feedback-card">
-    <div class="feedback-head">
-      <h2>💬 رأيك يهمنا</h2>
-      <p>ساعدنا نطوّر وضوح. دقيقة واحدة فقط.</p>
-    </div>
-
-    <div class="feedback-grid">
-      <div class="fb-field">
-        <label>التقييم</label>
-        <div class="fb-stars" id="fbStars" role="radiogroup" aria-label="rating">
-          <button type="button" class="star" data-v="1" aria-label="1">★</button>
-          <button type="button" class="star" data-v="2" aria-label="2">★</button>
-          <button type="button" class="star" data-v="3" aria-label="3">★</button>
-          <button type="button" class="star" data-v="4" aria-label="4">★</button>
-          <button type="button" class="star" data-v="5" aria-label="5">★</button>
+      <div class="feedback-card">
+        <div class="feedback-head">
+          <h2>💬 رأيك يهمنا</h2>
+          <p>ساعدنا نطوّر وضوح. دقيقة واحدة فقط.</p>
         </div>
-        <div class="fb-hint" id="fbRatingHint">اختر من 1 إلى 5</div>
+
+        <div class="feedback-grid">
+          <div class="fb-field">
+            <label>التقييم</label>
+            <div class="fb-stars" id="fbStars" role="radiogroup" aria-label="rating">
+              <button type="button" class="star" data-v="1" aria-label="1">★</button>
+              <button type="button" class="star" data-v="2" aria-label="2">★</button>
+              <button type="button" class="star" data-v="3" aria-label="3">★</button>
+              <button type="button" class="star" data-v="4" aria-label="4">★</button>
+              <button type="button" class="star" data-v="5" aria-label="5">★</button>
+            </div>
+            <div class="fb-hint" id="fbRatingHint">اختر من 1 إلى 5</div>
+          </div>
+
+          <div class="fb-field">
+            <label for="fbType">نوع الملاحظة</label>
+            <select id="fbType">
+              <option value="idea">اقتراح ميزة</option>
+              <option value="bug">مشكلة/خطأ</option>
+              <option value="ux">تحسين تجربة الاستخدام</option>
+              <option value="payment">الدفع/الاشتراك</option>
+              <option value="other">أخرى</option>
+            </select>
+          </div>
+
+          <div class="fb-field fb-wide">
+            <label for="fbMsg">رسالتك</label>
+            <textarea id="fbMsg" rows="4" maxlength="600" placeholder="اكتب ملاحظتك باختصار..."></textarea>
+            <div class="fb-counter"><span id="fbCount">0</span>/600</div>
+          </div>
+
+          <!-- Honeypot (anti-spam) -->
+          <input id="fbWebsite" type="text" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px;opacity:0" />
+
+          <!-- ✅ Hidden rating for Formspree -->
+          <input id="fbRating" type="hidden" name="rating" value="0" />
+
+          <div class="fb-actions fb-wide">
+            <button type="button" class="btn" id="fbSend">إرسال</button>
+            <div class="fb-note">بدون حساب • لا نطلب إيميل</div>
+          </div>
+
+          <!-- ✅ Success message -->
+          <p id="feedbackSuccess" style="display:none;margin:8px 0 0;opacity:.95;">
+            ✅ شكرًا لك! تم إرسال الملاحظة.
+          </p>
+        </div>
       </div>
-
-      <div class="fb-field">
-        <label for="fbType">نوع الملاحظة</label>
-        <select id="fbType">
-          <option value="idea">اقتراح ميزة</option>
-          <option value="bug">مشكلة/خطأ</option>
-          <option value="ux">تحسين تجربة الاستخدام</option>
-          <option value="payment">الدفع/الاشتراك</option>
-          <option value="other">أخرى</option>
-        </select>
-      </div>
-
-      <div class="fb-field fb-wide">
-        <label for="fbMsg">رسالتك</label>
-        <textarea id="fbMsg" rows="4" maxlength="600" placeholder="اكتب ملاحظتك باختصار..."></textarea>
-        <div class="fb-counter"><span id="fbCount">0</span>/600</div>
-      </div>
-
-      <!-- Honeypot (anti-spam) -->
-      <input id="fbWebsite" type="text" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px;opacity:0" />
-
-      <div class="fb-actions fb-wide">
-        <button type="button" class="btn" id="fbSend">إرسال</button>
-        <div class="fb-note">بدون حساب • لا نطلب إيميل</div>
-      </div>
-    </div>
-  </div>
-</section>
-
+    </section>
 
     <footer class="footer">
       <span>© <span id="year"></span> <span data-i18n="footerBrand">Wodoh – وضوح</span></span>
@@ -268,7 +275,6 @@
       <h3 id="paywallTitle" data-i18n="paywallTitle">🔒 انتهت المحاولات المجانية اليوم</h3>
       <p id="paywallText" data-i18n="paywallText">انتهت المحاولات المجانية. اشترك للمتابعة بلا حدود.</p>
 
-      <!-- ✅ NEW: Quick comparison inside paywall -->
       <div class="pricing-compare" style="margin-top:12px;">
         <div class="tier free">
           <div class="tier-head">
@@ -402,7 +408,6 @@
         </p>
       </div>
 
-      <!-- ✅ NEW: Free vs Pro comparison (simple + convincing) -->
       <div class="pricing-compare">
         <div class="tier free">
           <div class="tier-head">
@@ -470,8 +475,6 @@
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    // ✅ Optional: open subscribe modal from controls upgrade button (if you wire it in script.js later)
-    // This doesn't break anything if you don't.
     (function(){
       const btn = document.getElementById("openSubscribeFromControls");
       const headerBtn = document.getElementById("headerSubscribeBtn");
@@ -480,41 +483,6 @@
       }
     })();
   </script>
-
-<section class="feedback">
-  <h3>اقتراح أو ملاحظة</h3>
-
-  <form
-    id="feedbackForm"
-    action="https://formspree.io/f/mvzgvjwz"
-    method="POST"
-  >
-    <select name="type" required>
-      <option value="">اختر النوع</option>
-      <option value="اقتراح">اقتراح</option>
-      <option value="مشكلة">مشكلة</option>
-      <option value="تحسين">تحسين تجربة الاستخدام</option>
-      <option value="أخرى">أخرى</option>
-    </select>
-
-    <textarea
-      name="message"
-      placeholder="اكتب ملاحظتك هنا..."
-      required
-    ></textarea>
-
-    <!-- معلومات إضافية (اختياري) -->
-    <input type="hidden" name="page" value="Wodoh">
-    <input type="hidden" name="date" value="">
-
-    <button type="submit">إرسال</button>
-  </form>
-
-  <p id="feedbackSuccess" style="display:none;">
-    ✅ شكرًا لك! تم إرسال الملاحظة.
-  </p>
-</section>
-
 
   <!-- ✅ PayPal SDK (SUBSCRIPTIONS) -->
   <script

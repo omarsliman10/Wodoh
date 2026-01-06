@@ -68,6 +68,13 @@ function consumeOneUse(){
   setDailyUsage(u + 1);
 }
 
+// ✅ Free daily limit check
+function canUseNow(){
+  if (isSubscribed()) return true;      // Pro always allowed
+  return remainingFreeUses() > 0;       // Free: allowed if still has uses today
+}
+
+
 /* =======================
    Auth + Subscription (SERVER state via HttpOnly cookie)
 ======================= */
@@ -1991,20 +1998,40 @@ langBtn?.addEventListener("click", ()=>{
 questionCountEl?.addEventListener("input", ()=> updateProLocks());
 questionTypeEl?.addEventListener("change", ()=> updateProLocks());
 updateProLocks();
+
 // =======================
-// Feedback (Public)
+// Feedback (Stars -> Formspree)
 // =======================
+const FORMSPREE_URL = "https://formspree.io/f/mvzgvjwz";
+
 const fbStars = document.getElementById("fbStars");
 const fbType  = document.getElementById("fbType");
 const fbMsg   = document.getElementById("fbMsg");
 const fbSend  = document.getElementById("fbSend");
 const fbCount = document.getElementById("fbCount");
 const fbWebsite = document.getElementById("fbWebsite");
+const fbRatingInput = document.getElementById("fbRating");
+
+// optional success element (create it if you want)
+let feedbackSuccess = document.getElementById("feedbackSuccess");
+if (!feedbackSuccess) {
+  // إذا ما عندك عنصر نجاح، أنشئه تلقائيًا تحت الزر
+  const place = fbSend?.parentElement;
+  if (place) {
+    feedbackSuccess = document.createElement("p");
+    feedbackSuccess.id = "feedbackSuccess";
+    feedbackSuccess.style.display = "none";
+    feedbackSuccess.textContent = "✅ شكرًا لك! تم إرسال الملاحظة.";
+    place.appendChild(feedbackSuccess);
+  }
+}
 
 let fbRating = 0;
 
 function setStarsUI(v){
   fbRating = v;
+  if (fbRatingInput) fbRatingInput.value = String(v);
+
   fbStars?.querySelectorAll(".star").forEach(b=>{
     const n = Number(b.dataset.v || 0);
     b.classList.toggle("active", n <= v);
@@ -2021,7 +2048,7 @@ fbMsg?.addEventListener("input", ()=>{
   if (fbCount) fbCount.textContent = String((fbMsg.value || "").length);
 });
 
-async function sendFeedback(){
+async function sendFeedbackFormspree(){
   // honeypot
   if (fbWebsite && String(fbWebsite.value || "").trim()) return;
 
@@ -2040,27 +2067,33 @@ async function sendFeedback(){
   fbSend.disabled = true;
 
   try{
-    const r = await fetch("/api/feedback", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      credentials:"include",
-      body: JSON.stringify({ rating: fbRating, type, message: msg })
-    });
-    const data = await r.json().catch(()=>({}));
+    const fd = new FormData();
+    fd.append("rating", String(fbRating));
+    fd.append("type", type);
+    fd.append("message", msg);
+    fd.append("page", "Wodoh");
+    fd.append("date", new Date().toLocaleString());
 
-    if (!r.ok){
-      if (data?.error === "RATE_LIMIT"){
-        showToast(currentLang==="ar" ? "⏳ أرسلت قبل قليل، جرّب بعد دقيقة" : "⏳ Too fast, try in a minute", "err", 2800);
-      } else {
-        showToast(t("toastErr"), "err", 2600);
-      }
+    const res = await fetch(FORMSPREE_URL, {
+      method: "POST",
+      body: fd,
+      headers: { Accept: "application/json" },
+    });
+
+    if (!res.ok){
+      showToast(currentLang==="ar" ? "❌ حدث خطأ، حاول مرة أخرى" : "❌ Error, try again", "err", 2600);
       return;
     }
 
-    // reset
+    // reset UI
     setStarsUI(0);
     if (fbMsg) fbMsg.value = "";
     if (fbCount) fbCount.textContent = "0";
+
+    if (feedbackSuccess) {
+      feedbackSuccess.style.display = "block";
+      setTimeout(() => (feedbackSuccess.style.display = "none"), 4000);
+    }
 
     showToast(currentLang==="ar" ? "🙏 شكرًا! وصلنا رأيك" : "🙏 Thanks! Feedback received", "ok", 2400);
   }catch(e){
@@ -2071,32 +2104,4 @@ async function sendFeedback(){
   }
 }
 
-fbSend?.addEventListener("click", sendFeedback);
-const feedbackForm = document.getElementById("feedbackForm");
-const feedbackSuccess = document.getElementById("feedbackSuccess");
-
-if (feedbackForm) {
-  // ضع التاريخ تلقائيًا
-  feedbackForm.querySelector('input[name="date"]').value =
-    new Date().toLocaleString();
-
-  feedbackForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const res = await fetch(feedbackForm.action, {
-      method: "POST",
-      body: new FormData(feedbackForm),
-      headers: { Accept: "application/json" },
-    });
-
-    if (res.ok) {
-      feedbackForm.reset();
-      feedbackSuccess.style.display = "block";
-      setTimeout(() => {
-        feedbackSuccess.style.display = "none";
-      }, 4000);
-    } else {
-      alert("حدث خطأ، حاول مرة أخرى");
-    }
-  });
-}
+fbSend?.addEventListener("click", sendFeedbackFormspree);
