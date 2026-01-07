@@ -1658,24 +1658,6 @@ html[dir="rtl"] .header{
 .feedback select option:checked{
   background-color: #7C3AED; /* بنفسجي */
 }
-
-.faq-close {
-  cursor: pointer;
-  z-index: 9999;
-  position: relative;
-}
-#toggleFaqBtn { position: relative; z-index: 9999; pointer-events: auto; }
-#faqSection   { position: relative; z-index: 9998; }
-#toggleFaqBtn{
-  position: fixed;
-  z-index: 99999;
-  pointer-events: auto;
-}
-
-#faqSection{
-  position: relative;
-  z-index: 99990;
-}
 .hero::before, .hero::after,
 .bg, .bg::before, .bg::after,
 .glow, .glow::before, .glow::after{

@@ -1242,19 +1242,6 @@ function ensurePayPalButtons(){
 }
 
 /* =======================
-   FAQ label sync (SAFE)
-======================= */
-function syncFaqBtnLabel(){
-  const faqBtnEl = document.getElementById("toggleFaqBtn");
-  const faqSectionEl = document.getElementById("faqSection");
-  if (!faqBtnEl || !faqSectionEl) return;
-
-  const isHidden = faqSectionEl.classList.contains("hidden");
-  faqBtnEl.textContent = isHidden ? t("faqToggleBtn") : t("faqCloseBtn");
-}
-
-
-/* =======================
    applyLang (UI only)
 ======================= */
 function applyLang(){
@@ -2276,33 +2263,6 @@ fbSend?.addEventListener("click", sendFeedbackFormspree);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 })();
-
-/* =======================
-   FAQ toggle (FIXED)
-======================= */
-document.addEventListener("DOMContentLoaded", () => {
-  const faqBtn = document.getElementById("toggleFaqBtn");
-  const faqSection = document.getElementById("faqSection");
-  if (!faqBtn || !faqSection) return;
-
-  // ✅ مهم: لو الزر داخل form، لا تخليه يعمل submit
-  faqBtn.setAttribute("type", "button");
-
-  function updateFaqBtnLabel(){
-    const isHidden = faqSection.classList.contains("hidden");
-    faqBtn.textContent = isHidden ? t("faqToggleBtn") : t("faqCloseBtn");
-  }
-
-  // label on load
-  updateFaqBtnLabel();
-
-  faqBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    faqSection.classList.toggle("hidden");
-    updateFaqBtnLabel();
-  }, true);
-});
 
 /* =======================
    FIX: Start button not working (Render safe)
