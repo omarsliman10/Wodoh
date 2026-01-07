@@ -188,8 +188,8 @@
 
         <div class="pro-lock" id="proLockBox" style="display:none;">
           <div class="txt">
-            <b data-i18n="proLockBoxTitle">Wodoh Pro</b>
-            <span data-i18n="proLockBoxDesc">يعطيك تحكم بالنوع والعدد + بدون انتظار + حفظ النتائج.</span>
+            <b data-i18n="planPro">Wodoh Pro</b>
+            <span data-i18n="planProDesc">يعطيك تحكم بالنوع والعدد + بدون انتظار + حفظ النتائج.</span>
           </div>
           <button id="openSubscribeFromControls" class="btn btn-primary" type="button" data-i18n="upgradeBtn">ترقية ⭐</button>
         </div>
@@ -209,15 +209,16 @@
 
     <!-- ✅ Feedback (ONE section only) -->
     <section class="feedback" id="feedback">
-      <div class="feedback-card">
-        <div class="feedback-head">
-          <h2>💬 رأيك يهمنا</h2>
-          <p>ساعدنا نطوّر وضوح. دقيقة واحدة فقط.</p>
-        </div>
+     <div class="feedback-card">
+       <div class="feedback-head">
+      <h2 data-i18n="fbTitle">💬 رأيك يهمنا</h2>
+      <p data-i18n="fbDesc">ساعدنا نطوّر وضوح. دقيقة واحدة فقط.</p>
+    </div>
+
 
         <div class="feedback-grid">
           <div class="fb-field">
-            <label>التقييم</label>
+            <label data-i18n="fbRatingLabel">التقييم</label>
             <div class="fb-stars" id="fbStars" role="radiogroup" aria-label="rating">
               <button type="button" class="star" data-v="1" aria-label="1">★</button>
               <button type="button" class="star" data-v="2" aria-label="2">★</button>
@@ -225,23 +226,22 @@
               <button type="button" class="star" data-v="4" aria-label="4">★</button>
               <button type="button" class="star" data-v="5" aria-label="5">★</button>
             </div>
-            <div class="fb-hint" id="fbRatingHint">اختر من 1 إلى 5</div>
-          </div>
+          <div class="fb-hint" id="fbRatingHint" data-i18n="fbRatingHint">اختر من 1 إلى 5</div>          </div>
 
           <div class="fb-field">
-            <label for="fbType">نوع الملاحظة</label>
+            <label for="fbType" data-i18n="fbTypeLabel">نوع الملاحظة</label>
             <select id="fbType">
-              <option value="idea">اقتراح ميزة</option>
-              <option value="bug">مشكلة/خطأ</option>
-              <option value="ux">تحسين تجربة الاستخدام</option>
-              <option value="payment">الدفع/الاشتراك</option>
-              <option value="other">أخرى</option>
+              <option value="idea" data-i18n="fbTypeIdea">اقتراح ميزة</option>
+              <option value="bug" data-i18n="fbTypeBug">مشكلة/خطأ</option>
+              <option value="ux" data-i18n="fbTypeUx">تحسين تجربة الاستخدام</option>
+              <option value="payment" data-i18n="fbTypePayment">الدفع/الاشتراك</option>
+              <option value="other" data-i18n="fbTypeOther">أخرى</option>
             </select>
           </div>
 
           <div class="fb-field fb-wide">
-            <label for="fbMsg">رسالتك</label>
-            <textarea id="fbMsg" rows="4" maxlength="600" placeholder="اكتب ملاحظتك باختصار..."></textarea>
+            <label for="fbMsg" data-i18n="fbMsgLabel">رسالتك</label>
+            <textarea id="fbMsg" rows="4" maxlength="600" data-i18n-placeholder="fbMsgPh" placeholder="اكتب ملاحظتك باختصار..."></textarea>
             <div class="fb-counter"><span id="fbCount">0</span>/600</div>
           </div>
 
@@ -252,8 +252,8 @@
           <input id="fbRating" type="hidden" name="rating" value="0" />
 
           <div class="fb-actions fb-wide">
-            <button type="button" class="btn" id="fbSend">إرسال</button>
-            <div class="fb-note">بدون حساب • لا نطلب إيميل</div>
+            <button type="button" class="btn" id="fbSend" data-i18n="fbSend">إرسال</button>
+            <div class="fb-note" data-i18n="fbNote">بدون حساب • لا نطلب إيميل</div>
           </div>
 
           <!-- ✅ Success message -->

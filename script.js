@@ -313,11 +313,37 @@ const I18N = {
     subHint: "عند تفعيل الاشتراك سيتم إزالة حد الاستخدام اليومي.",
 
     footerBrand: "Wodoh – وضوح",
+    lockedTitle: "🔒 Pro فقط",
+    freeLimitTitle: "🆓 المجاني",
+    proControlsTitle: "تحكم بالأسئلة",
+    proControlsDesc: "اختر النوع والعدد (تحكم كامل لمشتركي Pro).",
 
     // ✅ NEW
     planFree: "Free",
     planPro: "Wodoh Pro",
-    upgradeBtn: "ترقية ⭐"
+    planProDesc: "يعطيك تحكم بالنوع والعدد + بدون انتظار + حفظ النتائج.",
+    upgradeBtn: "ترقية ⭐",
+    // ✅ Feedback
+    fbTitle: "💬 رأيك يهمنا",
+    fbDesc: "ساعدنا نطوّر وضوح — دقيقة واحدة فقط.",
+    fbRatingLabel: "التقييم",
+    fbRatingHint: "اختر من 1 إلى 5",
+    fbTypeLabel: "نوع الملاحظة",
+    fbTypeIdea: "اقتراح ميزة",
+    fbTypeBug: "مشكلة / خطأ",
+    fbTypeUx: "تحسين تجربة الاستخدام",
+    fbTypePayment: "الدفع / الاشتراك",
+    fbTypeOther: "أخرى",
+    fbMsgLabel: "رسالتك",
+    fbMsgPh: "اكتب ملاحظتك باختصار...",
+    fbSend: "إرسال",
+    fbNote: "بدون حساب • لا نطلب إيميل",
+    fbSuccess: "✅ شكرًا لك! تم إرسال الملاحظة.",
+    toastPickRating: "⚠️ اختر تقييمًا",
+    toastWriteMsgMin: "⚠️ اكتب رسالة قصيرة (على الأقل 8 أحرف)",
+    toastFeedbackSent: "🙏 شكرًا! وصلتنا ملاحظتك",
+    toastFeedbackErr: "❌ خطأ، جرّب مرة أخرى",
+    toastFeedbackErr: "❌ Error, try again",
   },
 
   en: {
@@ -412,7 +438,34 @@ const I18N = {
     subHint: "Subscription removes the daily free limit.",
 
     footerBrand: "Wodoh – وضوح",
+  // ✅ Feedback
+  fbTitle: "💬 Your feedback matters",
+  fbDesc: "Help us improve Wodoh — just one minute.",
+  fbRatingLabel: "Rating",
+  fbRatingHint: "Choose from 1 to 5",
+  fbTypeLabel: "Feedback type",
+  fbTypeIdea: "Feature suggestion",
+  fbTypeBug: "Bug / issue",
+  fbTypeUx: "UX improvement",
+  fbTypePayment: "Payment / subscription",
+  fbTypeOther: "Other",
+  fbMsgLabel: "Your message",
+  fbMsgPh: "Write your feedback briefly...",
+  fbSend: "Send",
+  fbNote: "No account • No email required",
+  fbSuccess: "✅ Thanks! Your feedback has been sent.",
+  toastPickRating: "⚠️ Please choose a rating",
+  toastWriteMsgMin: "⚠️ Write a short message (min 8 chars)",
+  toastFeedbackSent: "🙏 Thanks! Feedback received",
+  toastFeedbackErr: "❌ Error, try again",
+  // ✅ Pro controls block (missing keys)
+  proControlsTitle: "Question controls",
+  proControlsDesc: "Choose type and count (Full control for Pro).",
 
+  // ✅ Hints titles (missing keys)
+  lockedTitle: "🔒 Pro only",
+  freeLimitTitle: "🆓 Free",
+  planProDesc: "Gives you full control over type & count + no wait + saving results.",
     // ✅ NEW
     planFree: "Free",
     planPro: "Wodoh Pro",
@@ -1174,7 +1227,8 @@ function restoreSession(){
     const raw = localStorage.getItem(LS_SESSION_KEY);
     if (!raw) return;
     const s = JSON.parse(raw);
-    if (s?.lang) currentLang = s.lang;
+    if (s?.lang === "ar" || s?.lang === "en") currentLang = s.lang;
+    else currentLang = "ar";
   }catch{}
 }
 
@@ -2021,7 +2075,10 @@ if (!feedbackSuccess) {
     feedbackSuccess = document.createElement("p");
     feedbackSuccess.id = "feedbackSuccess";
     feedbackSuccess.style.display = "none";
-    feedbackSuccess.textContent = "✅ شكرًا لك! تم إرسال الملاحظة.";
+    feedbackSuccess.textContent =
+      currentLang === "ar"
+         ? "✅ شكرًا لك! تم إرسال الملاحظة."
+         : "✅ Thanks! Your feedback has been sent.";
     place.appendChild(feedbackSuccess);
   }
 }
@@ -2049,22 +2106,24 @@ fbMsg?.addEventListener("input", ()=>{
 });
 
 async function sendFeedbackFormspree(){
-  // honeypot
+  if (!fbSend || !fbMsg || !fbType || !fbRatingInput) return; // ✅ prevent crash if feedback UI not present
+  // honeypot ...
   if (fbWebsite && String(fbWebsite.value || "").trim()) return;
 
   const type = String(fbType?.value || "other");
   const msg  = String(fbMsg?.value || "").trim();
 
   if (!fbRating){
-    showToast(currentLang==="ar" ? "⚠️ اختر تقييمًا أولًا" : "⚠️ Please choose a rating", "err", 2500);
+    showToast(t("toastPickRating"), "err", 2500);
     return;
   }
   if (msg.length < 8){
-    showToast(currentLang==="ar" ? "⚠️ اكتب رسالة قصيرة (8 أحرف على الأقل)" : "⚠️ Write a short message (min 8 chars)", "err", 2600);
+    showToast(t("toastWriteMsgMin"), "err", 2600);
     return;
   }
 
-  fbSend.disabled = true;
+  fbSend.disabled = true; // الآن آمن لأننا تأكدنا فوق
+
 
   try{
     const fd = new FormData();
@@ -2081,7 +2140,7 @@ async function sendFeedbackFormspree(){
     });
 
     if (!res.ok){
-      showToast(currentLang==="ar" ? "❌ حدث خطأ، حاول مرة أخرى" : "❌ Error, try again", "err", 2600);
+      showToast(t("toastFeedbackErr"), "err", 2600);
       return;
     }
 
@@ -2094,8 +2153,7 @@ async function sendFeedbackFormspree(){
       feedbackSuccess.style.display = "block";
       setTimeout(() => (feedbackSuccess.style.display = "none"), 4000);
     }
-
-    showToast(currentLang==="ar" ? "🙏 شكرًا! وصلنا رأيك" : "🙏 Thanks! Feedback received", "ok", 2400);
+      showToast(t("toastFeedbackSent"), "ok", 2400);
   }catch(e){
     console.error(e);
     showToast(t("toastConnErr"), "err", 2600);
