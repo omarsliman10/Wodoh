@@ -2298,4 +2298,12 @@ if (faqBtn && faqSection) {
     updateFaqBtnLabel();
   });
 }
+const faqModal = document.getElementById("faqModal");
+const closeFaqBtn = document.getElementById("closeFaqBtn");
+
+if (closeFaqBtn && faqModal) {
+  closeFaqBtn.addEventListener("click", () => {
+    faqModal.classList.remove("active");
+  });
+}
 

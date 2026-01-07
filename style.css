@@ -1659,3 +1659,8 @@ html[dir="rtl"] .header{
   background-color: #7C3AED; /* بنفسجي */
 }
 
+.faq-close {
+  cursor: pointer;
+  z-index: 9999;
+  position: relative;
+}
