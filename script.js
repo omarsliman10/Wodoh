@@ -2304,3 +2304,41 @@ document.addEventListener("DOMContentLoaded", () => {
   }, true);
 });
 
+/* =======================
+   FIX: Start button not working (Render safe)
+======================= */
+document.addEventListener("DOMContentLoaded", () => {
+  const landingEl = document.getElementById("landing");
+  const appEl = document.getElementById("app");
+  const start = document.getElementById("startBtn");
+  const skip = document.getElementById("skipBtn");
+
+  function safeOpenApp(e){
+    try{
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+    }catch{}
+
+    // فتح التطبيق
+    if (landingEl) landingEl.style.display = "none";
+    if (appEl) appEl.style.display = "block";
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // لو الأزرار داخل form => امنع submit
+  if (start) start.setAttribute("type", "button");
+  if (skip)  skip.setAttribute("type", "button");
+
+  // لو في overlay يمنع الضغط (Render أحيانًا)
+  [start, skip].forEach(btn=>{
+    if (!btn) return;
+    btn.style.pointerEvents = "auto";
+    btn.style.position = btn.style.position || "relative";
+    btn.style.zIndex = "9999";
+
+    // اربط بقوة (capture) حتى لو في عناصر فوقه
+    btn.addEventListener("click", safeOpenApp, true);
+    btn.addEventListener("touchstart", safeOpenApp, true);
+  });
+});
