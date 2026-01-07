@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wodoh — Privacy Policy</title>
+  <meta name="theme-color" content="#0B1020" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="bg-glow g1"></div>
+  <div class="bg-glow g2"></div>
+  <div class="bg-glow g3"></div>
+
+  <main class="container app" style="display:block;">
+    <header class="header">
+      <div class="brand" style="width:100%;">
+        <div class="brand-text">
+          <div class="brand-lines">
+            <div class="brand-ar">وضوح</div>
+            <div class="brand-en">Wodoh</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <a id="backLink" class="btn btn-soft" href="#" data-i18n="backBtn">
+        ← رجوع للموقع
+        </a>
+      </div>
+    </header>
+
+    <section class="output" style="margin-top:14px;">
+      <div class="card">
+        <h1 style="margin-top:0" data-i18n="title">🔒 سياسة الخصوصية</h1>
+        <p style="opacity:.9;line-height:1.8" data-i18n="intro">
+          نحن في Wodoh — وضوح نحترم خصوصيتك ونلتزم بحماية بياناتك.
+        </p>
+
+        <h3 data-i18n="h1">ما البيانات التي نجمعها؟</h3>
+        <ul style="line-height:1.9;opacity:.92">
+          <li data-i18n="c1">النصوص أو الملفات التي يرفعها المستخدم تُستخدم فقط لمعالجة الطلب (تلخيص + أسئلة).</li>
+          <li data-i18n="c2">عند إنشاء حساب، قد نجمع: الاسم والبريد الإلكتروني.</li>
+          <li data-i18n="c3">في حال الاشتراك المدفوع: تتم عملية الدفع عبر PayPal، ولا نقوم بتخزين بيانات البطاقة.</li>
+        </ul>
+
+        <h3 data-i18n="h2">كيف نستخدم البيانات؟</h3>
+        <ul style="line-height:1.9;opacity:.92">
+          <li data-i18n="u1">لتقديم الخدمة المطلوبة فقط.</li>
+          <li data-i18n="u2">لتحسين جودة الموقع والتجربة.</li>
+          <li data-i18n="u3">لا نبيع ولا نشارك بياناتك مع أطراف خارجية.</li>
+        </ul>
+
+        <h3 data-i18n="h3">هل يتم حفظ المحتوى؟</h3>
+        <ul style="line-height:1.9;opacity:.92">
+          <li data-i18n="s1">المحتوى لا يُحفظ للمستخدم المجاني.</li>
+          <li data-i18n="s2">قد يُحفظ للمشترك فقط ضمن ميزة “ملخصاتي”.</li>
+        </ul>
+
+        <h3 data-i18n="h4">الأمان</h3>
+        <p style="opacity:.9;line-height:1.8" data-i18n="sec">
+          نستخدم وسائل تقنية مناسبة لحماية البيانات ومنع الوصول غير المصرح به.
+        </p>
+
+        <h3 data-i18n="h5">التواصل</h3>
+        <p style="opacity:.9;line-height:1.8">
+          <span data-i18n="contactLabel">للاستفسار:</span>
+          <a class="link" href="mailto:wodoh11323@gmail.com">wodoh11323@gmail.com</a>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // 1) read language from your saved session
+    function getSavedLang(){
+      try{
+        const raw = localStorage.getItem("wodoh_last_session_v6");
+        const s = raw ? JSON.parse(raw) : null;
+        const L = String(s?.lang || "ar");
+        return (L === "en") ? "en" : "ar";
+      }catch{
+        return "ar";
+      }
+    }
+
+    const I18N_PRIV = {
+      ar: {
+        backBtn: "← رجوع للموقع",
+        title: "🔒 سياسة الخصوصية",
+        intro: "نحن في Wodoh — وضوح نحترم خصوصيتك ونلتزم بحماية بياناتك.",
+        h1: "ما البيانات التي نجمعها؟",
+        c1: "النصوص أو الملفات التي يرفعها المستخدم تُستخدم فقط لمعالجة الطلب (تلخيص + أسئلة).",
+        c2: "عند إنشاء حساب، قد نجمع: الاسم والبريد الإلكتروني.",
+        c3: "في حال الاشتراك المدفوع: تتم عملية الدفع عبر PayPal، ولا نقوم بتخزين بيانات البطاقة.",
+        h2: "كيف نستخدم البيانات؟",
+        u1: "لتقديم الخدمة المطلوبة فقط.",
+        u2: "لتحسين جودة الموقع والتجربة.",
+        u3: "لا نبيع ولا نشارك بياناتك مع أطراف خارجية.",
+        h3: "هل يتم حفظ المحتوى؟",
+        s1: "المحتوى لا يُحفظ للمستخدم المجاني.",
+        s2: "قد يُحفظ للمشترك فقط ضمن ميزة “ملخصاتي”.",
+        h4: "الأمان",
+        sec: "نستخدم وسائل تقنية مناسبة لحماية البيانات ومنع الوصول غير المصرح به.",
+        h5: "التواصل",
+        contactLabel: "للاستفسار:"
+      },
+      en: {
+        backBtn: "← Back to site",
+        title: "🔒 Privacy Policy",
+        intro: "At Wodoh, we respect your privacy and are committed to protecting your data.",
+        h1: "What data do we collect?",
+        c1: "Texts or files you upload are used only to process your request (summary + questions).",
+        c2: "When you create an account, we may collect: name and email.",
+        c3: "For paid subscriptions: payment is handled via PayPal, and we do not store card details.",
+        h2: "How do we use data?",
+        u1: "To provide the requested service only.",
+        u2: "To improve the website and user experience.",
+        u3: "We do not sell or share your data with third parties.",
+        h3: "Do we store your content?",
+        s1: "Content is not stored for free users.",
+        s2: "For subscribers, content may be saved under the “My Summaries” feature.",
+        h4: "Security",
+        sec: "We use appropriate technical measures to protect data and prevent unauthorized access.",
+        h5: "Contact",
+        contactLabel: "Support:"
+      }
+    };
+
+    function applyLang(L){
+      const ar = (L === "ar");
+      document.documentElement.lang = ar ? "ar" : "en";
+      document.documentElement.dir  = ar ? "rtl" : "ltr";
+      document.body.dir            = ar ? "rtl" : "ltr";
+
+      const dict = I18N_PRIV[L] || I18N_PRIV.ar;
+      document.querySelectorAll("[data-i18n]").forEach(el=>{
+        const k = el.getAttribute("data-i18n");
+        if (k && dict[k] != null) el.textContent = dict[k];
+      });
+    }
+
+    // 2) Back button: previous page (history) + fallback to /#app
+    (function(){
+      const back = document.getElementById("backLink");
+      if (!back) return;
+      back.addEventListener("click", (e)=>{
+        e.preventDefault();
+        if (window.history.length > 1) window.history.back();
+        else window.location.href = "/#app";
+      });
+    })();
+
+    applyLang(getSavedLang());
+  </script>
+</body>
+</html>

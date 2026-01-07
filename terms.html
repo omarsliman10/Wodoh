@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wodoh — Terms</title>
+  <meta name="theme-color" content="#0B1020" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="bg-glow g1"></div>
+  <div class="bg-glow g2"></div>
+  <div class="bg-glow g3"></div>
+
+  <main class="container app" style="display:block;">
+    <header class="header">
+      <div class="brand" style="width:100%;">
+        <div class="brand-text">
+          <div class="brand-lines">
+            <div class="brand-ar">وضوح</div>
+            <div class="brand-en">Wodoh</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <a id="backLink" class="btn btn-soft" href="#" data-i18n="backBtn">
+        ← رجوع للموقع
+        </a>
+      </div>
+    </header>
+
+    <section class="output" style="margin-top:14px;">
+      <div class="card">
+        <h1 style="margin-top:0" data-i18n="title">📄 شروط الاستخدام</h1>
+        <p style="opacity:.9;line-height:1.8" data-i18n="intro">
+          باستخدامك لموقع Wodoh — وضوح، فأنت توافق على الشروط التالية:
+        </p>
+
+        <h3 data-i18n="h1">استخدام الخدمة</h3>
+        <ul style="line-height:1.9;opacity:.92">
+          <li data-i18n="u1">الخدمة مخصصة للاستخدام التعليمي والشخصي.</li>
+          <li data-i18n="u2">يمنع استخدام الموقع لأغراض غير قانونية أو مسيئة.</li>
+        </ul>
+
+        <h3 data-i18n="h2">الحد المجاني</h3>
+        <ul style="line-height:1.9;opacity:.92">
+          <li data-i18n="f1">المستخدم المجاني يمكنه استخدام الخدمة مرة واحدة يوميًا.</li>
+          <li data-i18n="f2">الاشتراك المدفوع يتيح استخدامًا غير محدود.</li>
+        </ul>
+
+        <h3 data-i18n="h3">الاشتراك والدفع</h3>
+        <ul style="line-height:1.9;opacity:.92">
+          <li data-i18n="p1">الاشتراك يتم عبر PayPal.</li>
+          <li data-i18n="p2">يمكن إلغاء الاشتراك في أي وقت من حساب PayPal.</li>
+          <li data-i18n="p3">لا نقدم استردادًا تلقائيًا بعد تفعيل الاشتراك.</li>
+        </ul>
+
+        <h3 data-i18n="h4">إخلاء المسؤولية</h3>
+        <ul style="line-height:1.9;opacity:.92">
+          <li data-i18n="d1">النتائج تعتمد على الذكاء الاصطناعي وقد تحتوي على أخطاء.</li>
+          <li data-i18n="d2">المستخدم مسؤول عن التحقق من المحتوى قبل الاعتماد عليه.</li>
+        </ul>
+
+        <h3 data-i18n="h5">التعديلات</h3>
+        <p style="opacity:.9;line-height:1.8" data-i18n="chg">
+          نحتفظ بالحق في تعديل هذه الشروط في أي وقت.
+        </p>
+
+        <h3 data-i18n="h6">التواصل</h3>
+        <p style="opacity:.9;line-height:1.8">
+          <span data-i18n="contactLabel">للاستفسار:</span>
+          <a class="link" href="mailto:wodoh11323@gmail.com">wodoh11323@gmail.com</a>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function getSavedLang(){
+      try{
+        const raw = localStorage.getItem("wodoh_last_session_v6");
+        const s = raw ? JSON.parse(raw) : null;
+        const L = String(s?.lang || "ar");
+        return (L === "en") ? "en" : "ar";
+      }catch{
+        return "ar";
+      }
+    }
+
+    const I18N_TERMS = {
+      ar: {
+        backBtn: "← رجوع للموقع",
+        title: "📄 شروط الاستخدام",
+        intro: "باستخدامك لموقع Wodoh — وضوح، فأنت توافق على الشروط التالية:",
+        h1: "استخدام الخدمة",
+        u1: "الخدمة مخصصة للاستخدام التعليمي والشخصي.",
+        u2: "يمنع استخدام الموقع لأغراض غير قانونية أو مسيئة.",
+        h2: "الحد المجاني",
+        f1: "المستخدم المجاني يمكنه استخدام الخدمة مرة واحدة يوميًا.",
+        f2: "الاشتراك المدفوع يتيح استخدامًا غير محدود.",
+        h3: "الاشتراك والدفع",
+        p1: "الاشتراك يتم عبر PayPal.",
+        p2: "يمكن إلغاء الاشتراك في أي وقت من حساب PayPal.",
+        p3: "لا نقدم استردادًا تلقائيًا بعد تفعيل الاشتراك.",
+        h4: "إخلاء المسؤولية",
+        d1: "النتائج تعتمد على الذكاء الاصطناعي وقد تحتوي على أخطاء.",
+        d2: "المستخدم مسؤول عن التحقق من المحتوى قبل الاعتماد عليه.",
+        h5: "التعديلات",
+        chg: "نحتفظ بالحق في تعديل هذه الشروط في أي وقت.",
+        h6: "التواصل",
+        contactLabel: "للاستفسار:"
+      },
+      en: {
+        backBtn: "← Back to site",
+        title: "📄 Terms of Use",
+        intro: "By using Wodoh, you agree to the following terms:",
+        h1: "Service usage",
+        u1: "The service is intended for educational and personal use.",
+        u2: "Using the site for illegal or abusive purposes is prohibited.",
+        h2: "Free limit",
+        f1: "Free users can use the service once per day.",
+        f2: "A paid subscription unlocks unlimited usage.",
+        h3: "Subscription & payment",
+        p1: "Subscriptions are handled via PayPal.",
+        p2: "You can cancel anytime from your PayPal account.",
+        p3: "We do not provide automatic refunds after activation.",
+        h4: "Disclaimer",
+        d1: "Results are AI-generated and may contain errors.",
+        d2: "You are responsible for verifying content before relying on it.",
+        h5: "Changes",
+        chg: "We reserve the right to update these terms at any time.",
+        h6: "Contact",
+        contactLabel: "Support:"
+      }
+    };
+
+    function applyLang(L){
+      const ar = (L === "ar");
+      document.documentElement.lang = ar ? "ar" : "en";
+      document.documentElement.dir  = ar ? "rtl" : "ltr";
+      document.body.dir            = ar ? "rtl" : "ltr";
+
+      const dict = I18N_TERMS[L] || I18N_TERMS.ar;
+      document.querySelectorAll("[data-i18n]").forEach(el=>{
+        const k = el.getAttribute("data-i18n");
+        if (k && dict[k] != null) el.textContent = dict[k];
+      });
+    }
+
+    (function(){
+      const back = document.getElementById("backLink");
+      if (!back) return;
+      back.addEventListener("click", (e)=>{
+        e.preventDefault();
+        if (window.history.length > 1) window.history.back();
+        else window.location.href = "/#app";
+      });
+    })();
+
+    applyLang(getSavedLang());
+  </script>
+</body>
+</html>

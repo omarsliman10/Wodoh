@@ -257,6 +257,8 @@ const I18N = {
     qCountLabel: "عدد الأسئلة",
     proLockHint: "🔒 التحكم الكامل متاح للمشترك",
     freeLimitHint: "🆓 المجاني: حد أقصى 5 أسئلة",
+    freeLimitHint: "🆓 المجاني: مرة واحدة يوميًا",
+    toastNeedSub: "🔒 انتهى الاستخدام المجاني اليوم. اشترك للاستخدام بلا حدود.",
 
     startBtn: "ابدأ الآن",
     skipBtn: "تخطي",
@@ -317,6 +319,41 @@ const I18N = {
     freeLimitTitle: "🆓 المجاني",
     proControlsTitle: "تحكم بالأسئلة",
     proControlsDesc: "اختر النوع والعدد (تحكم كامل لمشتركي Pro).",
+
+    faqTitle: "❓ أسئلة شائعة",
+    faqQ1: "هل يتم حفظ بياناتي أو ملفاتي؟",
+    faqA1: "لا. لا نقوم بحفظ النصوص أو الملفات للمستخدمين المجانيين.",
+    faqQ2: "ما اللغات المدعومة؟",
+    faqA2: "يدعم جميع اللغات، مع تحديد تلقائي للغة (العربية والإنجليزية).",
+    faqQ3: "ما حد الاستخدام المجاني؟",
+    faqA3: "مرة واحدة يوميًا. الاشتراك يتيح استخدامًا غير محدود.",
+
+    faqToggleBtn: "❓ أسئلة شائعة",
+    faqCloseBtn: "✖ إغلاق الأسئلة",
+
+    privacyLink: "سياسة الخصوصية",
+    termsLink: "الشروط والأحكام",
+    closeBtn: "إغلاق",
+
+    tierFreeName: "Free",
+    tierFreeBadge: "أساسي",
+    tagLimit: "Limit",
+    tagPro: "Pro",
+
+    tierFreeItem1: "مرة واحدة يوميًا",
+    tierFreeItem2: "أسئلة محدودة",
+    tierFreeItem3: "بدون حفظ",
+    tierFreeItem4: "مع انتظار",
+
+    tierProName: "Wodoh Pro",
+    tierProBadge: "غير محدود",
+    tierProItem1: "غير محدود",
+    tierProItem2: "حفظ النتائج",
+    tierProItem3: "تحكم بالنوع والعدد",
+    tierProItem4: "بدون انتظار",
+    tierProItem5: "دعم كامل للغات",
+
+    backBtn: "↩ رجوع للموقع",
 
     // ✅ NEW
     planFree: "Free",
@@ -382,6 +419,8 @@ const I18N = {
     qCountLabel: "Questions count",
     proLockHint: "🔒 Full control is for Pro",
     freeLimitHint: "🆓 Free: max 5 questions",
+    freeLimitHint: "🆓 Free: once per day",
+    toastNeedSub: "🔒 Free daily limit reached. Subscribe for unlimited access.",
 
     startBtn: "Start now",
     skipBtn: "Skip",
@@ -436,8 +475,44 @@ const I18N = {
     subText: "Choose a plan. Subscription gives you unlimited usage.",
     paypalNote: "Pay via PayPal or card to activate your subscription.",
     subHint: "Subscription removes the daily free limit.",
-
     footerBrand: "Wodoh – وضوح",
+
+    faqTitle: "❓ Frequently Asked Questions",
+    faqQ1: "Is my data or file saved?",
+    faqA1: "No. We do not store texts or files for free users.",
+    faqQ2: "Which languages are supported?",
+    faqA2: "Supports all languages, with automatic detection for Arabic and English.",
+    faqQ3: "What is the free limit?",
+    faqA3: "Once per day. Subscription unlocks unlimited usage.",
+
+    faqToggleBtn: "❓ FAQ",
+    faqCloseBtn: "✖ Close FAQ",
+
+    privacyLink: "Privacy Policy",
+    termsLink: "Terms of Service",
+    closeBtn: "Close",
+
+    tierFreeName: "Free",
+    tierFreeBadge: "Basic",
+    tagLimit: "Limit",
+    tagPro: "Pro",
+
+    tierFreeItem1: "Once per day",
+    tierFreeItem2: "Limited questions",
+    tierFreeItem3: "No saving",
+    tierFreeItem4: "With waiting",
+
+    tierProName: "Wodoh Pro",
+    tierProBadge: "Unlimited",
+    tierProItem1: "Unlimited",
+    tierProItem2: "Save results",
+    tierProItem3: "Full control (type & count)",
+    tierProItem4: "No waiting",
+    tierProItem5: "Full language support",
+    
+    backBtn: "↩ Back to site",
+
+
   // ✅ Feedback
   fbTitle: "💬 Your feedback matters",
   fbDesc: "Help us improve Wodoh — just one minute.",
@@ -1167,6 +1242,19 @@ function ensurePayPalButtons(){
 }
 
 /* =======================
+   FAQ label sync (SAFE)
+======================= */
+function syncFaqBtnLabel(){
+  const faqBtnEl = document.getElementById("toggleFaqBtn");
+  const faqSectionEl = document.getElementById("faqSection");
+  if (!faqBtnEl || !faqSectionEl) return;
+
+  const isHidden = faqSectionEl.classList.contains("hidden");
+  faqBtnEl.textContent = isHidden ? t("faqToggleBtn") : t("faqCloseBtn");
+}
+
+
+/* =======================
    applyLang (UI only)
 ======================= */
 function applyLang(){
@@ -1199,6 +1287,7 @@ function applyLang(){
   if (authLastName) authLastName.placeholder = t("lastNamePh");
 
   refreshHeaderButtons();
+  syncFaqBtnLabel();
 }
 
 /* =======================
@@ -1249,6 +1338,13 @@ skipBtn?.addEventListener("click", openApp);
    Init
 ======================= */
 restoreSession();
+(function(){
+  try{
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("app") === "1") openApp();
+  }catch{}
+})();
+
 applyLang();
 refreshHeaderButtons();
 setAccountTab("login");
@@ -2163,3 +2259,43 @@ async function sendFeedbackFormspree(){
 }
 
 fbSend?.addEventListener("click", sendFeedbackFormspree);
+
+/* =======================
+   Open App directly if ?app=1
+======================= */
+(function(){
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("app") === "1") {
+    // افتح صفحة التلخيص مباشرة
+    const landing = document.getElementById("landing");
+    const app = document.getElementById("app");
+
+    if (landing) landing.style.display = "none";
+    if (app) app.style.display = "block";
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+})();
+
+/* =======================
+   FAQ toggle
+======================= */
+const faqBtn = document.getElementById("toggleFaqBtn");
+const faqSection = document.getElementById("faqSection");
+
+function updateFaqBtnLabel(){
+  if (!faqBtn || !faqSection) return;
+  const isHidden = faqSection.classList.contains("hidden");
+  faqBtn.textContent = isHidden ? t("faqToggleBtn") : t("faqCloseBtn");
+}
+
+if (faqBtn && faqSection) {
+  // ✅ set correct label on load
+  updateFaqBtnLabel();
+
+  faqBtn.addEventListener("click", () => {
+    faqSection.classList.toggle("hidden");
+    updateFaqBtnLabel();
+  });
+}
+

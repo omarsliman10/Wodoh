@@ -207,6 +207,7 @@
     <section class="output" id="output"></section>
     <section id="mySummaries" class="output" style="display:none;"></section>
 
+
     <!-- ✅ Feedback (ONE section only) -->
     <section class="feedback" id="feedback">
      <div class="feedback-card">
@@ -257,16 +258,45 @@
           </div>
 
           <!-- ✅ Success message -->
-          <p id="feedbackSuccess" style="display:none;margin:8px 0 0;opacity:.95;">
+          <p id="feedbackSuccess" style="display:none;margin:8px 0 0;opacity:.95;" data-i18n="fbSuccess">
             ✅ شكرًا لك! تم إرسال الملاحظة.
           </p>
         </div>
       </div>
     </section>
+<!-- ✅ FAQ toggle under feedback -->
+<div class="faq-toggle-wrap">
+  <button id="toggleFaqBtn" class="btn btn-soft btn-small" type="button" data-i18n="faqToggleBtn">
+    ❓ أسئلة شائعة
+  </button>
+</div>
 
-    <footer class="footer">
-      <span>© <span id="year"></span> <span data-i18n="footerBrand">Wodoh – وضوح</span></span>
-    </footer>
+<!-- ✅ FAQ (Hidden by default) -->
+<div id="faqSection" class="faq hidden">
+  <h3 class="faq-title" data-i18n="faqTitle">❓ أسئلة شائعة</h3>
+
+  <div class="faq-item">
+    <b data-i18n="faqQ1">هل يتم حفظ بياناتي أو ملفاتي؟</b>
+    <p data-i18n="faqA1">لا نقوم بحفظ النصوص أو الملفات للمستخدمين المجانيين.</p>
+  </div>
+
+  <div class="faq-item">
+    <b data-i18n="faqQ2">ما اللغات المدعومة؟</b>
+    <p data-i18n="faqA2">يدعم جميع اللغات، مع التعرّف التلقائي على العربية والإنجليزية.</p>
+  </div>
+
+  <div class="faq-item">
+    <b data-i18n="faqQ3">ما حد الاستخدام المجاني؟</b>
+    <p data-i18n="faqA3">مرة واحدة يوميًا. الاشتراك يتيح استخدامًا غير محدود.</p>
+  </div>
+</div>
+
+  <footer class="footer" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:center;">
+    <span>© <span id="year"></span> <span data-i18n="footerBrand">Wodoh – وضوح</span></span>
+    <span style="opacity:.6">•</span>
+  <a href="/privacy.html" class="link" style="text-decoration:none;opacity:.9" data-i18n="privacyLink">Privacy</a>
+  <a href="/terms.html" class="link" style="text-decoration:none;opacity:.9" data-i18n="termsLink">Terms</a>
+  </footer>
   </main>
 
   <!-- Paywall -->
@@ -278,14 +308,15 @@
       <div class="pricing-compare" style="margin-top:12px;">
         <div class="tier free">
           <div class="tier-head">
-            <div class="tier-name">Free</div>
-            <div class="tier-badge">Basic</div>
-          </div>
+          <div class="tier-name" data-i18n="tierFreeName">Free</div>
+          <div class="tier-badge" data-i18n="tierFreeBadge">Basic</div>
+
           <ul>
-            <li>2 محاولات يوميًا <span class="tag limit">Limit</span></li>
-            <li>أسئلة محدودة <span class="tag limit">5</span></li>
-            <li>بدون حفظ</li>
-            <li>مع انتظار</li>
+            <li><span data-i18n="tierFreeItem1">1 محاولة يوميًا</span> <span class="tag limit" data-i18n="tagLimit">Limit</span></li>
+            <li><span data-i18n="tierFreeItem2">أسئلة محدودة</span> <span class="tag limit">5</span></li>
+            <li data-i18n="tierFreeItem3">بدون حفظ</li>
+            <li data-i18n="tierFreeItem4">مع انتظار</li>
+          </ul>
           </ul>
         </div>
 
