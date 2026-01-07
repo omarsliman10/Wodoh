@@ -2278,32 +2278,29 @@ fbSend?.addEventListener("click", sendFeedbackFormspree);
 })();
 
 /* =======================
-   FAQ toggle
+   FAQ toggle (FIXED)
 ======================= */
-const faqBtn = document.getElementById("toggleFaqBtn");
-const faqSection = document.getElementById("faqSection");
-
-function updateFaqBtnLabel(){
+document.addEventListener("DOMContentLoaded", () => {
+  const faqBtn = document.getElementById("toggleFaqBtn");
+  const faqSection = document.getElementById("faqSection");
   if (!faqBtn || !faqSection) return;
-  const isHidden = faqSection.classList.contains("hidden");
-  faqBtn.textContent = isHidden ? t("faqToggleBtn") : t("faqCloseBtn");
-}
 
-if (faqBtn && faqSection) {
-  // ✅ set correct label on load
+  // ✅ مهم: لو الزر داخل form، لا تخليه يعمل submit
+  faqBtn.setAttribute("type", "button");
+
+  function updateFaqBtnLabel(){
+    const isHidden = faqSection.classList.contains("hidden");
+    faqBtn.textContent = isHidden ? t("faqToggleBtn") : t("faqCloseBtn");
+  }
+
+  // label on load
   updateFaqBtnLabel();
 
-  faqBtn.addEventListener("click", () => {
+  faqBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     faqSection.classList.toggle("hidden");
     updateFaqBtnLabel();
-  });
-}
-const faqModal = document.getElementById("faqModal");
-const closeFaqBtn = document.getElementById("closeFaqBtn");
-
-if (closeFaqBtn && faqModal) {
-  closeFaqBtn.addEventListener("click", () => {
-    faqModal.classList.remove("active");
-  });
-}
+  }, true);
+});
 

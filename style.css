@@ -1664,3 +1664,5 @@ html[dir="rtl"] .header{
   z-index: 9999;
   position: relative;
 }
+#toggleFaqBtn { position: relative; z-index: 9999; pointer-events: auto; }
+#faqSection   { position: relative; z-index: 9998; }
