@@ -281,19 +281,19 @@
       <p id="paywallText" data-i18n="paywallText">انتهت المحاولات المجانية. اشترك للمتابعة بلا حدود.</p>
 
       <div class="pricing-compare" style="margin-top:12px;">
-        <div class="tier free">
-          <div class="tier-head">
-          <div class="tier-name" data-i18n="tierFreeName">Free</div>
-          <div class="tier-badge" data-i18n="tierFreeBadge">Basic</div>
+  <div class="tier free">
+    <div class="tier-head">
+      <div class="tier-name" data-i18n="tierFreeName">Free</div>
+      <div class="tier-badge" data-i18n="tierFreeBadge">Basic</div>
+    </div>
 
-          <ul>
-            <li><span data-i18n="tierFreeItem1">1 محاولة يوميًا</span> <span class="tag limit" data-i18n="tagLimit">Limit</span></li>
-            <li><span data-i18n="tierFreeItem2">أسئلة محدودة</span> <span class="tag limit">5</span></li>
-            <li data-i18n="tierFreeItem3">بدون حفظ</li>
-            <li data-i18n="tierFreeItem4">مع انتظار</li>
-          </ul>
-          </ul>
-        </div>
+    <ul>
+      <li><span data-i18n="tierFreeItem1">1 محاولة يوميًا</span> <span class="tag limit" data-i18n="tagLimit">Limit</span></li>
+      <li><span data-i18n="tierFreeItem2">أسئلة محدودة</span> <span class="tag limit">5</span></li>
+      <li data-i18n="tierFreeItem3">بدون حفظ</li>
+      <li data-i18n="tierFreeItem4">مع انتظار</li>
+    </ul>
+  </div>
 
         <div class="tier pro">
           <div class="tier-head">
@@ -477,24 +477,9 @@
 
     </div>
   </div>
-
-  <script>
-    document.getElementById("year").textContent = new Date().getFullYear();
-
-    (function(){
-      const btn = document.getElementById("openSubscribeFromControls");
-      const headerBtn = document.getElementById("headerSubscribeBtn");
-      if (btn && headerBtn) {
-        btn.addEventListener("click", () => headerBtn.click());
-      }
-    })();
-  </script>
-
   <!-- ✅ PayPal SDK (SUBSCRIPTIONS) -->
   <script
     src="https://www.paypal.com/sdk/js?client-id=AQhaA8WOxv9FdWToZccgDLITuazgbSw1bRwSpKARLc1c4bidUFTzsOAjUVf97rVFcw0RaGq0awF9_WhB&vault=true&intent=subscription&components=buttons">
   </script>
-
-  <script src="script.js"></script>
 </body>
 </html>

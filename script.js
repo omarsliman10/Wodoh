@@ -198,6 +198,15 @@ const subscribeModal = document.getElementById("subscribeModal");
 const subClose = document.getElementById("subClose");
 const paypalButtonsEl = document.getElementById("paypalButtons");
 
+// ✅ Fallback IDs if HTML uses different ids
+const _fallback = (el, id) => el || document.getElementById(id);
+
+// إذا بالـ HTML عندك id مختلف (جرّب هذه الأكثر شيوعًا)
+window.generateBtn = _fallback(generateBtn, "btnGenerate");
+window.mySummariesBtn = _fallback(mySummariesBtn, "historyBtn");
+window.headerAccountBtn = _fallback(headerAccountBtn, "accountBtn");
+window.headerSubscribeBtn = _fallback(headerSubscribeBtn, "subscribeBtn");
+
 /* =======================
    Pro Auth UX elements
 ======================= */
@@ -1274,7 +1283,6 @@ function applyLang(){
   if (authLastName) authLastName.placeholder = t("lastNamePh");
 
   refreshHeaderButtons();
-  syncFaqBtnLabel();
 }
 
 /* =======================
@@ -1325,13 +1333,6 @@ skipBtn?.addEventListener("click", openApp);
    Init
 ======================= */
 restoreSession();
-(function(){
-  try{
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("app") === "1") openApp();
-  }catch{}
-})();
-
 applyLang();
 refreshHeaderButtons();
 setAccountTab("login");
@@ -2262,43 +2263,12 @@ fbSend?.addEventListener("click", sendFeedbackFormspree);
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+  // ✅ Force-bind core buttons if they exist
+(function bindCore(){
+  document.getElementById("generateBtn")?.addEventListener("click", ()=> generateBtn?.click?.());
+  document.getElementById("mySummariesBtn")?.addEventListener("click", ()=> mySummariesBtn?.click?.());
+  document.getElementById("headerAccountBtn")?.addEventListener("click", ()=> headerAccountBtn?.click?.());
+  document.getElementById("headerSubscribeBtn")?.addEventListener("click", ()=> headerSubscribeBtn?.click?.());
 })();
 
-/* =======================
-   FIX: Start button not working (Render safe)
-======================= */
-document.addEventListener("DOMContentLoaded", () => {
-  const landingEl = document.getElementById("landing");
-  const appEl = document.getElementById("app");
-  const start = document.getElementById("startBtn");
-  const skip = document.getElementById("skipBtn");
-
-  function safeOpenApp(e){
-    try{
-      e?.preventDefault?.();
-      e?.stopPropagation?.();
-    }catch{}
-
-    // فتح التطبيق
-    if (landingEl) landingEl.style.display = "none";
-    if (appEl) appEl.style.display = "block";
-
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  // لو الأزرار داخل form => امنع submit
-  if (start) start.setAttribute("type", "button");
-  if (skip)  skip.setAttribute("type", "button");
-
-  // لو في overlay يمنع الضغط (Render أحيانًا)
-  [start, skip].forEach(btn=>{
-    if (!btn) return;
-    btn.style.pointerEvents = "auto";
-    btn.style.position = btn.style.position || "relative";
-    btn.style.zIndex = "9999";
-
-    // اربط بقوة (capture) حتى لو في عناصر فوقه
-    btn.addEventListener("click", safeOpenApp, true);
-    btn.addEventListener("touchstart", safeOpenApp, true);
-  });
-});
+})();

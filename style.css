@@ -1658,8 +1658,104 @@ html[dir="rtl"] .header{
 .feedback select option:checked{
   background-color: #7C3AED; /* بنفسجي */
 }
-.hero::before, .hero::after,
 .bg, .bg::before, .bg::after,
 .glow, .glow::before, .glow::after{
   pointer-events: none;
 }
+/* =========================
+   ✅ FINAL OVERRIDES (Place at very end)
+========================= */
+
+/* Click safety */
+.bg-glow,
+.bg, .bg::before, .bg::after,
+.glow, .glow::before, .glow::after{
+  pointer-events:none !important;
+}
+
+/* Header final layout */
+.header{
+  position: relative;
+  z-index: 50;
+
+  display: grid !important;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 14px;
+}
+
+html[dir="rtl"] .header{
+  grid-template-columns: auto 1fr;
+}
+
+.header-actions{
+  display:flex !important;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-start;
+  max-width: 520px;
+}
+
+.header, .header *{ pointer-events:auto; }
+
+/* lang button sizing */
+#langBtn{ min-width:110px; }
+/* ✅ FIX START BUTTON CLICK */
+.landing,
+.landing *{
+  pointer-events: auto !important;
+}
+
+.landing-card{
+  position: relative;
+  z-index: 10;
+}
+/* =========================
+   ✅ FINAL FIX (keep only this at the end)
+========================= */
+
+/* background glows never block clicks */
+.bg-glow{
+  pointer-events: none !important;
+  z-index: -1 !important;
+}
+
+/* landing/app always clickable */
+.landing, .landing *{
+  pointer-events: auto !important;
+}
+.landing-card{
+  position: relative;
+  z-index: 10;
+}
+
+/* header always above everything + clickable */
+.header{
+  position: relative;
+  z-index: 50;
+  display: grid !important;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 14px;
+}
+
+html[dir="rtl"] .header{
+  grid-template-columns: auto 1fr;
+}
+
+.header-actions{
+  display:flex !important;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-start;
+  max-width: 520px;
+}
+
+.header, .header *{
+  pointer-events: auto !important;
+}
+
+/* lang button sizing */
+#langBtn{ min-width:110px; }
