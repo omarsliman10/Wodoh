@@ -19,8 +19,89 @@
   <!-- ✅ Mammoth.js for DOCX -->
   <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
 
-    <link rel="stylesheet" href="style.css?v=7">
-    <script src="script.js?v=7" defer></script>
+  <link rel="stylesheet" href="style.css?v=7">
+  <script src="script.js?v=7" defer></script>
+
+  <!-- ✅ Quick polish for Paywall/Subscribe colors + Header Menu styling -->
+  <style>
+    .modal-card--subscribe, #paywallModal .modal-card{
+      background: rgba(10, 16, 32, .92);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 30px 80px rgba(0,0,0,.55);
+    }
+    .pricing-compare .tier{
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+    .pricing-compare .tier.pro{ border-color: rgba(34,211,238,.35); }
+    .pricing-compare .tier.free{ border-color: rgba(124,58,237,.28); }
+
+    .tag.limit{
+      background: rgba(239,68,68,.12);
+      border: 1px solid rgba(239,68,68,.35);
+    }
+    .tag.pro{
+      background: rgba(34,197,94,.12);
+      border: 1px solid rgba(34,197,94,.35);
+    }
+
+    /* ===== Header: logo beside words (brand) ===== */
+    .brand-logo{
+      width: 84px;
+      height: 84px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: 0 0 22px rgba(0,0,0,.25);
+      flex: 0 0 auto;
+    }
+    .brand-logo img{
+      width: 78%;
+      height: 78%;
+      object-fit: contain;
+      display:block;
+    }
+
+    /* ===== Header: action menu (buttons inside one pill) ===== */
+    .action-menu{
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      box-shadow: 0 12px 30px rgba(0,0,0,.22);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      flex-wrap: wrap;
+    }
+    .action-menu .btn{
+      height: 42px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    /* language stays outside */
+    .lang-outside{
+      display:inline-flex;
+      align-items:center;
+    }
+
+    @media (max-width: 720px){
+      .action-menu{
+        width: 100%;
+        justify-content: flex-start;
+        border-radius: 22px;
+        padding: 12px;
+      }
+      .lang-outside{ width:100%; }
+      #langBtn{ width:100%; }
+    }
+  </style>
 </head>
 
 <body>
@@ -42,6 +123,10 @@
           <div class="badge-en" data-i18n="brandEn">Wodoh</div>
         </div>
       </div>
+
+    <p class="sub-subtitle" id="accountSub" data-i18n="accountSubtitle">
+      سجّل دخول برقم الهاتف (كود لمرة واحدة).
+    </p>
 
       <h1 class="title">
         <span class="brand-inline">وضوح</span>
@@ -76,12 +161,15 @@
   <!-- App -->
   <main class="container app" id="app" style="display:none;">
 
+    <!-- ✅ HEADER (FIXED & CLEAN) -->
     <header class="header">
-      <div class="header-logo-corner" aria-label="Wodoh Logo">
-        <img src="./logo.png" alt="Wodoh logo" class="header-logo-img" />
-      </div>
 
+      <!-- Brand: logo beside words -->
       <div class="brand">
+        <div class="brand-logo" aria-label="Wodoh Logo">
+          <img src="./logo.png" alt="Wodoh logo" />
+        </div>
+
         <div class="brand-text">
           <div class="brand-lines">
             <div class="brand-ar" data-i18n="brandAr">وضوح</div>
@@ -95,26 +183,62 @@
         </div>
       </div>
 
+      <!-- Actions: one menu button opens dropdown + language outside -->
       <div class="header-actions">
-        <!-- ✅ NEW: Plan pill (Free/Pro) -->
-        <div class="header-plan" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <span id="planPill" class="plan-pill free" title="Plan">
-            <span class="dot"></span>
-            <span id="planPillText" data-i18n="planFree">Free</span>
-          </span>
+      <!-- Plan status pill -->
+      <div id="planStatus" class="plan-status free">
+        <span class="dot"></span>
+        <span id="planStatusText">Free</span>
+      </div>
+
+        <!-- ✅ Menu button -->
+        <div class="header-menu-wrap">
+<button id="headerMenuBtn" class="btn header-menu-btn btn-menu" type="button" aria-haspopup="true" aria-expanded="false">
+  ☰ <span data-i18n="menuBtn">القائمة</span>
+</button>
+          <!-- ✅ Dropdown -->
+          <div id="headerMenuDropdown" class="header-menu-dropdown" hidden>
+          <!-- 🔴 Logout (يظهر فقط بعد تسجيل الدخول) -->
+          <div class="menu-row" id="logoutRow" style="display:none;">
+            <button id="logoutBtn" class="btn btn-soft menu-btn" style="color:#ef4444;">
+              🚪 تسجيل خروج
+            </button>
+          </div>
+
+            <div class="menu-row">
+            <button id="mySummariesBtn" class="btn menu-btn btn-summaries" type="button" data-i18n="mySummariesBtn">📚 ملخصاتي</button>
+            </div>
+
+            <div class="menu-row">
+              <button id="headerAccountBtn" class="btn menu-btn btn-account" type="button" data-i18n="accountBtnTop">👤 الحساب</button>
+            </div>
+
+            <div class="menu-row">
+              <button id="headerSubscribeBtn" class="btn btn-primary menu-btn" type="button" data-i18n="subscribeBtnTop">⭐ اشترك</button>
+            </div>
+
+          </div>
         </div>
 
-        <button id="mySummariesBtn" class="btn btn-soft" type="button" data-i18n="mySummariesBtn">📚 ملخصاتي</button>
+        <!-- ✅ Language outside -->
+        <div class="lang-outside">
+        <button id="langBtn" class="btn lang-btn btn-lang" type="button" data-i18n="langBtn">🌐 English</button>
+        </div>
 
-        <button id="headerAccountBtn" class="btn btn-soft" type="button" data-i18n="accountBtnTop">👤 الحساب</button>
-        <button id="headerSubscribeBtn" class="btn btn-primary" type="button" data-i18n="subscribeBtnTop">⭐ اشترك</button>
-
-        <button id="langBtn" class="btn btn-soft" type="button" data-i18n="langBtn">🌐 English</button>
       </div>
+
+
     </header>
 
     <section class="panel">
       <label class="label" id="inputLabel" data-i18n="inputLabel">النص</label>
+
+      <div class="text-tools">
+  <button id="clearTextBtn" type="button" class="btn-clear-text" title="مسح النص">
+    ✕
+  </button>
+</div>
+
 
       <textarea
         id="textInput"
@@ -144,8 +268,7 @@
         </div>
       </div>
 
-      <!-- ✅ NEW: Question controls (type + count) -->
-      <!-- (IDs محفوظة حتى ما نكسر script.js: questionType / questionCount) -->
+      <!-- Question controls (keep IDs for script.js) -->
       <div class="pro-controls locked" id="proControls">
         <div class="row" style="justify-content:space-between;">
           <div>
@@ -153,7 +276,6 @@
             <div class="muted" data-i18n="proControlsDesc">اختر النوع والعدد (لـ Pro تحكم كامل).</div>
           </div>
 
-          <!-- hint badge (optional) -->
           <span id="controlsPlanBadge" class="plan-pill free" style="padding:7px 10px;">
             <span class="dot"></span>
             <span data-i18n="planFree">Free</span>
@@ -208,15 +330,13 @@
     <section class="output" id="output"></section>
     <section id="mySummaries" class="output" style="display:none;"></section>
 
-
-    <!-- ✅ Feedback (ONE section only) -->
+    <!-- Feedback -->
     <section class="feedback" id="feedback">
-     <div class="feedback-card">
-       <div class="feedback-head">
-      <h2 data-i18n="fbTitle">💬 رأيك يهمنا</h2>
-      <p data-i18n="fbDesc">ساعدنا نطوّر وضوح. دقيقة واحدة فقط.</p>
-    </div>
-
+      <div class="feedback-card">
+        <div class="feedback-head">
+          <h2 data-i18n="fbTitle">💬 رأيك يهمنا</h2>
+          <p data-i18n="fbDesc">ساعدنا نطوّر وضوح. دقيقة واحدة فقط.</p>
+        </div>
 
         <div class="feedback-grid">
           <div class="fb-field">
@@ -228,7 +348,8 @@
               <button type="button" class="star" data-v="4" aria-label="4">★</button>
               <button type="button" class="star" data-v="5" aria-label="5">★</button>
             </div>
-          <div class="fb-hint" id="fbRatingHint" data-i18n="fbRatingHint">اختر من 1 إلى 5</div>          </div>
+            <div class="fb-hint" id="fbRatingHint" data-i18n="fbRatingHint">اختر من 1 إلى 5</div>
+          </div>
 
           <div class="fb-field">
             <label for="fbType" data-i18n="fbTypeLabel">نوع الملاحظة</label>
@@ -247,10 +368,7 @@
             <div class="fb-counter"><span id="fbCount">0</span>/600</div>
           </div>
 
-          <!-- Honeypot (anti-spam) -->
           <input id="fbWebsite" type="text" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px;opacity:0" />
-
-          <!-- ✅ Hidden rating for Formspree -->
           <input id="fbRating" type="hidden" name="rating" value="0" />
 
           <div class="fb-actions fb-wide">
@@ -258,7 +376,6 @@
             <div class="fb-note" data-i18n="fbNote">بدون حساب • لا نطلب إيميل</div>
           </div>
 
-          <!-- ✅ Success message -->
           <p id="feedbackSuccess" style="display:none;margin:8px 0 0;opacity:.95;" data-i18n="fbSuccess">
             ✅ شكرًا لك! تم إرسال الملاحظة.
           </p>
@@ -266,13 +383,190 @@
       </div>
     </section>
 
-  <footer class="footer" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:center;">
-    <span>© <span id="year"></span> <span data-i18n="footerBrand">Wodoh – وضوح</span></span>
-    <span style="opacity:.6">•</span>
-  <a href="/privacy.html" class="link" style="text-decoration:none;opacity:.9" data-i18n="privacyLink">Privacy</a>
-  <a href="/terms.html" class="link" style="text-decoration:none;opacity:.9" data-i18n="termsLink">Terms</a>
-  </footer>
+    <footer class="footer" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:center;">
+      <span>© <span id="year"></span> <span data-i18n="footerBrand">Wodoh – وضوح</span></span>
+      <span style="opacity:.6">•</span>
+      <a href="/privacy.html" class="link" style="text-decoration:none;opacity:.9" data-i18n="privacyLink">Privacy</a>
+      <a href="/terms.html" class="link" style="text-decoration:none;opacity:.9" data-i18n="termsLink">Terms</a>
+    </footer>
   </main>
+
+<!-- Account / Phone Login Modal -->
+<div id="accountModal" class="modal" style="display:none;">
+  <div class="modal-card modal-card--account" role="dialog" aria-modal="true" aria-labelledby="accountTitle">
+    <button id="accountClose" class="modal-x" type="button" aria-label="إغلاق">✕</button>
+
+    <h3 id="accountTitle" class="modal-title">الحساب</h3>
+
+    <p class="modal-subtitle">
+      سجّل دخولك باستخدام رقم هاتفك للوصول إلى ميزات الموقع.<br>
+      بعض الميزات المتقدمة متاحة باشتراك <bdi>Pro</bdi>.
+    </p>
+
+    <div class="form-row">
+      <label class="field-label" for="countryCode">الدولة</label>
+      <select id="countryCode" class="input input--select">
+    <!-- STEP 1: phone -->
+  <div id="phoneStep">
+
+  <div class="form-row">
+    <label class="field-label" for="countrySelect">الدولة</label>
+
+  <!-- A -->
+  <option value="+93">🇦🇫 Afghanistan (+93)</option>
+  <option value="+355">🇦🇱 Albania (+355)</option>
+  <option value="+213">🇩🇿 Algeria (+213)</option>
+  <option value="+54">🇦🇷 Argentina (+54)</option>
+  <option value="+61">🇦🇺 Australia (+61)</option>
+  <option value="+43">🇦🇹 Austria (+43)</option>
+
+  <!-- B -->
+  <option value="+973">🇧🇭 Bahrain (+973)</option>
+  <option value="+880">🇧🇩 Bangladesh (+880)</option>
+  <option value="+32">🇧🇪 Belgium (+32)</option>
+  <option value="+55">🇧🇷 Brazil (+55)</option>
+  <option value="+359">🇧🇬 Bulgaria (+359)</option>
+
+  <!-- C -->
+  <option value="+1">🇨🇦 Canada (+1)</option>
+  <option value="+86">🇨🇳 China (+86)</option>
+  <option value="+57">🇨🇴 Colombia (+57)</option>
+  <option value="+385">🇭🇷 Croatia (+385)</option>
+  <option value="+357">🇨🇾 Cyprus (+357)</option>
+  <option value="+420">🇨🇿 Czech Republic (+420)</option>
+
+  <!-- D -->
+  <option value="+45">🇩🇰 Denmark (+45)</option>
+
+  <!-- E -->
+  <option value="+20">🇪🇬 Egypt (+20)</option>
+  <option value="+372">🇪🇪 Estonia (+372)</option>
+
+  <!-- F -->
+  <option value="+358">🇫🇮 Finland (+358)</option>
+  <option value="+33">🇫🇷 France (+33)</option>
+
+  <!-- G -->
+  <option value="+49">🇩🇪 Germany (+49)</option>
+  <option value="+30">🇬🇷 Greece (+30)</option>
+
+  <!-- H -->
+  <option value="+36">🇭🇺 Hungary (+36)</option>
+
+  <!-- I -->
+  <option value="+91">🇮🇳 India (+91)</option>
+  <option value="+62">🇮🇩 Indonesia (+62)</option>
+  <option value="+98">🇮🇷 Iran (+98)</option>
+  <option value="+964">🇮🇶 Iraq (+964)</option>
+  <option value="+972">🇮🇱 Israel (+972)</option>
+  <option value="+39">🇮🇹 Italy (+39)</option>
+
+  <!-- J -->
+  <option value="+962">🇯🇴 Jordan (+962)</option>
+  <option value="+81">🇯🇵 Japan (+81)</option>
+
+  <!-- K -->
+  <option value="+965">🇰🇼 Kuwait (+965)</option>
+  <option value="+82">🇰🇷 South Korea (+82)</option>
+
+  <!-- L -->
+  <option value="+961">🇱🇧 Lebanon (+961)</option>
+  <option value="+218">🇱🇾 Libya (+218)</option>
+
+  <!-- M -->
+  <option value="+60">🇲🇾 Malaysia (+60)</option>
+  <option value="+212">🇲🇦 Morocco (+212)</option>
+  <option value="+52">🇲🇽 Mexico (+52)</option>
+
+  <!-- N -->
+  <option value="+31">🇳🇱 Netherlands (+31)</option>
+  <option value="+47">🇳🇴 Norway (+47)</option>
+
+  <!-- O -->
+  <option value="+968">🇴🇲 Oman (+968)</option>
+
+  <!-- P -->
+  <option value="+970">🇵🇸 Palestine (+970)</option>
+  <option value="+92">🇵🇰 Pakistan (+92)</option>
+  <option value="+63">🇵🇭 Philippines (+63)</option>
+  <option value="+48">🇵🇱 Poland (+48)</option>
+  <option value="+351">🇵🇹 Portugal (+351)</option>
+
+  <!-- Q -->
+  <option value="+974">🇶🇦 Qatar (+974)</option>
+
+  <!-- S -->
+  <option value="+966">🇸🇦 Saudi Arabia (+966)</option>
+  <option value="+381">🇷🇸 Serbia (+381)</option>
+  <option value="+65">🇸🇬 Singapore (+65)</option>
+  <option value="+34">🇪🇸 Spain (+34)</option>
+  <option value="+46">🇸🇪 Sweden (+46)</option>
+  <option value="+41">🇨🇭 Switzerland (+41)</option>
+  <option value="+963">🇸🇾 Syria (+963)</option>
+
+  <!-- T -->
+  <option value="+216">🇹🇳 Tunisia (+216)</option>
+  <option value="+90">🇹🇷 Turkey (+90)</option>
+
+  <!-- U -->
+  <option value="+971">🇦🇪 United Arab Emirates (+971)</option>
+  <option value="+44">🇬🇧 United Kingdom (+44)</option>
+  <option value="+1">🇺🇸 United States (+1)</option>
+
+  <!-- Y -->
+  <option value="+967">🇾🇪 Yemen (+967)</option>
+
+</select>
+</div>
+
+
+
+ <div class="form-row">
+    <label class="field-label" for="phoneLocalInput">رقم الهاتف</label>
+    <input
+      id="phoneLocalInput"
+      class="input"
+      type="tel"
+      dir="ltr"
+      inputmode="numeric"
+      placeholder="أدخل رقم هاتفك"
+      autocomplete="tel-national"
+      maxlength="12"
+    />
+    <div id="authMsg" style="margin-top:10px;opacity:.92;"></div>
+  </div>
+
+  <div class="modal-actions">
+    <button id="sendCodeBtn" class="btn btn-primary" type="button">إرسال رمز التحقق</button>
+    <button id="cancelAccountBtn" class="btn btn-ghost" type="button">إغلاق</button>
+  </div>
+
+</div>
+    <!-- STEP 2: code -->
+    <div id="codeStep" style="display:none;margin-top:10px;">
+      <label class="label" for="codeInput">كود التحقق</label>
+      <input
+        id="codeInput"
+        class="input"
+        type="text"
+        dir="ltr"
+        inputmode="numeric"
+        maxlength="8"
+        placeholder="123456"
+        autocomplete="one-time-code"
+      />
+
+      <div class="row" style="gap:10px;flex-wrap:wrap;margin-top:12px;">
+        <button id="verifyCodeBtn" class="btn btn-primary" type="button">✅ تحقق</button>
+        <button id="resendCodeBtn" class="btn btn-soft" type="button">🔁 إعادة إرسال</button>
+        <button id="backToPhoneBtn" class="btn btn-ghost" type="button">⬅ رجوع</button>
+      </div>
+    </div>
+
+    <div id="authMsg" style="margin-top:12px;opacity:.92;"></div>
+  </div>
+</div>
+
 
   <!-- Paywall -->
   <div id="paywallModal" class="modal" style="display:none;">
@@ -281,19 +575,19 @@
       <p id="paywallText" data-i18n="paywallText">انتهت المحاولات المجانية. اشترك للمتابعة بلا حدود.</p>
 
       <div class="pricing-compare" style="margin-top:12px;">
-  <div class="tier free">
-    <div class="tier-head">
-      <div class="tier-name" data-i18n="tierFreeName">Free</div>
-      <div class="tier-badge" data-i18n="tierFreeBadge">Basic</div>
-    </div>
+        <div class="tier free">
+          <div class="tier-head">
+            <div class="tier-name" data-i18n="tierFreeName">Free</div>
+            <div class="tier-badge" data-i18n="tierFreeBadge">Basic</div>
+          </div>
 
-    <ul>
-      <li><span data-i18n="tierFreeItem1">1 محاولة يوميًا</span> <span class="tag limit" data-i18n="tagLimit">Limit</span></li>
-      <li><span data-i18n="tierFreeItem2">أسئلة محدودة</span> <span class="tag limit">5</span></li>
-      <li data-i18n="tierFreeItem3">بدون حفظ</li>
-      <li data-i18n="tierFreeItem4">مع انتظار</li>
-    </ul>
-  </div>
+          <ul>
+            <li><span data-i18n="tierFreeItem1">1 محاولة يوميًا</span> <span class="tag limit" data-i18n="tagLimit">Limit</span></li>
+            <li><span data-i18n="tierFreeItem2">أسئلة محدودة</span> <span class="tag limit">5</span></li>
+            <li data-i18n="tierFreeItem3">بدون حفظ</li>
+            <li data-i18n="tierFreeItem4">مع انتظار</li>
+          </ul>
+        </div>
 
         <div class="tier pro">
           <div class="tier-head">
@@ -311,97 +605,13 @@
       </div>
 
       <div class="modal-actions" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
-        <button id="paywallAccountBtn" class="btn btn-soft" type="button" data-i18n="accountBtnTop">👤 الحساب</button>
         <button id="paywallSubscribeBtn" class="btn btn-primary" type="button" data-i18n="subscribeBtnTop">⭐ اشترك</button>
         <button id="closePaywall" class="btn btn-ghost" type="button" data-i18n="closeBtn">إغلاق</button>
       </div>
     </div>
   </div>
 
-  <!-- ✅ Account Modal -->
-  <div id="accountModal" class="modal" style="display:none;">
-    <div class="modal-card auth-pro">
-
-      <div class="auth-header">
-        <div>
-          <h3 class="auth-title" id="accountTitle" data-i18n="accountBtnTop">👤 الحساب</h3>
-          <div class="auth-subtitle" data-i18n="authSubtitle">
-            سجّل دخولك أو أنشئ حسابك خلال ثوانٍ.
-          </div>
-        </div>
-        <button id="accountClose" class="auth-close" type="button" aria-label="close">✕</button>
-      </div>
-
-      <div class="auth-tabs">
-        <button id="tabLogin" class="active" type="button" data-i18n="tabLogin">تسجيل دخول</button>
-        <button id="tabSignup" type="button" data-i18n="tabSignup">إنشاء حساب</button>
-      </div>
-
-      <div id="authAlert" class="auth-alert"></div>
-
-      <form class="auth-form" onsubmit="return false;">
-        <div class="auth-names" data-auth-name>
-          <label class="field">
-            <span class="field-label" id="firstNameLabel" data-i18n="firstNameLabel">الاسم الأول</span>
-            <div class="field-control">
-              <input id="authFirstName" type="text" data-i18n-placeholder="firstNamePh" autocomplete="given-name" />
-            </div>
-          </label>
-
-          <label class="field">
-            <span class="field-label" id="lastNameLabel" data-i18n="lastNameLabel">اسم العائلة</span>
-            <div class="field-control">
-              <input id="authLastName" type="text" data-i18n-placeholder="lastNamePh" autocomplete="family-name" />
-            </div>
-          </label>
-        </div>
-
-        <label class="field">
-          <span class="field-label" id="emailLabel" data-i18n="emailLabel">الإيميل</span>
-          <div class="field-control">
-            <input id="authEmail" type="email" placeholder="name@email.com" autocomplete="email" />
-          </div>
-        </label>
-
-        <label class="field">
-          <span class="field-label" id="passLabel" data-i18n="passLabel">كلمة المرور</span>
-          <div class="field-control">
-            <input id="authPass" type="password" placeholder="********" autocomplete="current-password" />
-            <button id="togglePass" class="icon-btn" type="button" aria-label="toggle password">👁</button>
-          </div>
-        </label>
-
-        <div class="auth-row">
-          <label class="check">
-            <input id="rememberMe" type="checkbox" />
-            <span data-i18n="rememberMe">تذكرني</span>
-          </label>
-
-          <button id="forgotPass" class="link-btn" type="button" data-i18n="forgotPass">
-            نسيت كلمة المرور؟
-          </button>
-        </div>
-
-        <div class="auth-actions">
-          <button id="authSubmit" class="btn btn-primary" type="button" data-i18n="authSubmit">دخول</button>
-          <button id="authCancel" class="btn btn-secondary" type="button" data-i18n="cancelBtn">إغلاق</button>
-        </div>
-
-        <div class="auth-divider"></div>
-
-        <div class="tiny-hint" id="authHint" data-i18n="authHint" style="margin-top:10px;opacity:.9;line-height:1.6;">
-          ملاحظة: تسجيل الدخول وحده لا يعطيك لا محدود. اللا محدود فقط للمشترك.
-        </div>
-
-        <div id="logoutArea" class="logout-area">
-          <button id="logoutBtn" class="btn btn-danger" type="button" data-i18n="logoutBtn">تسجيل خروج</button>
-        </div>
-      </form>
-
-    </div>
-  </div>
-
-  <!-- ✅ Subscribe Modal -->
+  <!-- Subscribe Modal -->
   <div id="subscribeModal" class="modal" style="display:none;">
     <div class="modal-card modal-card--subscribe" role="dialog" aria-modal="true">
 
@@ -421,7 +631,7 @@
             <div class="tier-badge">Basic</div>
           </div>
           <ul>
-            <li>2 محاولات يوميًا <span class="tag limit">Limit</span></li>
+            <li>1 محاولة يوميًا <span class="tag limit">Limit</span></li>
             <li>أسئلة محدودة <span class="tag limit">5</span></li>
             <li>بدون حفظ</li>
             <li>مع انتظار</li>
@@ -471,13 +681,20 @@
         <div id="paypalButtons" class="paypal-box" style="margin-top:12px;"></div>
 
         <div class="tiny-hint" id="subHint" data-i18n="subHint" style="margin-top:10px;">
-          عند تفعيل الاشتراك سيتم إزالة حد 2 مرات/اليوم.
+          عند تفعيل الاشتراك سيتم إزالة حد 1 محاولة/اليوم.
         </div>
       </div>
 
     </div>
   </div>
-  <!-- ✅ PayPal SDK (SUBSCRIPTIONS) -->
+
+  <!-- ✅ Helpers -->
+  <script>
+    const y = document.getElementById("year");
+    if (y) y.textContent = new Date().getFullYear();
+  </script>
+
+  <!-- PayPal SDK (SUBSCRIPTIONS) -->
   <script
     src="https://www.paypal.com/sdk/js?client-id=AQhaA8WOxv9FdWToZccgDLITuazgbSw1bRwSpKARLc1c4bidUFTzsOAjUVf97rVFcw0RaGq0awF9_WhB&vault=true&intent=subscription&components=buttons">
   </script>

@@ -72,28 +72,25 @@ body{
    Buttons
 ========================= */
 .btn{
-  border: 1px solid var(--stroke);
-  background: rgba(255,255,255,.06);
-  color: var(--text);
-  border-radius: 999px;
-  padding: 10px 14px;
-  font-weight: 900;
-  cursor:pointer;
-  transition: transform .14s ease, background .14s ease, border-color .14s ease, box-shadow .14s ease, opacity .14s ease;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.07);
+  color: rgba(234,240,255,.95);
 }
 .btn:hover{
-  transform: translateY(-1px);
-  background: rgba(255,255,255,.10);
-  border-color: var(--stroke2);
+  background: rgba(255,255,255,.11);
+  border-color: rgba(255,255,255,.22);
 }
 .btn:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
 
 .btn-primary{
-  border:none;
-  background: linear-gradient(135deg, var(--p1), var(--p2));
-  box-shadow: 0 18px 55px rgba(124,58,237,.22);
+  border: 1px solid rgba(255,255,255,.12);
+  background: linear-gradient(135deg, #7C3AED, #22D3EE);
+  color: #071018;
+  box-shadow: 0 18px 55px rgba(34,211,238,.18), 0 18px 55px rgba(124,58,237,.18);
+}
+.btn-primary:hover{
+  filter: brightness(1.05);
+  box-shadow: 0 22px 68px rgba(34,211,238,.22), 0 22px 68px rgba(124,58,237,.22);
 }
 .btn-primary:hover{ box-shadow: 0 22px 68px rgba(124,58,237,.30); }
 
@@ -101,14 +98,15 @@ body{
 .btn-soft{ background: rgba(255,255,255,.05); }
 
 .btn-danger{
-  background: rgba(239,68,68,.12);
-  border-color: rgba(239,68,68,.28);
+  background: rgba(239,68,68,.14);
+  border: 1px solid rgba(239,68,68,.40);
+  color: #FFE4E6;
 }
 .btn-danger:hover{
-  background: rgba(239,68,68,.16);
-  border-color: rgba(239,68,68,.40);
+  background: rgba(239,68,68,.22);
+  border-color: rgba(239,68,68,.55);
+  box-shadow: 0 0 0 4px rgba(239,68,68,.12);
 }
-
 .btn-wide{ padding: 12px 18px; }
 
 /* cooldown visual */
@@ -246,24 +244,6 @@ html[dir="ltr"] .landing-logo-corner{ left: 18px; right: auto; }
 /* =========================
    Header (App)
 ========================= */
-.header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:14px;
-
-  padding:16px 18px;
-  border-radius: 22px;
-  border: 1px solid rgba(255,255,255,.10);
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-  box-shadow: 0 18px 60px rgba(0,0,0,.45);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  margin-bottom: 14px;
-
-  position: relative;
-}
-
 .brand{
   display:flex;
   align-items:center;
@@ -501,9 +481,12 @@ textarea:focus{
    Responsive
 ========================= */
 @media (max-width: 640px){
+  .header{
+    grid-template-columns: 1fr;
+  }
+
   .title{ font-size: 26px; }
   .features{ grid-template-columns: 1fr; }
-  .header{ flex-direction: column; align-items: stretch; }
   .header-actions{ justify-content:flex-end; width:100%; flex-wrap:wrap; }
   .controls{ justify-content: stretch; }
   .btn-wide{ width:100%; }
@@ -530,7 +513,6 @@ textarea:focus{
   html[dir="rtl"] .brand{ padding-right: 82px; }
   html[dir="ltr"] .brand{ padding-left: 82px; }
 }
-
 /* =========================
    QUIZ DESIGN
 ========================= */
@@ -569,6 +551,7 @@ textarea:focus{
 }
 html[dir="ltr"] .q button[data-opt]{ text-align:left; }
 html[dir="rtl"] .q button[data-opt]{ text-align:right; }
+
 
 /* hover neutral */
 .q button[data-opt]:hover{
@@ -1484,278 +1467,1064 @@ html[dir="rtl"] .pro-controls select{
 }
 html[dir="ltr"] .pro-controls .select-wrap::after{ right: 14px; }
 html[dir="rtl"] .pro-controls .select-wrap::after{ left: 14px; }
+
 /* =========================
-   Header layout polish (RTL friendly)
-   ضعها آخر ملف CSS
+   CLICK FIX (HARD) — VERY END
 ========================= */
 
-/* خلي الهيدر Grid: يمين Brand / يسار Actions */
-.header{
-  display: grid;
-  grid-template-columns: 1fr auto; /* brand takes space, actions auto */
-  align-items: center;
-  gap: 14px;
+/* أي طبقات خلفية/زينة لا تمسك كلك */
+.bg-glow,
+.bg, .bg::before, .bg::after,
+.glow, .glow::before, .glow::after,
+.noise, .grain,
+canvas, svg{
+  pointer-events: none !important;
 }
 
-html[dir="rtl"] .header{
-  grid-template-columns: auto 1fr; /* actions left, brand right in RTL */
+/* تأكد الهيدر وأزراره يمسكوا كلك */
+.header,
+.header *{
+  pointer-events: auto !important;
 }
 
-/* Brand block stays tidy */
-.brand{
-  min-width: 0;
-  display:flex;
-  align-items:center;
-  gap:12px;
+/* pseudo overlays لا تمسك كلك */
+.landing-card::before,
+.landing-card::after,
+.header::before,
+.header::after,
+.panel::before,
+.panel::after{
+  pointer-events: none !important;
 }
 
-/* actions become a neat wrap row */
-.header-actions{
-  display:flex;
-  align-items:center;
-  justify-content:flex-start;
-  gap: 10px;
-  flex-wrap: wrap;
-
-  max-width: 520px; /* يمنعها تتمدد زيادة */
+/* ترتيب الطبقات */
+.landing,
+#landing,
+#app,
+.container,
+.landing-card,
+.header,
+.panel,
+.output,
+.feedback,
+.footer{
+  position: relative;
+  z-index: 50;
 }
 
-/* خلي كل زر نفس الارتفاع وشكل "chip" مرتب */
-.header-actions .btn{
-  height: 42px;
-  padding: 10px 14px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
+/* المودال لازم يمسك كلك */
+.modal{
+  pointer-events: auto !important;
+  z-index: 9999 !important;
 }
+.modal .modal-card{
+  z-index: 10000 !important;
+}
+/* =========================
+   FEEDBACK RTL + STARS FIX (ADD AT END)
+========================= */
 
-/* توازن عرض الأزرار (اختياري) */
-.header-actions .btn{
-  min-width: 120px;
-  justify-content: center;
+.feedback-card,
+.feedback-head{
+  text-align: right;
 }
-
-/* زر اللغة أصغر شوي */
-.header-actions .btn.lang-btn{
-  min-width: 110px;
-}
-
-/* خلي زر Pro أو "مشترك" يبان كـ pill نظيف */
-.header-actions .btn.is-pill{
-  border-color: rgba(34,211,238,.22);
-  background: rgba(34,211,238,.08);
-}
-
-/* على الموبايل: خلي الأزرار تحت بعض بشكل أجمل */
-@media (max-width: 720px){
-  .header{
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  .header-actions{
-    max-width: 100%;
-    justify-content: flex-start;
-  }
-  .header-actions .btn{
-    min-width: unset;
-  }
-}
-.feedback{ padding: 22px 0 10px; }
-.feedback-card{
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 18px;
-  border-radius: 22px;
-  background: rgba(255,255,255,.04);
-  border: 1px solid rgba(255,255,255,.10);
-  box-shadow: 0 18px 60px rgba(0,0,0,.35);
-}
-.feedback-head h2{ margin:0 0 6px; font-size: 20px; font-weight: 800; }
-.feedback-head p{ margin:0; opacity:.85; line-height:1.6; }
 
 .feedback-grid{
-  margin-top: 14px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  direction: rtl;
 }
-.fb-wide{ grid-column: 1 / -1; }
-
-.fb-field label{
-  display:block;
-  margin:0 0 6px;
-  font-weight:700;
-  opacity:.9;
-}
-
-.fb-field select, .fb-field textarea{
-  width:100%;
-  border-radius: 14px;
-  background: rgba(255,255,255,.03);
-  border: 1px solid rgba(255,255,255,.10);
-  color: inherit;
-  padding: 12px 12px;
-  outline: none;
-}
-.fb-field textarea{ resize: vertical; min-height: 96px; }
 
 .fb-stars{
-  display:flex;
-  gap:8px;
-  align-items:center;
+  justify-content: flex-end;
 }
+
+/* لو الأزرار بدون class="star" */
+.fb-stars button,
 .fb-stars .star{
-  width: 44px; height: 44px;
+  width: 44px;
+  height: 44px;
   border-radius: 14px;
   border: 1px solid rgba(255,255,255,.12);
   background: rgba(255,255,255,.03);
-  color: rgba(255,255,255,.55);
+  color: rgba(255,255,255,.75);
   font-size: 18px;
-  cursor:pointer;
-}
-.fb-stars .star.active{ color: #ffd36a; border-color: rgba(255,211,106,.55); }
-.fb-hint{ margin-top:6px; font-size: 12px; opacity:.75; }
-
-.fb-counter{
-  margin-top: 6px;
-  font-size: 12px;
-  opacity: .75;
-  text-align: end;
+  cursor: pointer;
 }
 
-.fb-actions{
-  display:flex;
-  align-items:center;
-  justify-content: space-between;
+.fb-stars button.active,
+.fb-stars .star.active{
+  color: #ffd36a;
+  border-color: rgba(255,211,106,.55);
+  background: rgba(255,211,106,.10);
+}
+/* =========================
+   HEADER 3-AREAS FIX (brand | actions | logo)
+   PASTE AT VERY END
+========================= */
+
+/* 1) الغِ البادينغ اللي كنت حاطه للـ brand بسبب لوجو absolute */
+html[dir="rtl"] .brand{ padding-right: 0 !important; }
+html[dir="ltr"] .brand{ padding-left: 0 !important; }
+
+/* 2) خلي الهيدر Grid بثلاث أعمدة */
+.header{
+  display: grid !important;
+  align-items: center;
+  gap: 14px;
+
+  padding: 14px 14px !important;
+  border-radius: 24px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.03);
+  box-shadow: 0 16px 55px rgba(0,0,0,.25);
+
+  /* LTR default: brand | actions | logo */
+  grid-template-columns: 1fr auto auto;
+  grid-template-areas: "brand actions logo";
+}
+
+/* RTL: logo | actions | brand */
+html[dir="rtl"] .header{
+  grid-template-columns: auto auto 1fr;
+  grid-template-areas: "logo actions brand";
+}
+
+.brand{ grid-area: brand; min-width: 0; }
+.header-actions{ grid-area: actions; }
+.header-logo-corner{ grid-area: logo; }
+
+/* 3) صندوق الأزرار مرتب لوحده */
+.header-actions{
+  padding: 10px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.18);
+  box-shadow: 0 12px 30px rgba(0,0,0,.22);
+
+  display: flex;
   gap: 10px;
-}
-.fb-note{ font-size: 12px; opacity:.75; }
+  flex-wrap: wrap;
+  align-items: center;
 
-@media (max-width: 700px){
-  .feedback-grid{ grid-template-columns: 1fr; }
-}
-/* ===== Fix select / option colors (Feedback) ===== */
-.feedback select{
-  color: #EAF0FF;                 /* لون النص المختار */
-  background-color: #0B1020;      /* خلفية الـ select */
+  max-width: 560px;
 }
 
-/* القائمة المنسدلة نفسها */
-.feedback select option{
-  background-color: #0B1020;      /* خلفية الخيارات */
-  color: #EAF0FF;                 /* لون النص */
+/* 4) اللوجو: خلّيه عنصر Grid مش absolute */
+.header-logo-corner{
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+
+  width: 86px;
+  height: 86px;
+  border-radius: 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 0 22px rgba(0,0,0,.25);
+
+  pointer-events: none; /* اللوجو للعرض فقط */
 }
 
-/* الخيار عند المرور */
-.feedback select option:hover{
-  background-color: #1E293B;      /* أغمق شوي */
-  color: #FFFFFF;
+/* 5) على الموبايل: خليه ستاك مرتب */
+@media (max-width: 760px){
+  .header{
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "brand"
+      "actions"
+      "logo";
+  }
+  .header-actions{
+    max-width: 100%;
+    width: 100%;
+  }
+  .header-logo-corner{
+    width: 74px;
+    height: 74px;
+    justify-self: end;
+  }
+  html[dir="rtl"] .header-logo-corner{ justify-self: start; }
+}
+/* =========================
+   HEADER DROPDOWN MENU
+   (PASTE AT VERY END)
+========================= */
+
+.header-menu-wrap{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.header-menu-btn{
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+/* dropdown container */
+.header-menu-dropdown{
+  position: absolute;
+  top: calc(100% + 10px);
+  min-width: 240px;
+  padding: 10px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  box-shadow: 0 18px 45px rgba(0,0,0,.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 999;
+}
+
+/* RTL/LTR alignment */
+html[dir="rtl"] .header-menu-dropdown{ right: 0; left: auto; }
+html[dir="ltr"] .header-menu-dropdown{ left: 0; right: auto; }
+
+/* rows inside dropdown */
+.menu-row{
+  display: flex;
+  margin: 8px 0;
+}
+.menu-row:first-child{ margin-top: 0; }
+.menu-row:last-child{ margin-bottom: 0; }
+
+/* make buttons full width inside dropdown */
+.menu-btn{
+  width: 100%;
+  justify-content: center;
+  height: 42px;
+}
+
+/* plan pill full width */
+.header-menu-dropdown .plan-pill{
+  width: 100%;
+  justify-content: center;
+  height: 42px;
+}
+/* Header menu dropdown */
+.header-menu-wrap{ position: relative; }
+
+.header-menu-dropdown{
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;              /* RTL */
+  min-width: 220px;
+  padding: 10px;
+  border-radius: 16px;
+  background: rgba(10,16,32,.92);
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 22px 70px rgba(0,0,0,.5);
+  backdrop-filter: blur(12px);
+  z-index: 999;
+}
+
+html[dir="ltr"] .header-menu-dropdown{
+  right: auto;
+  left: 0;              /* LTR */
+}
+
+.header-menu-dropdown .menu-row{ margin: 8px 0; }
+.header-menu-dropdown .menu-btn{ width: 100%; }
+.header{
+  position: relative;   /* مهم */
+  z-index: 5000;
+}
+
+.header-actions{
+  position: relative;
+  z-index: 5001;
+}
+
+.header-menu-wrap{
+  position: relative;
+  z-index: 5002;
+}
+
+.header-menu-dropdown{
+  z-index: 9999;        /* أعلى شيء */
+}
+.container,
+.app,
+.header{
+  overflow: visible !important;
+}
+.panel{
+  position: relative;
+  z-index: 1;
+}
+/* خلي القائمة تستقبل الضغط دائمًا */
+.header-menu-dropdown{
+  pointer-events: auto !important;
+}
+
+/* خلي أي glow/background ما يغطي عليها */
+.bg-glow{
+  pointer-events: none !important;
+}
+
+/* إذا عندك أي overlay/طبقة جمالية فوق الصفحة */
+.landing, .panel, .output{
+  position: relative;
+  z-index: 1;
+}
+.header{ z-index: 9998; }
+.header-menu-dropdown{ z-index: 9999; }
+/* Phone input clean layout */
+.phone-row{
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.phone-country{
+  min-width: 200px;
+  max-width: 220px;
+}
+
+.phone-local{
+  flex: 1;
+  text-align: left;
+  direction: ltr;
+}
+
+/* Mobile */
+@media (max-width: 600px){
+  .phone-row{
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .phone-country{
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+.modal[style*="display: flex"]{
+  display: flex !important;
+}
+
+/* تخفيف الأبيض داخل مودال الحساب */
+#accountModal{
+  color: rgba(234,240,255,.92);
+}
+
+#accountModal .input,
+#accountModal .select{
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.14);
+  color: #EAF0FF;
+}
+
+#accountModal .input::placeholder{
+  color: rgba(234,240,255,.55);
+}
+
+#accountModal .label,
+#accountModal p{
+  color: rgba(234,240,255,.85);
+}
+/* Country select dropdown colors */
+#accountModal select,
+#accountModal option{
+  background: #0B1020;
+  color: #EAF0FF;
+}
+
+#accountModal option{
+  padding: 8px;
+}
+
+/* عند المرور */
+#accountModal option:hover{
+  background: rgba(124,58,237,.25);
 }
 
 /* الخيار المحدد */
-.feedback select option:checked{
-  background-color: #7C3AED; /* بنفسجي */
+#accountModal option:checked{
+  background: rgba(124,58,237,.45);
 }
-.bg, .bg::before, .bg::after,
-.glow, .glow::before, .glow::after{
-  pointer-events: none;
+#accountSub {
+  display: none;
+}
+/* Fix close (X) button in account modal */
+#accountModal .sub-x{
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+  line-height: 1;
+  top: 14px;
+  right: 14px;
+}
+
+#accountModal .sub-title{
+  padding-right: 40px; /* يبعد النص عن زر الإغلاق */
+}
+/* Plan status (Free / Pro) */
+.plan-status{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 14px;
+  border-radius:999px;
+  font-size:14px;
+  border:1px solid rgba(255,255,255,.15);
+  background: rgba(255,255,255,.06);
+  color:#EAF0FF;
+}
+
+.plan-status .dot{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#9CA3AF; /* Free */
+}
+
+.plan-status.pro{
+  border-color: rgba(34,197,94,.4);
+}
+
+.plan-status.pro .dot{
+  background:#22C55E;
+}
+/* ===== Clear Text Button ===== */
+.text-tools{
+  position: relative;
+}
+
+.btn-clear-text{
+  position: absolute;
+  top: 10px;
+  inset-inline-end: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: rgba(234,240,255,.85);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  transition: .18s ease;
+  backdrop-filter: blur(6px);
+}
+
+.btn-clear-text:hover{
+  background: rgba(239,68,68,.18);
+  border-color: rgba(239,68,68,.45);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+.btn-danger:hover{
+  background: rgba(239,68,68,.22);
+  color: #fff;
+  box-shadow: 0 0 0 4px rgba(239,68,68,.15);
+  transform: translateY(-1px);
+}
+
+.btn-danger:disabled{
+  opacity: .45;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 /* =========================
-   ✅ FINAL OVERRIDES (Place at very end)
+   FINAL BUTTON COLORS (PASTE LAST)
 ========================= */
 
-/* Click safety */
-.bg-glow,
-.bg, .bg::before, .bg::after,
-.glow, .glow::before, .glow::after{
-  pointer-events:none !important;
+/* شكل موحد لكل أزرار الهيدر والواجهة */
+.btn{
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-weight: 900;
+  letter-spacing: .2px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(234,240,255,.95);
+  transition: background .15s ease, border-color .15s ease, transform .12s ease, box-shadow .15s ease;
 }
 
-/* Header final layout */
-.header{
-  position: relative;
-  z-index: 50;
-
-  display: grid !important;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 14px;
+.btn:hover{
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.22);
+  transform: translateY(-1px);
 }
 
-html[dir="rtl"] .header{
-  grid-template-columns: auto 1fr;
+.btn:active{ transform: translateY(0); }
+.btn:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
+
+/* زر رئيسي (اشتراك/ترقية/تسجيل) */
+.btn-primary{
+  border: 0;
+  background: linear-gradient(135deg, var(--p1), var(--p2));
+  color: #071018;
+  box-shadow: 0 14px 40px rgba(124,58,237,.22), 0 14px 40px rgba(34,211,238,.18);
+}
+.btn-primary:hover{
+  filter: brightness(1.06);
+  box-shadow: 0 18px 55px rgba(124,58,237,.28), 0 18px 55px rgba(34,211,238,.22);
 }
 
-.header-actions{
-  display:flex !important;
-  align-items:center;
-  gap:10px;
-  flex-wrap:wrap;
-  justify-content:flex-start;
-  max-width: 520px;
+/* زر خفيف (مثل الحساب/القائمة) */
+.btn-ghost{
+  background: rgba(255,255,255,.05);
+}
+.btn-ghost:hover{
+  background: rgba(255,255,255,.09);
 }
 
-.header, .header *{ pointer-events:auto; }
-
-/* lang button sizing */
-#langBtn{ min-width:110px; }
-/* ✅ FIX START BUTTON CLICK */
-.landing,
-.landing *{
-  pointer-events: auto !important;
+/* زر خطر (حذف/مسح) */
+.btn-danger{
+  background: rgba(239,68,68,.12);
+  border-color: rgba(239,68,68,.35);
+  color: rgba(255,228,230,.96);
+}
+.btn-danger:hover{
+  background: rgba(239,68,68,.18);
+  border-color: rgba(239,68,68,.55);
+  box-shadow: 0 0 0 4px rgba(239,68,68,.12);
 }
 
-.landing-card{
-  position: relative;
-  z-index: 10;
+/* زر كبير (تلخيص + أسئلة) */
+.btn-wide{
+  height: 48px;
+  border-radius: 16px;
+  padding: 0 18px;
+  font-size: 15px;
 }
 /* =========================
-   ✅ FINAL FIX (keep only this at the end)
+   FIX: button text color + colored menu button
+   (PASTE LAST)
 ========================= */
 
-/* background glows never block clicks */
-.bg-glow{
-  pointer-events: none !important;
-  z-index: -1 !important;
+/* 1) خلي نص الزر الرئيسي أبيض بدل الأسود */
+.btn-primary{
+  color: #F8FAFF !important;
+  text-shadow: 0 1px 14px rgba(0,0,0,.35);
 }
 
-/* landing/app always clickable */
-.landing, .landing *{
-  pointer-events: auto !important;
-}
-.landing-card{
-  position: relative;
-  z-index: 10;
+/* 2) زر "القائمة" يكون ملون (Gradient) */
+.header-menu-btn{
+  border: 0 !important;
+  background: linear-gradient(135deg, rgba(124,58,237,.95), rgba(34,211,238,.80)) !important;
+  color: #F8FAFF !important;
+  box-shadow: 0 14px 40px rgba(124,58,237,.22), 0 14px 40px rgba(34,211,238,.18) !important;
 }
 
-/* header always above everything + clickable */
-.header{
-  position: relative;
-  z-index: 50;
-  display: grid !important;
-  grid-template-columns: 1fr auto;
-  align-items: center;
+.header-menu-btn:hover{
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 18px 55px rgba(124,58,237,.28), 0 18px 55px rgba(34,211,238,.22) !important;
+}
+
+/* 3) أيقونة/نص داخل زر القائمة أبيض */
+.header-menu-btn *{
+  color: #F8FAFF !important;
+}
+/* =========================
+   BUTTON COLORS (FIX + PREMIUM)
+   PASTE AT VERY END
+========================= */
+
+/* 1) Fix primary text color (كان أسود) */
+.btn-primary{
+  color: #F8FAFF !important;
+  text-shadow: 0 1px 10px rgba(0,0,0,.25);
+}
+
+/* 2) Better default buttons */
+.btn{
+  border-radius: 999px;
+  height: 42px;
+  padding: 0 16px;
+  font-weight: 900;
+  letter-spacing: .2px;
+}
+
+/* Hover/active polish */
+.btn:hover{ transform: translateY(-1px); }
+.btn:active{ transform: translateY(0px); }
+
+/* 3) Colored MENU button ("القائمة") */
+.header-menu-btn{
+  border: 1px solid rgba(255,255,255,.12) !important;
+  background: linear-gradient(135deg, rgba(124,58,237,.95), rgba(34,211,238,.75)) !important;
+  color: #F8FAFF !important;
+  box-shadow: 0 18px 55px rgba(124,58,237,.18), 0 18px 55px rgba(34,211,238,.14);
+}
+.header-menu-btn:hover{
+  filter: brightness(1.05);
+  box-shadow: 0 22px 70px rgba(124,58,237,.22), 0 22px 70px rgba(34,211,238,.18);
+}
+
+/* 4) Make "English" button and other header buttons consistent (اختياري بس يعطي شكل أجمل) */
+.header-actions .btn:not(.header-menu-btn):not(.btn-primary){
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.14);
+  color: rgba(234,240,255,.92);
+}
+.header-actions .btn:not(.header-menu-btn):not(.btn-primary):hover{
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.20);
+}
+
+/* =========================
+   DROPDOWN MENU (more premium)
+========================= */
+.header-menu-dropdown{
+  background: rgba(10,14,30,.86) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  box-shadow: 0 26px 90px rgba(0,0,0,.55) !important;
+}
+.header-menu-dropdown .menu-btn{
+  border-radius: 14px;
+  height: 44px;
+  font-weight: 900;
+}
+.header-menu-dropdown .menu-btn.btn-primary{
+  color: #F8FAFF !important;
+}
+
+/* =========================
+   FEEDBACK SECTION — PREMIUM / PRO LOOK
+   (fix "الي تحت" شكل احترافي)
+========================= */
+
+/* Outer spacing */
+.feedback{
+  padding: 26px 0 !important;
+}
+
+/* Card */
+.feedback-card{
+  border-radius: 26px !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03)) !important;
+  box-shadow: 0 22px 70px rgba(0,0,0,.38) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 22px !important;
+}
+
+/* Header align */
+.feedback-head{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 14px;
+  margin-bottom: 14px;
+}
+.feedback-head h2,
+.feedback-head h3{
+  margin: 0 !important;
+}
+.feedback-head p{
+  margin: 6px 0 0 !important;
+  color: rgba(170,183,230,.90) !important;
+  line-height: 1.6;
 }
 
-html[dir="rtl"] .header{
-  grid-template-columns: auto 1fr;
+/* Grid layout (right side compact like pro forms) */
+.feedback-grid{
+  display: grid !important;
+  grid-template-columns: 320px 1fr !important; /* right controls + big message */
+  gap: 14px !important;
+  align-items: start !important;
+  direction: rtl;
+}
+@media (max-width: 860px){
+  .feedback-grid{
+    grid-template-columns: 1fr !important;
+  }
 }
 
-.header-actions{
-  display:flex !important;
-  align-items:center;
-  gap:10px;
-  flex-wrap:wrap;
-  justify-content:flex-start;
-  max-width: 520px;
+/* Fields */
+.feedback .fb-field,
+.feedback .fb-wide{
+  width: 100%;
+}
+.feedback label{
+  display: block;
+  font-weight: 900;
+  color: rgba(234,240,255,.92);
+  margin-bottom: 8px;
 }
 
-.header, .header *{
-  pointer-events: auto !important;
+/* Inputs/select/textarea unified */
+.feedback select,
+.feedback input,
+.feedback textarea{
+  width: 100%;
+  border-radius: 16px !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  background: rgba(0,0,0,.22) !important;
+  color: rgba(234,240,255,.95) !important;
+  outline: none !important;
+  box-shadow: 0 12px 28px rgba(0,0,0,.28);
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.feedback select,
+.feedback input{
+  height: 46px !important;
+  padding: 0 14px !important;
+}
+.feedback textarea{
+  min-height: 180px !important;
+  padding: 14px 16px !important;
+  resize: vertical;
+}
+.feedback textarea::placeholder{
+  color: rgba(170,183,230,.70) !important;
+}
+.feedback select:focus,
+.feedback input:focus,
+.feedback textarea:focus{
+  border-color: rgba(34,211,238,.55) !important;
+  box-shadow: 0 0 0 4px rgba(34,211,238,.12), 0 12px 28px rgba(0,0,0,.32) !important;
+  background: rgba(255,255,255,.05) !important;
 }
 
-/* lang button sizing */
-#langBtn{ min-width:110px; }
+/* Select dropdown options */
+.feedback select option{
+  background: #0B1020 !important;
+  color: #EAF0FF !important;
+}
+
+/* Stars row premium */
+.fb-stars{
+  display: flex !important;
+  gap: 10px !important;
+  flex-wrap: nowrap !important;
+  justify-content: flex-start; /* RTL: left inside the small column */
+}
+.fb-stars button,
+.fb-stars .star{
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  background: rgba(255,255,255,.04) !important;
+  color: rgba(234,240,255,.78) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+  transition: transform .12s ease, background .12s ease, border-color .12s ease;
+}
+.fb-stars button:hover,
+.fb-stars .star:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,.07) !important;
+  border-color: rgba(255,255,255,.22) !important;
+}
+.fb-stars button.active,
+.fb-stars .star.active{
+  color: #0B1020 !important;
+  border-color: rgba(255,211,106,.55) !important;
+  background: linear-gradient(135deg, rgba(255,211,106,.95), rgba(34,211,238,.35)) !important;
+}
+
+/* Counter text nicer */
+.feedback .counter,
+.feedback .fb-counter{
+  margin-top: 8px;
+  font-weight: 900;
+  color: rgba(234,240,255,.88);
+  opacity: .9;
+  text-align: left; /* looks cleaner */
+  direction: ltr;
+}
+
+/* Submit row */
+.fb-actions{
+  display: flex !important;
+  gap: 10px !important;
+  justify-content: flex-end !important;
+  margin-top: 12px !important;
+  flex-wrap: wrap;
+}
+.fb-actions .btn{
+  height: 46px;
+  border-radius: 16px;
+  padding: 0 18px;
+}
+
+/* Make "Send" button premium */
+.fb-actions .btn-primary{
+  background: linear-gradient(135deg, rgba(124,58,237,.95), rgba(34,211,238,.80)) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  color: #F8FAFF !important;
+}
+
+/* Tiny hint line */
+.feedback .small,
+.feedback small{
+  color: rgba(170,183,230,.85) !important;
+}
+/* =========================
+   COLOR SOFT MENU BUTTONS
+   (Free stays the same)
+========================= */
+
+/* الأزرار الباهتة داخل القائمة */
+.header-menu-dropdown .menu-btn:not(.btn-primary):not(.plan-pill){
+  background: linear-gradient(
+    135deg,
+    rgba(124,58,237,.18),
+    rgba(34,211,238,.12)
+  );
+  border: 1px solid rgba(255,255,255,.16);
+  color: #EAF0FF;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+}
+
+/* hover */
+.header-menu-dropdown .menu-btn:not(.btn-primary):not(.plan-pill):hover{
+  background: linear-gradient(
+    135deg,
+    rgba(124,58,237,.30),
+    rgba(34,211,238,.22)
+  );
+  border-color: rgba(255,255,255,.22);
+  transform: translateY(-1px);
+}
+
+/* أيقونات داخلها */
+.header-menu-dropdown .menu-btn svg,
+.header-menu-dropdown .menu-btn span{
+  color: #F8FAFF;
+}
+
+/* =========================
+   KEEP FREE BUTTON UNTOUCHED
+========================= */
+.header-actions .plan-pill.free{
+  background: rgba(255,255,255,.06) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  box-shadow: none !important;
+}
+/* =========================
+   COLORED SOFT BUTTONS
+   (Menu + Language)
+========================= */
+
+/* === MENU BUTTONS BASE === */
+.header-menu-dropdown .menu-btn{
+  border-radius: 14px;
+  height: 44px;
+  font-weight: 900;
+  transition: all .18s ease;
+}
+
+/* 🟣 ملخصاتي */
+.header-menu-dropdown .menu-btn.summary{
+  background: linear-gradient(
+    135deg,
+    rgba(124,58,237,.20),
+    rgba(124,58,237,.10)
+  );
+  border: 1px solid rgba(124,58,237,.35);
+  color: #F3EEFF;
+}
+.header-menu-dropdown .menu-btn.summary:hover{
+  background: linear-gradient(
+    135deg,
+    rgba(124,58,237,.35),
+    rgba(124,58,237,.20)
+  );
+}
+
+/* 🔵 الحساب */
+.header-menu-dropdown .menu-btn.account{
+  background: linear-gradient(
+    135deg,
+    rgba(59,130,246,.20),
+    rgba(59,130,246,.10)
+  );
+  border: 1px solid rgba(59,130,246,.35);
+  color: #EAF2FF;
+}
+.header-menu-dropdown .menu-btn.account:hover{
+  background: linear-gradient(
+    135deg,
+    rgba(59,130,246,.35),
+    rgba(59,130,246,.20)
+  );
+}
+
+/* ⭐ اشترك (يبقى الأقوى) */
+.header-menu-dropdown .menu-btn.btn-primary{
+  color: #F8FAFF !important;
+}
+
+/* =========================
+   LANGUAGE BUTTON (HEADER)
+========================= */
+
+.header-actions .lang-btn{
+  border-radius: 999px;
+  height: 42px;
+  padding: 0 16px;
+  font-weight: 900;
+
+  background: linear-gradient(
+    135deg,
+    rgba(34,211,238,.22),
+    rgba(34,211,238,.12)
+  );
+  border: 1px solid rgba(34,211,238,.40);
+  color: #E6FBFF;
+
+  box-shadow: 0 10px 28px rgba(34,211,238,.15);
+}
+
+.header-actions .lang-btn:hover{
+  background: linear-gradient(
+    135deg,
+    rgba(34,211,238,.40),
+    rgba(34,211,238,.22)
+  );
+  transform: translateY(-1px);
+}
+
+/* =========================
+   KEEP FREE BUTTON SAME
+========================= */
+.plan-pill.free{
+  background: rgba(255,255,255,.06) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  box-shadow: none !important;
+}
+/* =========================
+   Header Buttons Colors (soft but colorful)
+========================= */
+
+/* base: keep text readable */
+.btn-menu, .btn-lang, .btn-summaries, .btn-account{
+  color: rgba(234,240,255,.96) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  box-shadow: 0 12px 32px rgba(0,0,0,.22);
+}
+
+/* Menu button (purple -> cyan soft) */
+.btn-menu{
+  background: linear-gradient(135deg,
+    rgba(124,58,237,.35),
+    rgba(34,211,238,.20)
+  ) !important;
+}
+.btn-menu:hover{
+  filter: brightness(1.06);
+  border-color: rgba(255,255,255,.20) !important;
+}
+
+/* Language button (cyan -> blue soft) */
+.btn-lang{
+  background: linear-gradient(135deg,
+    rgba(34,211,238,.28),
+    rgba(59,130,246,.18)
+  ) !important;
+}
+.btn-lang:hover{
+  filter: brightness(1.06);
+}
+
+/* Dropdown buttons */
+.header-menu-dropdown .menu-btn{
+  height: 44px;
+  border-radius: 14px;
+  font-weight: 900;
+}
+
+/* My summaries (blue soft) */
+.btn-summaries{
+  background: linear-gradient(135deg,
+    rgba(59,130,246,.22),
+    rgba(34,211,238,.14)
+  ) !important;
+}
+.btn-summaries:hover{ filter: brightness(1.06); }
+
+/* Account (purple soft) */
+.btn-account{
+  background: linear-gradient(135deg,
+    rgba(124,58,237,.22),
+    rgba(124,58,237,.10)
+  ) !important;
+}
+.btn-account:hover{ filter: brightness(1.06); }
+/* Account modal close button (X) */
+#accountModal .modal-x{
+  position: absolute;
+  top: 14px;
+  inset-inline-end: 14px;   /* يمين في RTL ويسار في LTR تلقائي */
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+
+  display: grid;
+  place-items: center;
+
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(234,240,255,.92);
+  cursor: pointer;
+
+  box-shadow: 0 12px 30px rgba(0,0,0,.25);
+  transition: transform .15s ease, background .15s ease, border-color .15s ease;
+  z-index: 10001;
+}
+
+#accountModal .modal-x:hover{
+  transform: translateY(-1px) scale(1.03);
+  background: rgba(255,255,255,.10);
+  border-color: rgba(34,211,238,.40);
+}
+
+#accountModal .modal-x:active{
+  transform: scale(.98);
+}
+#accountModal .modal-close{
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  font-size: 12px !important;
+  line-height: 20px !important;
+  border-radius: 7px !important;
+}
+/* ✅ FORCE: shrink X in Account Modal (PUT VERY LAST) */
+#accountModal #accountClose,
+#accountModal .modal-x,
+#accountModal .sub-x,
+#accountModal .modal-close{
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  padding: 0 !important;
+
+  font-size: 12px !important;
+  line-height: 20px !important;
+
+  border-radius: 7px !important;
+}
+
+/* مكانه يمين */
+#accountModal #accountClose,
+#accountModal .modal-x,
+#accountModal .sub-x,
+#accountModal .modal-close{
+  top: 14px !important;
+  inset-inline-end: 14px !important;
+  inset-inline-start: auto !important;
+}

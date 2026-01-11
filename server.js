@@ -15,8 +15,10 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+
+import twilio from "twilio";
+import jwt from "jsonwebtoken";
 
 dotenv.config();
 
@@ -136,22 +138,30 @@ function signToken(payload) {
   return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
 }
 
-function setAuthCookie(res, token) {
-  // ✅ Render + custom domain = HTTPS (خلّيها secure)
-  const isProd = true;
+function setAuthCookie(res, token, req) {
+  const isHttps =
+    (req?.secure === true) ||
+    (String(req?.headers?.["x-forwarded-proto"] || "").includes("https"));
 
   res.cookie("wodoh_token", token, {
     httpOnly: true,
-    secure: isProd,
-    sameSite: "lax",
+    secure: isHttps,                  // ✅ https=true / localhost=false
+    sameSite: isHttps ? "none" : "lax",// ✅ cross-site only on https
     path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 }
 
+function clearAuthCookie(res, req) {
+  const isHttps =
+    (req?.secure === true) ||
+    (String(req?.headers?.["x-forwarded-proto"] || "").includes("https"));
 
-function clearAuthCookie(res) {
-  res.clearCookie("wodoh_token", { path: "/" });
+  res.clearCookie("wodoh_token", {
+    path: "/",
+    secure: isHttps,
+    sameSite: isHttps ? "none" : "lax",
+  });
 }
 
 function requireAuth(req, res, next) {
@@ -263,7 +273,7 @@ app.post("/api/auth/dev-login", (req, res) => {
       email: "demo@wodoh",
       subActive: false, // ✅ Free by default
     });
-    setAuthCookie(res, token);
+    setAuthCookie(res, token, req);
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ ok: false, error: String(e?.message || e) });
@@ -271,8 +281,113 @@ app.post("/api/auth/dev-login", (req, res) => {
 });
 
 app.post("/api/auth/logout", (req, res) => {
-  clearAuthCookie(res);
+  clearAuthCookie(res, req);
   res.json({ ok: true });
+});
+
+// =======================
+// ✅ Phone Auth (Twilio Verify) - Send + Verify
+// =======================
+const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
+const TWILIO_AUTH_TOKEN  = process.env.TWILIO_AUTH_TOKEN;
+const TWILIO_VERIFY_SID  = process.env.TWILIO_VERIFY_SID;
+
+const twilioClient =
+  (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN)
+    ? twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+    : null;
+
+// 1) Send code
+// body: { phone: "+9725xxxxxxxx" }
+app.post("/api/auth/phone/send", async (req, res) => {
+  try {
+    const phone = String(req.body?.phone || "").trim();
+
+    if (!phone.startsWith("+") || phone.length < 10) {
+      return res.status(400).json({ ok:false, error:"BAD_PHONE" });
+    }
+    if (!twilioClient || !TWILIO_VERIFY_SID) {
+      return res.status(500).json({ ok:false, error:"TWILIO_NOT_CONFIGURED" });
+    }
+
+    await twilioClient.verify.v2
+      .services(TWILIO_VERIFY_SID)
+      .verifications.create({ to: phone, channel: "sms" });
+
+    return res.json({ ok:true });
+  } catch (e) {
+    console.error("phone send error:", e);
+    return res.status(500).json({ ok:false, error:"SEND_FAILED" });
+  }
+});
+
+// 2) Verify code + login
+// body: { phone:"+9725...", code:"123456", firstName, lastName }
+app.post("/api/auth/phone/verify", async (req, res) => {
+  try {
+    const phone = String(req.body?.phone || "").trim();
+    const code  = String(req.body?.code || "").trim();
+    const firstName = safeName(req.body?.firstName);
+    const lastName  = safeName(req.body?.lastName);
+
+    if (!phone.startsWith("+") || phone.length < 10) {
+      return res.status(400).json({ ok:false, error:"BAD_PHONE" });
+    }
+    if (!/^\d{4,8}$/.test(code)) {
+      return res.status(400).json({ ok:false, error:"BAD_CODE" });
+    }
+    if (!twilioClient || !TWILIO_VERIFY_SID) {
+      return res.status(500).json({ ok:false, error:"TWILIO_NOT_CONFIGURED" });
+    }
+
+    const check = await twilioClient.verify.v2
+      .services(TWILIO_VERIFY_SID)
+      .verificationChecks.create({ to: phone, code });
+
+    if (check.status !== "approved") {
+      return res.status(401).json({ ok:false, error:"WRONG_CODE" });
+    }
+
+    // ✅ Create/find user by phone inside users.json
+    const users = await readUsers();
+    let user = users.find(u => String(u.phone || "") === phone);
+
+    if (!user) {
+      // create new user (phone based)
+      user = {
+        id: crypto.randomUUID(),
+        phone,
+        email: "",          // optional
+        passHash: "",       // not used
+        firstName: firstName || "User",
+        lastName: lastName || "",
+        subActive: false,
+        subscriptionId: "",
+        createdAt: new Date().toISOString(),
+      };
+      users.push(user);
+      await writeUsers(users);
+    }
+
+    // issue JWT + set cookie
+    const token = signToken({
+      id: user.id,
+      phone: user.phone,
+      email: user.email || "",
+      name: `${user.firstName} ${user.lastName}`.trim(),
+      firstName: user.firstName,
+      lastName: user.lastName,
+      subActive: !!user.subActive,
+      subscriptionId: user.subscriptionId || "",
+    });
+
+    setAuthCookie(res, token, req);
+
+    return res.json({ ok:true, user: userPublic(user) });
+  } catch (e) {
+    console.error("phone verify error:", e);
+    return res.status(500).json({ ok:false, error:"VERIFY_FAILED" });
+  }
 });
 
 /* =======================
@@ -939,7 +1054,7 @@ function userPublic(u) {
   if (!u) return null;
   return {
     id: u.id,
-    email: u.email,
+    phone: u.phone || "",
     firstName: u.firstName,
     lastName: u.lastName,
     subActive: !!u.subActive,
@@ -1005,7 +1120,8 @@ app.post("/api/auth/signup", async (req, res) => {
       subActive: false,
     });
 
-    setAuthCookie(res, token);
+    setAuthCookie(res, token, req);
+
 
     return res.json({
       ok: true,
@@ -1042,7 +1158,8 @@ app.post("/api/auth/login", async (req, res) => {
       subActive: !!user.subActive,
     });
 
-    setAuthCookie(res, token);
+    setAuthCookie(res, token, req);
+
 
     return res.json({
       ok: true,
@@ -1210,7 +1327,7 @@ app.post("/api/subscription/activate", requireAuth, async (req, res) => {
       lastName: updated.lastName,
       subActive: true,
     });
-    setAuthCookie(res, newJwt);
+    setAuthCookie(res, newJwt, req);
 
     return res.json({ ok: true, user: userPublic(updated) });
   } catch (e) {
@@ -1226,6 +1343,31 @@ app.get("/api/subscription/status", async (req, res) => {
   const row = subs[subId];
   res.json({ ok: true, found: !!row, data: row || null });
 });
+
+// =======================
+// Check logged-in user (for refresh)
+// =======================
+app.get("/api/me", (req, res) => {
+  try {
+    const token = req.cookies?.token;
+    if (!token) {
+      return res.status(401).json({ ok: false });
+    }
+
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+
+    return res.json({
+      ok: true,
+      user: {
+        id: payload.id,
+        name: payload.name || "مستخدم"
+      }
+    });
+  } catch (err) {
+    return res.status(401).json({ ok: false });
+  }
+});
+
 
 app.listen(PORT, () => {
   console.log(`✅ Server running: http://localhost:${PORT}`);

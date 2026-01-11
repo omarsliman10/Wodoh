@@ -32,55 +32,15 @@ let currentFile = null;
 /* =======================
    Free vs Pro limits
 ======================= */
-const FREE_DAILY_LIMIT = 1;
 const FREE_MAX_QUESTIONS = 5;
 const PRO_MAX_QUESTIONS = 20;
-
-const LS_USAGE_KEY = "wodoh_daily_usage_v1";
-
-function todayKey(){
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,"0");
-  const day = String(d.getDate()).padStart(2,"0");
-  return `${y}-${m}-${day}`;
-}
-function getDailyUsage(){
-  try{
-    const raw = localStorage.getItem(LS_USAGE_KEY);
-    if (!raw) return { date: todayKey(), used: 0 };
-    const obj = JSON.parse(raw);
-    if (!obj || obj.date !== todayKey()) return { date: todayKey(), used: 0 };
-    return { date: obj.date, used: Number(obj.used)||0 };
-  }catch{
-    return { date: todayKey(), used: 0 };
-  }
-}
-function setDailyUsage(used){
-  localStorage.setItem(LS_USAGE_KEY, JSON.stringify({ date: todayKey(), used }));
-}
-function remainingFreeUses(){
-  const u = getDailyUsage().used;
-  return Math.max(0, FREE_DAILY_LIMIT - u);
-}
-function consumeOneUse(){
-  const u = getDailyUsage().used;
-  setDailyUsage(u + 1);
-}
-
-// ✅ Free daily limit check
-function canUseNow(){
-  if (isSubscribed()) return true;      // Pro always allowed
-  return remainingFreeUses() > 0;       // Free: allowed if still has uses today
-}
-
 
 /* =======================
    Auth + Subscription (SERVER state via HttpOnly cookie)
 ======================= */
 
 // Session cache in memory
-let sessionUser = null; // {id,email,firstName,lastName,subActive,subscriptionId}
+let sessionUser = null; // {id,firstName,lastName,subActive,subscriptionId}
 
 // Helpers
 function isLoggedIn(){ return !!sessionUser; }
@@ -89,13 +49,12 @@ function getSubscriptionId(){ return String(sessionUser?.subscriptionId || ""); 
 
 function getUser(){
   if (!sessionUser){
-    return { loggedIn:false, subscribed:false, subscriptionId:"", email:"", firstName:"", lastName:"" };
+    return { loggedIn:false, subscribed:false, subscriptionId:"", firstName:"", lastName:"" };
   }
   return {
     loggedIn:true,
     subscribed: !!sessionUser.subActive,
     subscriptionId: sessionUser.subscriptionId || "",
-    email: sessionUser.email || "",
     firstName: sessionUser.firstName || "",
     lastName: sessionUser.lastName || ""
   };
@@ -130,6 +89,8 @@ async function syncSession(){
   return sessionUser;
 }
 
+
+
 /* =======================
    DOM Elements
 ======================= */
@@ -138,6 +99,10 @@ const output = document.getElementById("output");
 const generateBtn = document.getElementById("generateBtn");
 const langBtn = document.getElementById("langBtn");
 const toast = document.getElementById("toast");
+
+// ✅ if user clicks Subscribe while logged out, we remember the action
+let pendingAction = ""; // "" | "subscribe"
+
 
 /* NEW controls */
 const questionTypeEl = document.getElementById("questionType");
@@ -150,6 +115,8 @@ const proControlsWrap = document.getElementById("proControls");
 const proLockBox = document.getElementById("proLockBox");
 const openSubscribeFromControls = document.getElementById("openSubscribeFromControls");
 const controlsPlanBadge = document.getElementById("controlsPlanBadge");
+
+
 
 /* NEW: header plan pill (from updated index) */
 const planPill = document.getElementById("planPill");
@@ -187,12 +154,6 @@ const paywallAccountBtn = document.getElementById("paywallAccountBtn");
 const paywallSubscribeBtn = document.getElementById("paywallSubscribeBtn");
 const closePaywall = document.getElementById("closePaywall");
 
-/* Account modal */
-const accountModal = document.getElementById("accountModal");
-const accountClose = document.getElementById("accountClose");
-const tabLogin = document.getElementById("tabLogin");
-const tabSignup = document.getElementById("tabSignup");
-
 /* Subscribe modal */
 const subscribeModal = document.getElementById("subscribeModal");
 const subClose = document.getElementById("subClose");
@@ -207,24 +168,68 @@ window.mySummariesBtn = _fallback(mySummariesBtn, "historyBtn");
 window.headerAccountBtn = _fallback(headerAccountBtn, "accountBtn");
 window.headerSubscribeBtn = _fallback(headerSubscribeBtn, "subscribeBtn");
 
+// ✅ FIX: use fallback elements everywhere
+const GEN_BTN = window.generateBtn;
+const HIST_BTN = window.mySummariesBtn;
+const ACC_BTN  = window.headerAccountBtn;
+const SUB_BTN  = window.headerSubscribeBtn;
+
+
+
 /* =======================
-   Pro Auth UX elements
+   Header Menu (Dropdown)
 ======================= */
-const authAlert = document.getElementById("authAlert");
-const togglePass = document.getElementById("togglePass");
-const rememberMe = document.getElementById("rememberMe");
-const forgotPass = document.getElementById("forgotPass");
-const authCancel = document.getElementById("authCancel");
-const logoutArea = document.getElementById("logoutArea");
+const headerMenuBtn = document.getElementById("headerMenuBtn");
+const headerMenuDropdown = document.getElementById("headerMenuDropdown");
 
-/* name fields */
-const authFirstName = document.getElementById("authFirstName");
-const authLastName  = document.getElementById("authLastName");
+mySummariesBtn?.addEventListener("click", closeHeaderMenu);
+headerAccountBtn?.addEventListener("click", closeHeaderMenu);
+headerSubscribeBtn?.addEventListener("click", closeHeaderMenu);
 
-const authEmail = document.getElementById("authEmail");
-const authPass = document.getElementById("authPass");
-const authSubmit = document.getElementById("authSubmit");
-const logoutBtn = document.getElementById("logoutBtn");
+function closeHeaderMenu(){
+  if (!headerMenuDropdown) return;
+  headerMenuDropdown.hidden = true;
+  headerMenuBtn?.setAttribute("aria-expanded", "false");
+}
+
+function openHeaderMenu(){
+  if (!headerMenuDropdown) return;
+  headerMenuDropdown.hidden = false;
+  headerMenuBtn?.setAttribute("aria-expanded", "true");
+}
+
+headerMenuBtn?.addEventListener("click", (e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+  if (!headerMenuDropdown) return;
+
+  const isOpen = headerMenuDropdown.hidden === false;
+  if (isOpen) closeHeaderMenu();
+  else openHeaderMenu();
+});
+
+// اقفل القائمة عند الضغط خارجها
+document.addEventListener("click", (e)=>{
+  if (!headerMenuDropdown || headerMenuDropdown.hidden) return;
+  const wrap = e.target.closest(".header-menu-wrap");
+  if (!wrap) closeHeaderMenu();
+});
+
+// اقفلها بزر ESC
+document.addEventListener("keydown", (e)=>{
+  if (e.key === "Escape") closeHeaderMenu();
+});
+
+document.addEventListener("DOMContentLoaded", async () => {
+  // ✅ امسح الرقم والكود عند أي ريفريش
+  if (phoneLocalInput) phoneLocalInput.value = "";
+  if (codeInput) codeInput.value = "";
+  if (sendCodeBtn) sendCodeBtn.disabled = true;
+
+  await syncSession();
+});
+
+
 
 /* =======================
    i18n
@@ -265,10 +270,7 @@ const I18N = {
     qTypeTf: "صح/خطأ فقط",
     qCountLabel: "عدد الأسئلة",
     proLockHint: "🔒 التحكم الكامل متاح للمشترك",
-    freeLimitHint: "🆓 المجاني: حد أقصى 5 أسئلة",
     freeLimitHint: "🆓 المجاني: مرة واحدة يوميًا",
-    toastNeedSub: "🔒 انتهى الاستخدام المجاني اليوم. اشترك للاستخدام بلا حدود.",
-
     startBtn: "ابدأ الآن",
     skipBtn: "تخطي",
 
@@ -286,9 +288,6 @@ const I18N = {
     toastNeedLibs: "⚠️ لتشغيل PDF/DOCX أضف pdf.js و mammoth في index.html",
     toastNeedSub: "🔒 انتهت المحاولات المجانية. اشترك للاستخدام بلا حدود.",
     toastNeedProHistory: "🔒 الحفظ (ملخصاتي) للمشترك فقط.",
-    toastLoggedIn: "✅ تم تسجيل الدخول",
-    toastSignedUp: "✅ تم إنشاء الحساب",
-    toastLoggedOut: "✅ تم تسجيل الخروج",
     toastSubOn: "⭐ تم تفعيل الاشتراك — بلا حدود!",
     toastSubAlready: "⭐ أنت مشترك بالفعل",
     toastPayPalNotReady: "⚠️ PayPal لم يتم تحميله بعد. حدّث الصفحة وحاول.",
@@ -302,19 +301,6 @@ const I18N = {
 
     paywallTitle: "🔒 انتهت المحاولات المجانية اليوم",
     paywallText: "انتهت المحاولات المجانية. اشترك للمتابعة بلا حدود.",
-
-    emailLabel: "الإيميل",
-    passLabel: "كلمة المرور",
-
-    tabLogin: "تسجيل دخول",
-    tabSignup: "إنشاء حساب",
-    rememberMe: "تذكرني",
-    forgotPass: "نسيت كلمة المرور؟",
-    authSubtitle: "سجّل دخولك أو أنشئ حسابك خلال ثوانٍ.",
-    authSubmit: "دخول",
-    cancelBtn: "إغلاق",
-    logoutBtn: "تسجيل خروج",
-
     planMonthly: "شهري",
     planYearly: "سنوي",
     planUnlimited: "استخدام بلا حدود",
@@ -328,17 +314,6 @@ const I18N = {
     freeLimitTitle: "🆓 المجاني",
     proControlsTitle: "تحكم بالأسئلة",
     proControlsDesc: "اختر النوع والعدد (تحكم كامل لمشتركي Pro).",
-
-    faqTitle: "❓ أسئلة شائعة",
-    faqQ1: "هل يتم حفظ بياناتي أو ملفاتي؟",
-    faqA1: "لا. لا نقوم بحفظ النصوص أو الملفات للمستخدمين المجانيين.",
-    faqQ2: "ما اللغات المدعومة؟",
-    faqA2: "يدعم جميع اللغات، مع تحديد تلقائي للغة (العربية والإنجليزية).",
-    faqQ3: "ما حد الاستخدام المجاني؟",
-    faqA3: "مرة واحدة يوميًا. الاشتراك يتيح استخدامًا غير محدود.",
-
-    faqToggleBtn: "❓ أسئلة شائعة",
-    faqCloseBtn: "✖ إغلاق الأسئلة",
 
     privacyLink: "سياسة الخصوصية",
     termsLink: "الشروط والأحكام",
@@ -389,7 +364,17 @@ const I18N = {
     toastWriteMsgMin: "⚠️ اكتب رسالة قصيرة (على الأقل 8 أحرف)",
     toastFeedbackSent: "🙏 شكرًا! وصلتنا ملاحظتك",
     toastFeedbackErr: "❌ خطأ، جرّب مرة أخرى",
-    toastFeedbackErr: "❌ Error, try again",
+
+    menuBtn: "القائمة",
+
+    accountTitle: "الحساب",
+    phonePlaceholder: "رقم الهاتف",
+    sendCodeBtn: "إرسال الكود",
+    closeBtn: "إغلاق",
+
+    loginNote: "تسجيل الدخول لا يفعّل النسخة الاحترافية (Pro). الاشتراك مطلوب.",
+
+
   },
 
   en: {
@@ -427,7 +412,6 @@ const I18N = {
     qTypeTf: "True/False only",
     qCountLabel: "Questions count",
     proLockHint: "🔒 Full control is for Pro",
-    freeLimitHint: "🆓 Free: max 5 questions",
     freeLimitHint: "🆓 Free: once per day",
     toastNeedSub: "🔒 Free daily limit reached. Subscribe for unlimited access.",
 
@@ -448,9 +432,6 @@ const I18N = {
     toastNeedLibs: "⚠️ To use PDF/DOCX add pdf.js and mammoth to index.html",
     toastNeedSub: "🔒 Free limit reached. Subscribe for unlimited.",
     toastNeedProHistory: "🔒 Saving (My Summaries) is for Pro only.",
-    toastLoggedIn: "✅ Logged in",
-    toastSignedUp: "✅ Account created",
-    toastLoggedOut: "✅ Logged out",
     toastSubOn: "⭐ Subscription enabled — Unlimited!",
     toastSubAlready: "⭐ You are already subscribed",
     toastPayPalNotReady: "⚠️ PayPal not loaded yet. Refresh and try again.",
@@ -465,17 +446,10 @@ const I18N = {
     paywallTitle: "🔒 Free limit reached today",
     paywallText: "Free limit reached. Subscribe for unlimited.",
 
-    emailLabel: "Email",
-    passLabel: "Password",
-
     tabLogin: "Log in",
     tabSignup: "Sign up",
-    rememberMe: "Remember me",
-    forgotPass: "Forgot password?",
     authSubtitle: "Log in or create an account in seconds.",
-    authSubmit: "Log in",
     cancelBtn: "Close",
-    logoutBtn: "Log out",
 
     planMonthly: "Monthly",
     planYearly: "Yearly",
@@ -520,6 +494,14 @@ const I18N = {
     tierProItem5: "Full language support",
     
     backBtn: "↩ Back to site",
+    menuBtn: "Menu",
+
+    accountTitle: "Account",
+    phonePlaceholder: "Phone number",
+    sendCodeBtn: "Send code",
+    closeBtn: "Close",
+
+    loginNote: "Logging in does not activate Pro. A subscription is required.",
 
 
   // ✅ Feedback
@@ -634,24 +616,25 @@ let btnBusyTimer = null;
 let originalGenerateLabel = "";
 
 function setGenerateBusy(isBusy){
-  if (!generateBtn) return;
+  const btn = GEN_BTN || generateBtn;
+  if (!btn) return;
 
   if (btnBusyTimer) clearTimeout(btnBusyTimer);
 
   if (isBusy){
-    if (!originalGenerateLabel) originalGenerateLabel = generateBtn.textContent || t("generateBtn");
-    generateBtn.disabled = true;
-    generateBtn.style.filter = "brightness(0.72)";
-    generateBtn.style.transform = "translateY(1px)";
-    generateBtn.style.opacity = "0.95";
-    generateBtn.textContent = t("generatingBtn");
+    if (!originalGenerateLabel) originalGenerateLabel = btn.textContent || t("generateBtn");
+    btn.disabled = true;
+    btn.style.filter = "brightness(0.72)";
+    btn.style.transform = "translateY(1px)";
+    btn.style.opacity = "0.95";
+    btn.textContent = t("generatingBtn");
   } else {
     btnBusyTimer = setTimeout(()=>{
-      generateBtn.disabled = false;
-      generateBtn.style.filter = "";
-      generateBtn.style.transform = "";
-      generateBtn.style.opacity = "";
-      generateBtn.textContent = t("generateBtn");
+      btn.disabled = false;
+      btn.style.filter = "";
+      btn.style.transform = "";
+      btn.style.opacity = "";
+      btn.textContent = t("generateBtn");
       originalGenerateLabel = "";
     }, 200);
   }
@@ -830,7 +813,7 @@ function updateProLocks(){
 }
 
 /* ✅ upgrade button inside controls => open subscribe */
-openSubscribeFromControls?.addEventListener("click", ()=> headerSubscribeBtn?.click?.());
+openSubscribeFromControls?.addEventListener("click", ()=> SUB_BTN?.click?.());
 
 /* ✅ Server-verified subscription check helper */
 async function serverVerifySubscription(subscriptionId){
@@ -862,11 +845,11 @@ async function serverVerifySubscription(subscriptionId){
    Paywall
 ======================= */
 function showPaywall(){
-  const left = remainingFreeUses();
   if (paywallTitle) paywallTitle.textContent = t("paywallTitle");
-  if (paywallText) paywallText.textContent = currentLang==="ar"
-    ? `المجاني: ${FREE_DAILY_LIMIT} مرات/يوم. المتبقي اليوم: ${left}. اشترك للاستخدام بلا حدود.`
-    : `Free: ${FREE_DAILY_LIMIT}/day. Remaining today: ${left}. Subscribe for unlimited.`;
+  if (paywallText) paywallText.textContent =
+    currentLang==="ar"
+      ? "انتهت المحاولة المجانية اليوم. اشترك للمتابعة بلا حدود."
+      : "Free daily limit reached. Subscribe for unlimited access.";
   openModal(paywallModal);
 }
 
@@ -875,216 +858,11 @@ paywallModal?.addEventListener("click", (e)=>{ if (e.target === paywallModal) cl
 
 paywallAccountBtn?.addEventListener("click", ()=>{
   closeModal(paywallModal);
-  openAccount("login");
 });
 paywallSubscribeBtn?.addEventListener("click", ()=>{
   closeModal(paywallModal);
   openSubscribe();
-});
 
-/* =======================
-   Account modal
-======================= */
-let accountMode = "login";
-
-function setAccountTab(mode){
-  accountMode = mode;
-  tabLogin?.classList.toggle("active", mode==="login");
-  tabSignup?.classList.toggle("active", mode==="signup");
-
-  document.querySelectorAll("[data-auth-name]").forEach(el=>{
-    el.style.display = (mode === "signup") ? "" : "none";
-  });
-
-  const emailLabelEl = document.getElementById("emailLabel");
-  const passLabelEl = document.getElementById("passLabel");
-  const firstLabelEl = document.getElementById("firstNameLabel");
-  const lastLabelEl  = document.getElementById("lastNameLabel");
-  if (emailLabelEl) emailLabelEl.textContent = t("emailLabel");
-  if (passLabelEl) passLabelEl.textContent = t("passLabel");
-  if (firstLabelEl) firstLabelEl.textContent = t("firstNameLabel");
-  if (lastLabelEl) lastLabelEl.textContent = t("lastNameLabel");
-
-  if (authFirstName) authFirstName.placeholder = t("firstNamePh");
-  if (authLastName) authLastName.placeholder = t("lastNamePh");
-
-  if (authSubmit){
-    authSubmit.textContent = mode==="login"
-      ? (currentLang==="ar" ? "دخول" : "Log in")
-      : (currentLang==="ar" ? "إنشاء حساب" : "Create account");
-  }
-  if (authPass){
-    authPass.setAttribute("autocomplete", mode==="login" ? "current-password" : "new-password");
-  }
-}
-
-async function openAccount(mode="login"){
-  setAccountTab(mode);
-
-  await syncSession(); // ✅ pull from server
-  const u = getUser();
-
-  if (logoutBtn){
-    logoutBtn.style.display = u.loggedIn ? "block" : "none";
-    logoutBtn.textContent = currentLang==="ar" ? "تسجيل خروج" : "Log out";
-  }
-  openModal(accountModal);
-  setTimeout(()=>{ authEmail?.focus?.(); }, 50);
-}
-function closeAccount(){ closeModal(accountModal); }
-
-headerAccountBtn?.addEventListener("click", ()=> openAccount("login"));
-accountClose?.addEventListener("click", closeAccount);
-accountModal?.addEventListener("click", (e)=>{ if (e.target === accountModal) closeAccount(); });
-
-tabLogin?.addEventListener("click", ()=> setAccountTab("login"));
-tabSignup?.addEventListener("click", ()=> setAccountTab("signup"));
-
-// ✅ submit on Enter
-[authEmail, authPass, authFirstName, authLastName].forEach(el=>{
-  el?.addEventListener?.("keydown",(e)=>{
-    if (e.key === "Enter") authSubmit?.click?.();
-  });
-});
-
-/* =======================
-   Pro Auth UX
-======================= */
-function showAuthAlert(msg, type="err"){
-  if (!authAlert) return;
-  authAlert.className = `auth-alert ${type === "ok" ? "ok" : "err"}`;
-  authAlert.textContent = msg;
-  authAlert.style.display = "block";
-}
-function clearAuthAlert(){
-  if (!authAlert) return;
-  authAlert.className = "auth-alert";
-  authAlert.textContent = "";
-  authAlert.style.display = "none";
-}
-
-togglePass?.addEventListener("click", ()=>{
-  if (!authPass) return;
-  const isPwd = authPass.type === "password";
-  authPass.type = isPwd ? "text" : "password";
-  togglePass.textContent = isPwd ? "🙈" : "👁";
-});
-
-authCancel?.addEventListener("click", ()=> closeModal(accountModal));
-
-forgotPass?.addEventListener("click", ()=>{
-  showAuthAlert(
-    currentLang==="ar"
-      ? "ميزة استرجاع كلمة المرور قريبًا. حاليًا: تواصل مع الدعم."
-      : "Password reset is coming soon. For now, contact support.",
-    "err"
-  );
-});
-
-// Remember email (still local)
-const LS_REMEMBER_KEY = "wodoh_remember_email_v1";
-try{
-  const savedEmail = localStorage.getItem(LS_REMEMBER_KEY) || "";
-  if (savedEmail && authEmail){
-    authEmail.value = savedEmail;
-    if (rememberMe) rememberMe.checked = true;
-  }
-}catch{}
-
-// Wrap openAccount safely (supports async)
-const _oldOpenAccount = openAccount;
-openAccount = async function(mode="login"){
-  await _oldOpenAccount(mode);
-  clearAuthAlert();
-  const u = getUser();
-  if (logoutArea) logoutArea.classList.toggle("show", !!u.loggedIn);
-};
-
-/* =======================
-   Auth submit / logout (SERVER)
-======================= */
-authSubmit?.addEventListener("click", async ()=>{
-  clearAuthAlert?.();
-
-  const emailRaw = (authEmail?.value || "").trim();
-  const pass = (authPass?.value || "").trim();
-  const firstName = (authFirstName?.value || "").trim();
-  const lastName  = (authLastName?.value || "").trim();
-
-  if (!emailRaw || !pass){
-    showToast(currentLang==="ar" ? "⚠️ أدخل الإيميل وكلمة المرور" : "⚠️ Enter email & password", "err");
-    return;
-  }
-
-  // Signup
-  if (accountMode === "signup"){
-    if (!firstName || !lastName){
-      showToast(t("toastNeedName"), "err");
-      return;
-    }
-
-    const { r, data } = await apiJSON("/api/auth/signup", { email: emailRaw, pass, firstName, lastName });
-
-    if (!r.ok){
-      if (data?.error === "EMAIL_EXISTS"){
-        showToast(currentLang==="ar" ? "⚠️ الإيميل مستخدم. روح لتبويب (دخول)." : "⚠️ Email exists. Switch to Log in.", "err", 4000);
-        return;
-      }
-      showToast(t("toastErr"), "err", 3500);
-      return;
-    }
-
-    // remember email if checked
-    try{
-      if (rememberMe?.checked) localStorage.setItem(LS_REMEMBER_KEY, emailRaw);
-      else localStorage.removeItem(LS_REMEMBER_KEY);
-    }catch{}
-
-    if (authPass) authPass.value = "";
-    closeAccount();
-    await syncSession();
-    showToast(t("toastSignedUp"));
-    return;
-  }
-
-  // Login
-  {
-    const { r, data } = await apiJSON("/api/auth/login", { email: emailRaw, pass });
-
-    if (!r.ok){
-      if (data?.error === "NOT_FOUND"){
-        showToast(currentLang==="ar" ? "⚠️ الإيميل غير مسجل. أنشئ حسابًا." : "⚠️ Email not found. Sign up.", "err", 3500);
-        return;
-      }
-      if (data?.error === "BAD_PASS"){
-        showToast(currentLang==="ar" ? "❌ كلمة المرور خاطئة." : "❌ Incorrect password.", "err", 3200);
-        return;
-      }
-      showToast(t("toastErr"), "err", 3500);
-      return;
-    }
-
-    // remember email if checked
-    try{
-      if (rememberMe?.checked) localStorage.setItem(LS_REMEMBER_KEY, emailRaw);
-      else localStorage.removeItem(LS_REMEMBER_KEY);
-    }catch{}
-
-    if (authPass) authPass.value = "";
-    closeAccount();
-    await syncSession();
-    showToast(t("toastLoggedIn"));
-  }
-});
-
-logoutBtn?.addEventListener("click", async ()=>{
-  try{
-    await apiJSON("/api/auth/logout", {});
-  }catch{}
-  sessionUser = null;
-  closeAccount();
-  refreshHeaderButtons();
-  showToast(t("toastLoggedOut"));
 });
 
 /* =======================
@@ -1110,16 +888,11 @@ async function openSubscribe(){
   await syncSession(); // ✅ ensure session
 
   if (!isLoggedIn()){
-    showToast(
-      currentLang === "ar"
-        ? "🔒 لازم تسوي حساب/تسجل دخول قبل الاشتراك."
-        : "🔒 Please sign up / log in before subscribing.",
-      "err",
-      3200
-    );
-    openAccount("signup");
-    return;
-  }
+  pendingAction = "subscribe";
+  openAccount(); // ✅ افتح تسجيل الدخول بدل رسالة
+  return;
+}
+
 
   if (isSubscribed()){
     showToast(t("toastSubAlready"), "ok", 1800);
@@ -1130,7 +903,7 @@ async function openSubscribe(){
   ensurePayPalButtons();
 }
 
-headerSubscribeBtn?.addEventListener("click", ()=> openSubscribe());
+SUB_BTN?.addEventListener("click", ()=> openSubscribe());
 subClose?.addEventListener("click", closeSubscribe);
 subscribeModal?.addEventListener("click",(e)=>{ if (e.target === subscribeModal) closeSubscribe(); });
 
@@ -1193,12 +966,11 @@ function ensurePayPalButtons(){
         if (!isLoggedIn()){
           showToast(
             currentLang==="ar"
-              ? "🔒 لازم تسوي حساب/تسجل دخول قبل تفعيل الاشتراك."
-              : "🔒 Please sign up / log in before activating subscription.",
+            ? "🔒 لازم تسجّل دخول قبل تفعيل الاشتراك."
+            : "🔒 Please log in before activating subscription.",
             "err",
             3500
           );
-          openAccount("login");
           return;
         }
 
@@ -1251,6 +1023,316 @@ function ensurePayPalButtons(){
 }
 
 /* =======================
+   Account (Phone OTP) Modal
+======================= */
+const accountModal = document.getElementById("accountModal");
+const accountClose = document.getElementById("accountClose");
+const cancelAccountBtn = document.getElementById("cancelAccountBtn");
+
+let sendCodeCooldown = false;
+let resendTimer = null;
+const resendSeconds = 30;
+
+
+// ✅ OTP inputs (NEW)
+const codeInput = document.getElementById("codeInput"); // لازم يكون id موجود بالـ HTML
+// بدل phoneInput القديم استخدم phoneLocalInput
+
+// const phoneInput = document.getElementById("phoneInput"); // ❌ قديم
+
+const countrySelect = document.getElementById("countrySelect");     // ✅ جديد
+const phoneLocalInput = document.getElementById("phoneLocalInput"); // ✅ جديد
+// 🔒 phone: digits only + min length
+phoneLocalInput?.addEventListener("input", () => {
+  // أرقام فقط
+  phoneLocalInput.value = phoneLocalInput.value.replace(/\D/g, "");
+
+  // أقل من 7 أرقام => عطّل زر الإرسال
+  if (phoneLocalInput.value.length < 7) {
+    sendCodeBtn.disabled = true;
+  } else {
+    sendCodeBtn.disabled = false;
+  }
+});
+
+function getFullPhoneNumber(){
+  window.testPhone = function(){
+  alert(getFullPhoneNumber());
+};
+
+  if (!countrySelect || !phoneLocalInput) return "";
+
+  const code = String(countrySelect.value || "").trim(); // مثل: +972
+  const number = String(phoneLocalInput.value || "")
+    .replace(/\D/g, "")   // يشيل أي شيء غير أرقام
+    .replace(/^0+/, "");  // يشيل صفر بالبداية
+
+  return code + number;   // مثال: +972537118999
+}
+
+
+const sendCodeBtn   = document.getElementById("sendCodeBtn");
+const verifyCodeBtn = document.getElementById("verifyCodeBtn");
+const resendCodeBtn = document.getElementById("resendCodeBtn");
+const backToPhoneBtn= document.getElementById("backToPhoneBtn");
+sendCodeBtn.disabled = true;
+sendCodeBtn?.addEventListener("click", handleSendCode);
+resendCodeBtn?.addEventListener("click", ()=>{
+  if (resendCodeBtn.disabled) return;
+  handleSendCode();
+});
+
+verifyCodeBtn?.addEventListener("click", async ()=>{
+  const code = String(codeInput?.value || "").trim();
+  const phone = _lastPhone || getFullPhoneNumber();
+
+  if (!code){
+    authSetMsg(currentLang==="ar" ? "⚠️ أدخل الكود" : "⚠️ Enter the code", false);
+    return;
+  }
+
+  verifyCodeBtn.disabled = true;
+  verifyCodeBtn.textContent = currentLang==="ar" ? "⏳ جاري التحقق..." : "⏳ Verifying...";
+
+  try{
+    const { r, data } = await verifyPhoneOTP(phone, code);
+
+    if (!r.ok || data?.ok !== true){
+      // ✅ رسائل خطأ حسب رد السيرفر (إذا بتبعت code / error)
+      const msg =
+        data?.error ||
+        (data?.code === "INVALID_CODE" ? (currentLang==="ar" ? "❌ الكود غير صحيح" : "❌ Invalid code") :
+         data?.code === "EXPIRED_CODE" ? (currentLang==="ar" ? "⏳ الكود منتهي" : "⏳ Code expired") :
+         (currentLang==="ar" ? "❌ فشل التحقق" : "❌ Verification failed"));
+
+      authSetMsg(msg, false);
+      return;
+    }
+
+    showToast(currentLang==="ar" ? "✅ تم تسجيل الدخول" : "✅ Logged in", "ok", 2200);
+   
+    // ✅ نجاح: حدّث الجلسة (cookie) واغلق مودال الحساب
+await syncSession();
+closeAccount(false); // ❗ لا تمسح pendingAction هنا
+closeHeaderMenu?.();
+
+// ✅ لو المستخدم كان ضاغط "اشترك"
+if (pendingAction === "subscribe"){
+  pendingAction = "";
+  openSubscribe(); // 🔓 افتح الاشتراك مباشرة
+  return;
+}
+
+showToast(
+  currentLang==="ar" ? "✅ تم تسجيل الدخول" : "✅ Logged in",
+  "ok",
+  2200
+);
+
+    
+  }catch(e){
+    console.error(e);
+    authSetMsg(currentLang==="ar" ? "❌ خطأ اتصال" : "❌ Connection error", false);
+  }finally{
+    verifyCodeBtn.disabled = false;
+    verifyCodeBtn.textContent = currentLang==="ar" ? "تحقق" : "Verify";
+  }
+});
+
+
+const authMsg = document.getElementById("authMsg");
+
+let _lastPhone = "";
+
+function authSetMsg(msg, ok=true){
+  if (!authMsg) return;
+  authMsg.textContent = msg || "";
+  authMsg.style.color = ok ? "" : "rgba(239,68,68,0.95)";
+}
+const phoneStep = document.getElementById("phoneStep");
+const codeStep  = document.getElementById("codeStep");
+
+
+function setAuthStep(step){
+  if (!phoneStep || !codeStep) return;
+
+  if (step === "code"){
+    phoneStep.style.display = "none";
+    codeStep.style.display = "block";
+    setTimeout(()=> codeInput?.focus?.(), 30);
+  } else {
+    codeStep.style.display = "none";
+    phoneStep.style.display = "block";
+    setTimeout(()=> phoneLocalInput?.focus?.(), 30); // ✅ بدل phoneInput
+  }
+}
+
+function openAccount(){
+  if (!accountModal){
+    showToast("⚠️ accountModal غير موجود", "err", 2500);
+    return;
+  }
+  closeHeaderMenu?.();
+  authSetMsg("");
+  setAuthStep("phone");
+  openModal(accountModal);
+  // ✅ امسح أي قيمة (حتى لو المتصفح عبّاها)
+if (phoneLocalInput) phoneLocalInput.value = "";
+if (codeInput) codeInput.value = "";
+if (sendCodeBtn) sendCodeBtn.disabled = true;
+
+}
+
+function closeAccount({ clearPending = false } = {}){
+  if (clearPending) pendingAction = "";
+
+  // ✅ امسح رقم الهاتف والكود والرسالة
+  if (phoneLocalInput) phoneLocalInput.value = "";
+  if (codeInput) codeInput.value = "";
+  if (authMsg) authMsg.textContent = "";
+  if (sendCodeBtn) sendCodeBtn.disabled = true;
+
+  closeModal(accountModal);
+}
+
+
+// ✅ Robust binding for Account button (works with different IDs)
+(function bindAccountButton(){
+  const acc =
+    document.getElementById("headerAccountBtn") ||
+    document.getElementById("accountBtn") ||
+    document.getElementById("accountBtnTop") ||
+    document.querySelector('[data-action="account"]');
+
+  acc?.addEventListener("click", (e)=>{
+    e.preventDefault();
+    openAccount();
+  });
+})();
+
+ACC_BTN?.addEventListener("click", openAccount);
+accountClose?.addEventListener("click", ()=> closeAccount(true));
+cancelAccountBtn?.addEventListener("click", ()=> closeAccount(true));
+
+accountModal?.addEventListener("click", (e)=>{
+  if (e.target === accountModal) closeAccount(true);
+});
+
+document.addEventListener("keydown", (e)=>{
+  if (e.key === "Escape" && accountModal?.style.display === "flex") closeAccount(true);
+});
+
+/* =======================
+   OTP: Start + Verify
+   ✅ عدّل الروابط إذا عندك endpoints مختلفة
+======================= */
+async function startPhoneOTP(phone){
+  // مثال: { ok:true } أو { ok:false, error:"..." }
+  return apiJSON("/api/auth/phone/start", { phone });
+}
+
+async function verifyPhoneOTP(phone, code){
+  // مثال: { ok:true } أو { ok:false, error:"..." }
+  return apiJSON("/api/auth/phone/verify", { phone, code });
+}
+
+function normalizePhone(p){
+  return String(p||"").trim();
+}
+
+async function handleSendCode(){
+  if (sendCodeCooldown) return;
+
+  const phone = getFullPhoneNumber();
+  const localDigits = phoneLocalInput.value.replace(/\D/g, "");
+
+  if (localDigits.length < 7 || localDigits.length > 12){
+    authSetMsg(
+      currentLang === "ar"
+        ? "⚠️ رقم الهاتف يجب أن يكون بين 7 و 12 رقم"
+        : "⚠️ Phone number must be 7–12 digits",
+      false
+    );
+    return;
+  }
+
+  // 🔒 قفل الزر + Loading
+  sendCodeCooldown = true;
+  sendCodeBtn.disabled = true;
+  sendCodeBtn.textContent = currentLang === "ar" ? "⏳ جاري الإرسال..." : "⏳ Sending...";
+
+  authSetMsg("");
+
+  try{
+    const { r, data } = await startPhoneOTP(phone);
+
+    if (!r.ok || data?.ok !== true){
+      authSetMsg(
+        data?.error || (currentLang === "ar" ? "❌ فشل إرسال الكود" : "❌ Failed to send code"),
+        false
+      );
+      return;
+    }
+
+    _lastPhone = phone;
+    setAuthStep("code");
+
+    authSetMsg(
+      currentLang === "ar"
+        ? "✅ تم إرسال الكود"
+        : "✅ Code sent",
+      true
+    );
+
+    // ▶️ عداد إعادة الإرسال
+    startResendTimer();
+
+  }catch(e){
+    console.error(e);
+    authSetMsg(
+      currentLang === "ar" ? "❌ خطأ اتصال" : "❌ Connection error",
+      false
+    );
+  }finally{
+    // افتح الزر بعد 4 ثواني (anti-spam)
+    setTimeout(()=>{
+      sendCodeCooldown = false;
+      sendCodeBtn.disabled = false;
+      sendCodeBtn.textContent = currentLang === "ar" ? "إرسال الكود" : "Send code";
+    }, 4000);
+  }
+}
+function startResendTimer(){
+  if (!resendCodeBtn) return;
+
+  let sec = resendSeconds;
+  resendCodeBtn.disabled = true;
+  resendCodeBtn.textContent =
+    currentLang === "ar"
+      ? `إعادة الإرسال (${sec})`
+      : `Resend (${sec})`;
+
+  if (resendTimer) clearInterval(resendTimer);
+
+  resendTimer = setInterval(()=>{
+    sec--;
+
+    if (sec <= 0){
+      clearInterval(resendTimer);
+      resendTimer = null;
+      resendCodeBtn.disabled = false;
+      resendCodeBtn.textContent =
+        currentLang === "ar" ? "إعادة الإرسال" : "Resend";
+    } else {
+      resendCodeBtn.textContent =
+        currentLang === "ar"
+          ? `إعادة الإرسال (${sec})`
+          : `Resend (${sec})`;
+    }
+  }, 1000);
+}
+
+/* =======================
    applyLang (UI only)
 ======================= */
 function applyLang(){
@@ -1274,13 +1356,12 @@ function applyLang(){
   });
 
   if (langBtn) langBtn.textContent = dict.langBtn;
-  if (generateBtn && !generateBtn.disabled) generateBtn.textContent = dict.generateBtn;
+  const btn = GEN_BTN || generateBtn;
+  if (btn && !btn.disabled) btn.textContent = dict.generateBtn;
 
   if (paywallTitle && dict.paywallTitle) paywallTitle.textContent = dict.paywallTitle;
   if (paywallText && dict.paywallText) paywallText.textContent = dict.paywallText;
 
-  if (authFirstName) authFirstName.placeholder = t("firstNamePh");
-  if (authLastName) authLastName.placeholder = t("lastNamePh");
 
   refreshHeaderButtons();
 }
@@ -1293,8 +1374,7 @@ const LS_SESSION_KEY = "wodoh_last_session_v6";
 function saveSession(){
   try{
     localStorage.setItem(LS_SESSION_KEY, JSON.stringify({
-      lang: currentLang,
-      ts: Date.now()
+      lang: currentLang
     }));
   }catch{}
 }
@@ -1329,20 +1409,30 @@ function openApp(){
 startBtn?.addEventListener("click", openApp);
 skipBtn?.addEventListener("click", openApp);
 
-/* =======================
-   Init
-======================= */
-restoreSession();
-applyLang();
-refreshHeaderButtons();
-setAccountTab("login");
+function resetWorkState(){
+  if (textInput) textInput.value = "";
+  if (output) output.innerHTML = "";
+  previousQuestions = [];
+  lastSourceText = "";
+  lastOutputLang = "";
+  clearFile();
+}
 
-textInput?.addEventListener("input", saveSession);
 
-// ✅ On load: sync session from server
-(async function initOnLoad(){
-  await syncSession();
-})();
+document.addEventListener("DOMContentLoaded", async ()=>{
+  restoreSession();   // يرجّع اللغة فقط
+  applyLang();
+
+  await syncSession();  // يعرف إذا فيه user ولا لا
+
+  // ✅ إذا مش مسجل دخول: رجّع كل شيء من الصفر بعد الريفرش
+  if (!isLoggedIn()){
+    resetWorkState();
+  }
+
+  refreshHeaderButtons();
+  textInput?.addEventListener("input", saveSession);
+});
 
 /* =======================
    Uploader Logic (TXT / PDF / DOCX)
@@ -1543,7 +1633,19 @@ async function callAPI({text,mode,count,questionMode,questionCount}){
 /* =======================
    Generate button
 ======================= */
-generateBtn?.addEventListener("click", async ()=>{
+GEN_BTN?.addEventListener("click", async ()=>{
+    if (!isLoggedIn()){
+    openAccount();
+    showToast(
+      currentLang==="ar"
+        ? "🔐 سجّل دخول للمتابعة (التسجيل لا يفعّل النسخة Pro)"
+        : "🔐 Please log in to continue (login does not activate Pro)",
+      "err",
+      3200
+    );
+    return;
+  }
+
   hideToast();
 
   if (!canRequest()){
@@ -1557,11 +1659,6 @@ generateBtn?.addEventListener("click", async ()=>{
     return;
   }
 
-  // ✅ Free: مرة واحدة فقط يوميًا
-  if (!isSubscribed() && !canUseNow()){
-    showPaywall();
-    return;
-  }
 
   const prefs = getQuestionPrefs();
 
@@ -1582,12 +1679,16 @@ generateBtn?.addEventListener("click", async ()=>{
     });
     lastOutputLang = detected;
 
-    if (!r.ok){
-      showToast((data?.error || t("toastErr")), "err", 3500);
-      return;
-    }
+  if (!r.ok){
+  // Free limit reached (server)
+  if (r.status === 429 || r.status === 402 || data?.code === "FREE_LIMIT"){
+    showPaywall();
+    return;
+  }
+  showToast((data?.error || t("toastErr")), "err", 3500);
+  return;
+}
 
-    if (!isSubscribed()) consumeOneUse();
 
     const parsed = parseGeminiText(data.text || "");
     previousQuestions.push(
@@ -1664,11 +1765,6 @@ document.addEventListener("click", async (e)=>{
     return;
   }
 
-  if (!canUseNow()){
-    showPaywall();
-    return;
-  }
-
   if (!canRequest()){
     showToast(t("toastWait"), "err");
     return;
@@ -1697,12 +1793,16 @@ document.addEventListener("click", async (e)=>{
 
     skeletonHolder.remove();
 
-    if (!r.ok){
-      showToast((data?.error || t("toastErr")), "err", 3500);
-      return;
-    }
+  if (!r.ok){
+  // Free limit reached (server)
+  if (r.status === 429 || r.status === 402 || data?.code === "FREE_LIMIT"){
+    showPaywall();
+    return;
+  }
+  showToast((data?.error || t("toastErr")), "err", 3500);
+  return;
+}
 
-    if (!isSubscribed()) consumeOneUse();
 
     const parsed = parseGeminiText(data.text || "");
     previousQuestions.push(
@@ -2109,12 +2209,25 @@ function openSummary(id){
   wrap.scrollIntoView({ behavior:"smooth", block:"start" });
 }
 
-mySummariesBtn?.addEventListener("click", ()=>{
+HIST_BTN?.addEventListener("click", ()=>{
+  if (!isLoggedIn()){
+    openAccount();
+    showToast(
+      currentLang==="ar"
+        ? "🔐 سجّل دخول أولًا (الميزة Pro فقط)"
+        : "🔐 Please log in first (Pro feature)",
+      "err",
+      3000
+    );
+    return;
+  }
+
   if (!isSubscribed()){
     showToast(t("toastNeedProHistory"), "err", 2800);
     openSubscribe();
     return;
   }
+
   showSummariesView();
   renderMySummaries();
 });
@@ -2263,12 +2376,193 @@ fbSend?.addEventListener("click", sendFeedbackFormspree);
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
-  // ✅ Force-bind core buttons if they exist
-(function bindCore(){
-  document.getElementById("generateBtn")?.addEventListener("click", ()=> generateBtn?.click?.());
-  document.getElementById("mySummariesBtn")?.addEventListener("click", ()=> mySummariesBtn?.click?.());
-  document.getElementById("headerAccountBtn")?.addEventListener("click", ()=> headerAccountBtn?.click?.());
-  document.getElementById("headerSubscribeBtn")?.addEventListener("click", ()=> headerSubscribeBtn?.click?.());
+  (function bindCore(){
+  const g = document.getElementById("generateBtn");
+  if (g && g !== generateBtn) g.addEventListener("click", ()=> generateBtn?.click?.());
+
+  const h = document.getElementById("mySummariesBtn");
+  if (h && h !== mySummariesBtn) h.addEventListener("click", ()=> mySummariesBtn?.click?.());
+
+  const a = document.getElementById("headerAccountBtn");
+  if (a && a !== headerAccountBtn) a.addEventListener("click", ()=> headerAccountBtn?.click?.());
+
+  const s = document.getElementById("headerSubscribeBtn");
+  if (s && s !== headerSubscribeBtn) s.addEventListener("click", ()=> headerSubscribeBtn?.click?.());
 })();
 
+})();
+// 🔹 تركيب رقم الهاتف الكامل من الدولة + الرقم المحلي
+window.testPhone = function(){
+  alert(getFullPhoneNumber());
+};
+async function logout(){
+  try{
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include"
+    });
+  }catch(e){}
+
+  sessionUser = null;
+  refreshHeaderButtons();
+  closeHeaderMenu?.();
+}
+document.getElementById("logoutBtn")?.addEventListener("click", logout);
+(function () {
+  const select = document.getElementById("countrySelect");
+  if (!select) return;
+
+  select.addEventListener("change", () => {
+    // سكّر الدروب داون فورًا بعد الاختيار
+    select.blur();
+
+    // رجّع الفوكس لحقل الهاتف (يعطي إحساس احترافي)
+    setTimeout(() => {
+      document.getElementById("phoneLocalInput")?.focus?.();
+    }, 0);
+  });
+})();
+(function initNiceCountrySelect(){
+  const real = document.getElementById("countrySelect");
+  const wrap = document.getElementById("countryNice");
+  const btn  = document.getElementById("countryNiceBtn");
+  const drop = document.getElementById("countryNiceDrop");
+  const list = document.getElementById("countryNiceList");
+  const val  = document.getElementById("countryNiceValue");
+  const search = document.getElementById("countryNiceSearch");
+  const phone = document.getElementById("phoneLocalInput");
+
+  if (!real || !wrap || !btn || !drop || !list || !val || !search) return;
+
+  // build options from real select
+  const options = Array.from(real.options).map(o => ({
+    value: o.value,
+    label: o.textContent.trim()
+  }));
+
+  function render(filter=""){
+    const f = filter.trim().toLowerCase();
+    list.innerHTML = "";
+    options
+      .filter(x => !f || x.label.toLowerCase().includes(f))
+      .forEach(x => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "nice-select__opt" + (real.value === x.value ? " active" : "");
+        b.textContent = x.label;
+
+        b.addEventListener("click", ()=>{
+          real.value = x.value;
+          val.textContent = x.label;
+
+          // close
+          closeDrop();
+
+          // focus next input
+          setTimeout(()=> phone?.focus?.(), 0);
+
+          // if you rely on change event anywhere:
+          real.dispatchEvent(new Event("change", { bubbles:true }));
+        });
+
+        list.appendChild(b);
+      });
+  }
+
+  function openDrop(){
+    wrap.classList.add("open");
+    drop.hidden = false;
+    btn.setAttribute("aria-expanded","true");
+    search.value = "";
+    render("");
+    setTimeout(()=> search.focus(), 0);
+  }
+  function closeDrop(){
+    wrap.classList.remove("open");
+    drop.hidden = true;
+    btn.setAttribute("aria-expanded","false");
+  }
+  function toggle(){
+    if (drop.hidden) openDrop();
+    else closeDrop();
+  }
+
+  // initial label
+  val.textContent = real.options[real.selectedIndex]?.textContent?.trim() || "اختر الدولة";
+
+  btn.addEventListener("click", (e)=>{ e.preventDefault(); toggle(); });
+
+  search.addEventListener("input", ()=> render(search.value));
+
+  // click outside to close
+  document.addEventListener("click", (e)=>{
+    if (!wrap.contains(e.target)) closeDrop();
+  });
+
+  // esc
+  document.addEventListener("keydown", (e)=>{
+    if (e.key === "Escape") closeDrop();
+  });
+})();
+const clearTextBtn = document.getElementById("clearTextBtn");
+
+clearTextBtn?.addEventListener("click", ()=>{
+  if (!textInput) return;
+
+  textInput.value = "";
+  textInput.focus();
+
+  lastSourceText = "";
+  lastOutputLang = "";
+  previousQuestions = [];
+
+  showToast(
+    currentLang === "ar" ? "🧹 تم مسح النص" : "🧹 Text cleared",
+    "ok",
+    1600
+  );
+});
+// ===== Account Modal Close (Robust) =====
+(() => {
+  const accountModal = document.getElementById("accountModal");
+  const accountClose = document.getElementById("accountClose");
+  const cancelBtn = document.getElementById("cancelAccountBtn");
+
+  function closeAccountModal() {
+    if (!accountModal) return;
+    accountModal.style.display = "none";
+    accountModal.classList.remove("is-open");
+
+    // optional: رجّع سكرول الصفحة
+    document.body.style.overflow = "";
+
+    // optional: سكّر قائمة الهيدر لو مفتوحة
+    const dd = document.getElementById("headerMenuDropdown");
+    const mb = document.getElementById("headerMenuBtn");
+    if (dd) dd.hidden = true;
+    if (mb) mb.setAttribute("aria-expanded", "false");
+  }
+
+  // لو عندك كود قديم بيفتح المودال بـ display:flex
+  // خليه مثل ما هو، بس الإغلاق صار مضمون
+  if (accountClose) accountClose.addEventListener("click", closeAccountModal);
+  if (cancelBtn) cancelBtn.addEventListener("click", closeAccountModal);
+
+  // إغلاق عند الضغط خارج الكارد
+  if (accountModal) {
+    accountModal.addEventListener("click", (e) => {
+      if (e.target === accountModal) closeAccountModal();
+    });
+  }
+
+  // إغلاق بزر ESC
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && accountModal && accountModal.style.display === "flex") {
+      closeAccountModal();
+    }
+  });
+
+  // إذا كان عندك أي مكان لسه ينادي closeAccountModal() (قديم)
+  // خلّيه شغال برضه:
+  window.closeAccountModal = closeAccountModal;
 })();
