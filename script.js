@@ -358,7 +358,7 @@ const I18N = {
     fbMsgLabel: "رسالتك",
     fbMsgPh: "اكتب ملاحظتك باختصار...",
     fbSend: "إرسال",
-    fbNote: "بدون حساب • لا نطلب إيميل",
+    fbNote: "بدون حساب",
     fbSuccess: "✅ شكرًا لك! تم إرسال الملاحظة.",
     toastPickRating: "⚠️ اختر تقييمًا",
     toastWriteMsgMin: "⚠️ اكتب رسالة قصيرة (على الأقل 8 أحرف)",
