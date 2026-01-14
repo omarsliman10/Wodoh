@@ -128,6 +128,27 @@ const app = document.getElementById("app");
 const startBtn = document.getElementById("startBtn");
 const skipBtn = document.getElementById("skipBtn");
 
+function openApp(){
+  if (landing) landing.style.display = "none";
+  if (app) app.style.display = "block";
+
+  // افتح الرئيسية أول ما يدخل
+  if (typeof showView === "function") showView("home");
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+startBtn?.addEventListener("click", (e)=>{
+  e.preventDefault();
+  openApp();
+});
+
+skipBtn?.addEventListener("click", (e)=>{
+  e.preventDefault();
+  openApp();
+});
+
+
 /* Uploader */
 const dropZone = document.getElementById("dropZone");
 const fileInput = document.getElementById("fileInput");
@@ -175,44 +196,48 @@ const ACC_BTN  = window.headerAccountBtn;
 const SUB_BTN  = window.headerSubscribeBtn;
 
 // =======================
-// Views nav (Home / Solve / Generate)
+// Views nav (Home / Solve / Generate) — ROBUST
 // =======================
-const homeView = document.getElementById("homeView");
-const solveView = document.getElementById("solveView");
-const generateView = document.getElementById("generateView");
-
-const goSolve = document.getElementById("goSolve");
-const goGenerate = document.getElementById("goGenerate");
+const VIEWS = {
+  home: document.getElementById("homeView") || document.querySelector('[data-view="home"]'),
+  solve: document.getElementById("solveView") || document.querySelector('[data-view="solve"]'),
+  generate: document.getElementById("generateView") || document.querySelector('[data-view="generate"]'),
+};
 
 const topBack = document.getElementById("topBack");
-const backHomeBtn = document.getElementById("backHomeBtn");
 
 function showView(name){
-  if (homeView) homeView.style.display = (name==="home") ? "block" : "none";
-  if (solveView) solveView.style.display = (name==="solve") ? "block" : "none";
-  if (generateView) generateView.style.display = (name==="generate") ? "block" : "none";
+  Object.entries(VIEWS).forEach(([k, el])=>{
+    if (!el) return;
+    el.style.display = (k === name) ? "block" : "none";
+  });
 
-  if (topBack) topBack.style.display = (name==="home") ? "none" : "block";
-
-  // اقفل أي مخرجات إضافية (اختياري)
+  if (topBack) topBack.style.display = (name === "home") ? "none" : "block";
   closeHeaderMenu?.();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
+// ✅ expose globally (حتى أي مكان يقدر يناديها)
+window.showView = showView;
 
-// default عند فتح app
-function openApp(){
-  if (landing) landing.style.display = "none";
-  if (app) app.style.display = "block";
-  showView("home");
-}
-startBtn?.addEventListener("click", openApp);
-skipBtn?.addEventListener("click", openApp);
-
-goSolve?.addEventListener("click", ()=> showView("solve"));
-goGenerate?.addEventListener("click", ()=> showView("generate"));
-backHomeBtn?.addEventListener("click", ()=> showView("home"));
+// ✅ bind زر الرجوع مباشرة (مش بالـ delegation)
+const BACK_BTN = document.getElementById("backHomeBtn");
+BACK_BTN?.addEventListener("click", (e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+  window.showView("home");
+});
 
 
+// أزرار الانتقال (بـ id أو data-action)
+document.addEventListener("click", (e)=>{
+  const toSolve = e.target.closest("#goSolve, [data-action='goSolve']");
+  const toGen   = e.target.closest("#goGenerate, [data-action='goGenerate']");
+  const back    = e.target.closest("#backHomeBtn, [data-action='backHome']");
+
+  if (toSolve){ e.preventDefault(); showView("solve"); }
+  if (toGen){ e.preventDefault(); showView("generate"); }
+  if (back){ e.preventDefault(); showView("home"); }
+});
 /* =======================
    Header Menu (Dropdown)
 ======================= */
@@ -404,6 +429,22 @@ const I18N = {
     toastFeedbackSent: "🙏 شكرًا! وصلتنا ملاحظتك",
     toastFeedbackErr: "❌ خطأ، جرّب مرة أخرى",
 
+    homeSolveTitle: "✅ حل الأسئلة",
+    homeSolveDesc: "ارفع ملف أسئلة أو الصق الأسئلة، وخلي وضوح يعطيك الإجابات بشكل مرتب.",
+    homeGenerateTitle: "⚡ تلخيص + إنشاء أسئلة",
+    homeGenerateDesc: "ارفع نص/ملف → ملخص + أسئلة اختيار من متعدد وصح/خطأ (حسب الخطة).",
+
+    mySummariesBtn: "ملخصاتي",
+    accountBtn: "الحساب",
+    logoutBtn: "تسجيل خروج",
+    menuBtn: "القائمة",
+
+    headerDescAr: "حوّل المحتوى إلى فهم",
+    headerDescEn: "Turn content into understanding",
+
+    langBtn: "🌐 English",
+
+
     menuBtn: "القائمة",
 
     accountTitle: "الحساب",
@@ -413,6 +454,15 @@ const I18N = {
 
     loginNote: "تسجيل الدخول لا يفعّل النسخة الاحترافية (Pro). الاشتراك مطلوب.",
 
+    backHomeBtn: "⬅ الرجوع للرئيسية",
+
+      homeGenerateTitle: "تلخيص + إنشاء أسئلة",
+    homeGenerateDesc: "ارفع نصًا أو ملفًا لتحصل على ملخص واضح مع أسئلة اختيار من متعدد وصح/خطأ (حسب الخطة).",
+
+    homeSolveTitle: "حل الأسئلة",
+    homeSolveDesc: "ارفع ملف أسئلة أو الصق الأسئلة، وسيعطيك وضوح الإجابات بشكل مرتب وواضح."
+
+    
 
   },
 
@@ -436,7 +486,7 @@ const I18N = {
     mySummariesBtn: "📚 My Summaries",
     accountBtnTop: "👤 Account",
     subscribeBtnTop: "⭐ Subscribe",
-    generateBtn: "Summary + Questions",
+    generateBtn: "📚Summary + Questions",
 
     inputLabel: "Text",
     uploadTitle: "📎 Upload file",
@@ -541,6 +591,26 @@ const I18N = {
     closeBtn: "Close",
 
     loginNote: "Logging in does not activate Pro. A subscription is required.",
+
+   backHomeBtn: "← Back to Home",
+
+    homeSolveTitle: "Solve Questions",
+    homeSolveDesc: "Upload a questions file or paste your questions, and Wodoh will provide clear, well-organized answers.",
+
+   homeSolveTitle: "✅ Solve Questions",
+    homeSolveDesc: "Upload a questions file or paste your questions, and Wodoh will give you clean, organized answers.",
+    homeGenerateTitle: "⚡ Summary + Question Generation",
+    homeGenerateDesc: "Upload text/file → a summary + MCQ and True/False questions (based on your plan).",
+
+    mySummariesBtn: "My Summaries",
+    accountBtn: "Account",
+    logoutBtn: "Log out",
+    menuBtn: "Menu",
+
+    headerDescAr: "حوّل المحتوى إلى فهم",
+    headerDescEn: "Turn content into understanding",
+
+    langBtn: "🌐 العربية",
 
 
   // ✅ Feedback
@@ -673,7 +743,7 @@ function setGenerateBusy(isBusy){
       btn.style.filter = "";
       btn.style.transform = "";
       btn.style.opacity = "";
-      btn.textContent = t("generateBtn");
+      btn.textContent = t("generateBtn"); // هادي لحالها رح ترجع النص
       originalGenerateLabel = "";
     }, 200);
   }
@@ -1080,7 +1150,7 @@ const codeInput = document.getElementById("codeInput"); // لازم يكون id 
 
 // const phoneInput = document.getElementById("phoneInput"); // ❌ قديم
 
-const countrySelect = document.getElementById("countrySelect");
+const countrySelect = document.getElementById("countryCode");
 const phoneLocalInput = document.getElementById("phoneLocalInput"); // ✅ جديد
 // 🔒 phone: digits only + min length
 phoneLocalInput?.addEventListener("input", () => {
@@ -1388,11 +1458,19 @@ if (appRoot) appRoot.setAttribute("dir", ar ? "rtl" : "ltr");
 /* ✅ الهيدر ثابت LTR حتى لا تتحرك أزرار اليسار */
 const header = document.getElementById("appHeader");
 if (header) header.setAttribute("dir", "ltr");
-  document.querySelectorAll("[data-i18n]").forEach((el)=>{
-    const key = el.getAttribute("data-i18n");
-    if (!key) return;
-    if (dict[key] != null) el.textContent = dict[key];
-  });
+document.querySelectorAll("[data-i18n]").forEach((el)=>{
+  const key = el.getAttribute("data-i18n");
+  if (!key) return;
+  if (dict[key] == null) return;
+
+  // ✅ إذا العنصر فيه إيموجي/أيقونة ثابتة في البداية، حافظ عليها
+  const icon = (el.getAttribute("data-i18n-icon") || "").trim();
+  if (icon) {
+    el.textContent = `${icon} ${dict[key]}`;
+  } else {
+    el.textContent = dict[key];
+  }
+});
 
   document.querySelectorAll("[data-i18n-placeholder]").forEach((el)=>{
     const key = el.getAttribute("data-i18n-placeholder");
@@ -1401,8 +1479,11 @@ if (header) header.setAttribute("dir", "ltr");
   });
 
   if (langBtn) langBtn.textContent = dict.langBtn;
-  const btn = GEN_BTN || generateBtn;
-  if (btn && !btn.disabled) btn.textContent = dict.generateBtn;
+const btn = GEN_BTN || generateBtn;
+if (btn && !btn.disabled){
+  const icon = (btn.getAttribute("data-i18n-icon") || "").trim();
+  btn.textContent = icon ? `${icon} ${dict.generateBtn}` : dict.generateBtn;
+}
 
   if (paywallTitle && dict.paywallTitle) paywallTitle.textContent = dict.paywallTitle;
   if (paywallText && dict.paywallText) paywallText.textContent = dict.paywallText;
@@ -1663,21 +1744,11 @@ async function callAPI({text,mode,count,questionMode,questionCount}){
   return { r, data, detected };
 }
 
-/* =======================
-   Generate button
-======================= */
-GEN_BTN?.addEventListener("click", async ()=>{
-    if (!isLoggedIn()){
-    openAccount();
-    showToast(
-      currentLang==="ar"
-        ? "🔐 سجّل دخول للمتابعة (التسجيل لا يفعّل النسخة Pro)"
-        : "🔐 Please log in to continue (login does not activate Pro)",
-      "err",
-      3200
-    );
-    return;
-  }
+// ✅ Generate click
+(GEN_BTN || generateBtn)?.addEventListener("click", onGenerate);
+
+async function onGenerate(e){
+  e?.preventDefault?.();
 
   hideToast();
 
@@ -1691,7 +1762,6 @@ GEN_BTN?.addEventListener("click", async ()=>{
     showToast(t("toastEnterText"), "err");
     return;
   }
-
 
   const prefs = getQuestionPrefs();
 
@@ -1710,67 +1780,20 @@ GEN_BTN?.addEventListener("click", async ()=>{
       questionMode: prefs.questionMode,
       questionCount: prefs.questionCount
     });
+
     lastOutputLang = detected;
 
-  if (!r.ok){
-  // Free limit reached (server)
-  if (r.status === 429 || r.status === 402 || data?.code === "FREE_LIMIT"){
-    showPaywall();
-    return;
-  }
-  showToast((data?.error || t("toastErr")), "err", 3500);
-  return;
-}
+    // ✅ الصق هنا نفس الكود الموجود عندك بعد if(!r.ok) إلى قبل الـ catch
+    // يعني: if(!r.ok){...} ثم parseGeminiText/renderUI/addSummaryItem/saveSession/showToast ...
 
-
-    const parsed = parseGeminiText(data.text || "");
-    previousQuestions.push(
-      ...parsed.mcq.map(q=>q.question),
-      ...parsed.tf.map(q=>q.statement)
-    );
-
-    if (output){
-      output.innerHTML = renderUI(parsed);
-      output.insertAdjacentHTML("beforeend", `
-        <div class="more-inline">
-          <button class="more-btn" data-more>${outT("moreBtn")}</button>
-        </div>
-      `);
-    }
-
-    // ✅ SAVE only for PRO
-    if (isSubscribed()){
-      const paras = (parsed.summaryParas || parsed.summary || []);
-      const bullets = (parsed.summaryBullets || []);
-      const summaryText =
-        (paras.join("\n\n") + (bullets.length ? `\n\n${bullets.map(b=>`- ${b}`).join("\n")}` : "")).trim();
-
-      const questions = [
-        ...parsed.mcq.map(q => ({ type:"mcq", question:q.question, options:q.options, answer:q.correct })),
-        ...parsed.tf.map(q => ({ type:"tf", statement:q.statement, answer:q.correct }))
-      ];
-
-      const L = outLang();
-      const titlePrefix = (L==="ar") ? "ملخص" : (L==="he" ? "סיכום" : "Summary");
-
-      addSummaryItem({
-        title: `${titlePrefix} • ${new Date().toLocaleDateString()}`,
-        summaryText,
-        questions
-      });
-
-      showToast(t("toastAdded"), "ok", 2200);
-    }
-
-    saveSession();
-    showToast(t("toastGenerated"));
   }catch(e){
     console.error(e);
     showToast(t("toastConnErr"), "err");
   }finally{
     setGenerateBusy(false);
   }
-});
+}
+
 
 /* =======================
    More button
@@ -2421,6 +2444,7 @@ fbSend?.addEventListener("click", sendFeedbackFormspree);
 
   const s = document.getElementById("headerSubscribeBtn");
   if (s && s !== headerSubscribeBtn) s.addEventListener("click", ()=> headerSubscribeBtn?.click?.());
+
 })();
 
 })();
@@ -2442,7 +2466,7 @@ async function logout(){
 }
 document.getElementById("logoutBtn")?.addEventListener("click", logout);
 (function () {
-  const select = document.getElementById("countrySelect");
+  const select = document.getElementById("countryCode");
   if (!select) return;
 
   select.addEventListener("change", () => {
@@ -2456,7 +2480,7 @@ document.getElementById("logoutBtn")?.addEventListener("click", logout);
   });
 })();
 (function initNiceCountrySelect(){
-  const real = document.getElementById("countrySelect");
+  const real = document.getElementById("countryCode");
   const wrap = document.getElementById("countryNice");
   const btn  = document.getElementById("countryNiceBtn");
   const drop = document.getElementById("countryNiceDrop");
@@ -2554,4 +2578,32 @@ clearTextBtn?.addEventListener("click", ()=>{
     "ok",
     1600
   );
+});
+document.addEventListener("click", (e)=>{
+  const back = e.target.closest("#backHomeBtn, [data-action='backHome']");
+  if (!back) return;
+  e.preventDefault();
+  showView("home");
+});
+const backHomeBtn = document.getElementById("backHomeBtn");
+
+function showBackBtn(){
+  if (backHomeBtn) backHomeBtn.style.display = "inline-flex";
+}
+function hideBackBtn(){
+  if (backHomeBtn) backHomeBtn.style.display = "none";
+}
+
+backHomeBtn?.addEventListener("click", ()=>{
+  showView("home");
+  hideBackBtn();
+});
+goGenerate?.addEventListener("click", ()=>{
+  showView("generate");
+  showBackBtn();
+});
+
+goSolve?.addEventListener("click", ()=>{
+  showView("solve");
+  showBackBtn();
 });

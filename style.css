@@ -2824,3 +2824,85 @@ html[dir="ltr"] #headerMenuDropdown .menu-btn{ justify-content: flex-start; }
     font-size: 14px !important;
   }
 }
+/* ===== HARD FIX: make Back button clickable (LAST OVERRIDE) ===== */
+#topBack{
+  position: relative !important;
+  z-index: 100000 !important;
+  pointer-events: auto !important;
+}
+#topBack *{
+  pointer-events: auto !important;
+}
+
+/* لو في طبقة شفافة فوق المحتوى */
+#app, #homeView, #generateView, #solveView, .panel, .container{
+  position: relative !important;
+  z-index: 1000 !important;
+}
+
+/* تأكد الهيدر نفسه ما يغطي تحتو */
+#appHeader{
+  pointer-events: none !important; /* الهيدر نفسه ما يمسك كلك خارج أزراره */
+}
+#appHeader button, 
+#appHeader a,
+#appHeader .header-menu-wrap,
+#appHeader #headerMenuDropdown{
+  pointer-events: auto !important; /* بس الأزرار/القائمة تضل تشتغل */
+}
+/* =========================
+   FIX OVERLAP WITH HEADER (HARD FINAL)
+   PASTE AS LAST THING IN CSS
+========================= */
+
+:root{
+  --headerH: 110px; /* عدّلها حسب طول الهيدر عندك */
+}
+
+/* الهيدر ثابت فوق */
+#appHeader{
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 99999 !important;
+
+  background: rgba(7,10,20,.60) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border-bottom: 1px solid rgba(255,255,255,.10) !important;
+
+  /* مهم جداً: خلي الهيدر يمسك كلك */
+  pointer-events: auto !important;
+}
+
+/* زح كل الموقع تحت الهيدر (هاي اللي بتمنع التداخل فعلياً) */
+body{
+  padding-top: var(--headerH) !important;
+}
+
+/* إذا عندك landing أو app main: امنع أي margin/top غريب */
+.landing,
+#landing,
+#app,
+main.container.app,
+.container{
+  margin-top: 0 !important;
+}
+
+/* حتى لو في anchors */
+html{
+  scroll-padding-top: calc(var(--headerH) + 12px);
+}
+
+/* الدروبداون يطلع فوق */
+#appHeader,
+.header-menu-wrap{
+  overflow: visible !important;
+}
+
+/* موبايل */
+@media (max-width: 700px){
+  :root{ --headerH: 90px; }
+}
+.header-back-btn{ margin-inline-end: 8px; white-space: nowrap; }

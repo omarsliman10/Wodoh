@@ -20,7 +20,7 @@
   <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
 
 <link rel="stylesheet" href="style.css?v=999">
-  <script src="script.js?v=7" defer></script>
+<script src="script.js?v=1000" defer></script>
 
   <!-- ✅ Quick polish for Paywall/Subscribe colors + Header Menu styling -->
   <style>
@@ -181,26 +181,26 @@
       </button>
 
       <div id="headerMenuDropdown" class="header-menu-dropdown" hidden>
-        <div class="menu-row" id="logoutRow" style="display:none;">
-          <button id="logoutBtn" class="btn btn-soft menu-btn" style="color:#ef4444;">
-            🚪 تسجيل خروج
-          </button>
-        </div>
+    <div class="menu-row" id="logoutRow" style="display:none;">
+      <button id="logoutBtn" class="btn btn-soft menu-btn" style="color:#ef4444;" data-i18n="logoutBtn">
+        🚪 تسجيل خروج
+      </button>
+    </div>
 
-        <div class="menu-row">
-          <button id="mySummariesBtn" class="btn menu-btn summary">📚 ملخصاتي</button>
-        </div>
 
-        <div class="menu-row">
-          <button id="headerAccountBtn" class="btn menu-btn account">👤 الحساب</button>
-        </div>
+<button id="mySummariesBtn" class="btn menu-btn summary"
+        data-i18n="mySummariesBtn" data-i18n-icon="📚">ملخصاتي</button>
 
-        <div class="menu-row">
-          <button id="headerSubscribeBtn" class="btn btn-primary menu-btn">⭐ اشترك</button>
+    <div class="menu-row">
+      <button id="headerAccountBtn" class="btn menu-btn account" data-i18n="headerAccountBtn">👤 الحساب</button>
+    </div>
+
+    <div class="menu-row">
+      <button id="headerSubscribeBtn" class="btn btn-primary menu-btn" data-i18n="headerSubscribeBtn">⭐ اشترك</button>
+    </div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
 
   <!-- CENTER -->
   <div class="header-center">
@@ -215,42 +215,50 @@
 
   <!-- LEFT -->
   <div class="header-left">
-    <div id="planStatus" class="plan-status free">
-      <span class="dot"></span>
-      <span>Free</span>
-    </div>
+    <button
+  id="backHomeBtn"
+  class="btn btn-ghost header-back-btn"
+  type="button"
+  data-i18n="backHomeBtn"
+  style="display:none;"
+>
+  ⬅ الرجوع للرئيسية
+</button>
+
+<div id="planStatus" class="plan-status free">
+  <span class="dot"></span>
+  <span id="planStatusText">Free</span>
+</div>
 
     <button id="langBtn" class="btn lang-btn">🌐 English</button>
   </div>
 
 </header>
 
-
-    <!-- زر رجوع (يظهر فقط داخل صفحات الخصائص) -->
-    <div class="top-back" id="topBack" style="display:none;margin-top:12px;">
-      <button class="btn btn-ghost" id="backHomeBtn" type="button">⬅ الرجوع للرئيسية</button>
-    </div>
-
-    <!-- ============ HOME VIEW ============ -->
-    <section id="homeView">
-
+<!-- ============ HOME VIEW ============ -->
+<section id="homeView">
       <!-- زرين كبار -->
     <div class="home-tiles">
       
-      <button id="goSolve" class="panel home-tile" type="button">
-        <div class="home-tile-title">✅ حل الأسئلة</div>
-        <div class="home-tile-desc">
-          ارفع ملف أسئلة أو الصق الأسئلة، وخلي وضوح يعطيك الإجابات بشكل مرتب.
-        </div>
-      </button>
+    <button id="goSolve" class="panel home-tile" type="button">
+<div class="home-tile-title"
+  data-i18n="homeSolveTitle"
+  data-i18n-icon="✅">
+</div>
+      <div class="home-tile-desc" data-i18n="homeSolveDesc">
+        ارفع ملف أسئلة أو الصق الأسئلة، وخلي وضوح يعطيك الإجابات بشكل مرتب.
+      </div>
+    </button>
 
-      <button id="goGenerate" class="panel home-tile" type="button">
-        <div class="home-tile-title">⚡ تلخيص + إنشاء أسئلة</div>
-        <div class="home-tile-desc">
-          ارفع نص/ملف → ملخص + أسئلة اختيار من متعدد وصح/خطأ (حسب الخطة).
-        </div>
-      </button>
-
+    <button id="goGenerate" class="panel home-tile" type="button">
+<div class="home-tile-title"
+  data-i18n="homeGenerateTitle"
+  data-i18n-icon="⚡">
+</div>
+      <div class="home-tile-desc" data-i18n="homeGenerateDesc">
+        ارفع نص/ملف → ملخص + أسئلة اختيار من متعدد وصح/خطأ (حسب الخطة).
+      </div>
+    </button>
     </div>
       <!-- Feedback (يبقى هنا فقط) -->
       <section class="feedback" id="feedback">
@@ -407,10 +415,11 @@
         </div>
 
         <div class="controls" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:12px;">
-          <button id="generateBtn" type="button" class="btn btn-primary btn-wide" style="flex:1;min-width:200px;" data-i18n="generateBtn">
-            تلخيص + أسئلة
-          </button>
-        </div>
+    <button id="generateBtn" type="button" class="btn btn-primary btn-wide"
+      style="flex:1;min-width:200px;"
+      data-i18n="generateBtn"
+      data-i18n-icon="📚">
+    </button>
 
         <div id="toast" class="toast" style="display:none;"></div>
       </section>
