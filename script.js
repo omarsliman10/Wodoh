@@ -119,8 +119,8 @@ const controlsPlanBadge = document.getElementById("controlsPlanBadge");
 
 
 /* NEW: header plan pill (from updated index) */
-const planPill = document.getElementById("planPill");
-const planPillText = document.getElementById("planPillText");
+const planPill = document.getElementById("planStatus");
+const planPillText = document.getElementById("planStatusText");
 
 /* Landing */
 const landing = document.getElementById("landing");
@@ -174,6 +174,43 @@ const HIST_BTN = window.mySummariesBtn;
 const ACC_BTN  = window.headerAccountBtn;
 const SUB_BTN  = window.headerSubscribeBtn;
 
+// =======================
+// Views nav (Home / Solve / Generate)
+// =======================
+const homeView = document.getElementById("homeView");
+const solveView = document.getElementById("solveView");
+const generateView = document.getElementById("generateView");
+
+const goSolve = document.getElementById("goSolve");
+const goGenerate = document.getElementById("goGenerate");
+
+const topBack = document.getElementById("topBack");
+const backHomeBtn = document.getElementById("backHomeBtn");
+
+function showView(name){
+  if (homeView) homeView.style.display = (name==="home") ? "block" : "none";
+  if (solveView) solveView.style.display = (name==="solve") ? "block" : "none";
+  if (generateView) generateView.style.display = (name==="generate") ? "block" : "none";
+
+  if (topBack) topBack.style.display = (name==="home") ? "none" : "block";
+
+  // اقفل أي مخرجات إضافية (اختياري)
+  closeHeaderMenu?.();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// default عند فتح app
+function openApp(){
+  if (landing) landing.style.display = "none";
+  if (app) app.style.display = "block";
+  showView("home");
+}
+startBtn?.addEventListener("click", openApp);
+skipBtn?.addEventListener("click", openApp);
+
+goSolve?.addEventListener("click", ()=> showView("solve"));
+goGenerate?.addEventListener("click", ()=> showView("generate"));
+backHomeBtn?.addEventListener("click", ()=> showView("home"));
 
 
 /* =======================
@@ -221,14 +258,16 @@ document.addEventListener("keydown", (e)=>{
 });
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // ✅ امسح الرقم والكود عند أي ريفريش
-  if (phoneLocalInput) phoneLocalInput.value = "";
-  if (codeInput) codeInput.value = "";
-  if (sendCodeBtn) sendCodeBtn.disabled = true;
+  const p = document.getElementById("phoneLocalInput");
+  const c = document.getElementById("codeInput");
+  const s = document.getElementById("sendCodeBtn");
+
+  if (p) p.value = "";
+  if (c) c.value = "";
+  if (s) s.disabled = true;
 
   await syncSession();
 });
-
 
 
 /* =======================
@@ -858,6 +897,7 @@ paywallModal?.addEventListener("click", (e)=>{ if (e.target === paywallModal) cl
 
 paywallAccountBtn?.addEventListener("click", ()=>{
   closeModal(paywallModal);
+  openAccount();
 });
 paywallSubscribeBtn?.addEventListener("click", ()=>{
   closeModal(paywallModal);
@@ -1040,7 +1080,7 @@ const codeInput = document.getElementById("codeInput"); // لازم يكون id 
 
 // const phoneInput = document.getElementById("phoneInput"); // ❌ قديم
 
-const countrySelect = document.getElementById("countrySelect");     // ✅ جديد
+const countrySelect = document.getElementById("countrySelect");
 const phoneLocalInput = document.getElementById("phoneLocalInput"); // ✅ جديد
 // 🔒 phone: digits only + min length
 phoneLocalInput?.addEventListener("input", () => {
@@ -1056,10 +1096,6 @@ phoneLocalInput?.addEventListener("input", () => {
 });
 
 function getFullPhoneNumber(){
-  window.testPhone = function(){
-  alert(getFullPhoneNumber());
-};
-
   if (!countrySelect || !phoneLocalInput) return "";
 
   const code = String(countrySelect.value || "").trim(); // مثل: +972
@@ -1075,7 +1111,7 @@ const sendCodeBtn   = document.getElementById("sendCodeBtn");
 const verifyCodeBtn = document.getElementById("verifyCodeBtn");
 const resendCodeBtn = document.getElementById("resendCodeBtn");
 const backToPhoneBtn= document.getElementById("backToPhoneBtn");
-sendCodeBtn.disabled = true;
+if (sendCodeBtn) sendCodeBtn.disabled = true;
 sendCodeBtn?.addEventListener("click", handleSendCode);
 resendCodeBtn?.addEventListener("click", ()=>{
   if (resendCodeBtn.disabled) return;
@@ -1113,7 +1149,7 @@ verifyCodeBtn?.addEventListener("click", async ()=>{
    
     // ✅ نجاح: حدّث الجلسة (cookie) واغلق مودال الحساب
 await syncSession();
-closeAccount(false); // ❗ لا تمسح pendingAction هنا
+closeAccount({ clearPending:false }); // لا تمسح pendingAction
 closeHeaderMenu?.();
 
 // ✅ لو المستخدم كان ضاغط "اشترك"
@@ -1211,15 +1247,15 @@ function closeAccount({ clearPending = false } = {}){
 })();
 
 ACC_BTN?.addEventListener("click", openAccount);
-accountClose?.addEventListener("click", ()=> closeAccount(true));
-cancelAccountBtn?.addEventListener("click", ()=> closeAccount(true));
+accountClose?.addEventListener("click", ()=> closeAccount({ clearPending:true }));
+cancelAccountBtn?.addEventListener("click", ()=> closeAccount({ clearPending:true }));
 
 accountModal?.addEventListener("click", (e)=>{
-  if (e.target === accountModal) closeAccount(true);
+  if (e.target === accountModal) closeAccount({ clearPending:true });
 });
 
 document.addEventListener("keydown", (e)=>{
-  if (e.key === "Escape" && accountModal?.style.display === "flex") closeAccount(true);
+  if (e.key === "Escape" && accountModal?.style.display === "flex") closeAccount({ clearPending:true });
 });
 
 /* =======================
@@ -1258,7 +1294,7 @@ async function handleSendCode(){
 
   // 🔒 قفل الزر + Loading
   sendCodeCooldown = true;
-  sendCodeBtn.disabled = true;
+if (sendCodeBtn) sendCodeBtn.disabled = true;
   sendCodeBtn.textContent = currentLang === "ar" ? "⏳ جاري الإرسال..." : "⏳ Sending...";
 
   authSetMsg("");
@@ -1339,10 +1375,19 @@ function applyLang(){
   const ar = currentLang === "ar";
   const dict = I18N[currentLang] || I18N.ar;
 
-  document.documentElement.lang = ar ? "ar" : "en";
-  document.documentElement.dir = ar ? "rtl" : "ltr";
-  document.body.dir = ar ? "rtl" : "ltr";
+document.documentElement.lang = ar ? "ar" : "en";
 
+/* ✅ لا تقلب اتجاه الصفحة كلها */
+document.documentElement.dir = "rtl";   // ثابت (اختياري)
+document.body.dir = "rtl";              // ثابت (اختياري)
+
+/* ✅ غيّر اتجاه المحتوى فقط */
+const appRoot = document.getElementById("app") || document.querySelector("main.container.app");
+if (appRoot) appRoot.setAttribute("dir", ar ? "rtl" : "ltr");
+
+/* ✅ الهيدر ثابت LTR حتى لا تتحرك أزرار اليسار */
+const header = document.getElementById("appHeader");
+if (header) header.setAttribute("dir", "ltr");
   document.querySelectorAll("[data-i18n]").forEach((el)=>{
     const key = el.getAttribute("data-i18n");
     if (!key) return;
@@ -1396,18 +1441,6 @@ function restoreSession(){
   }catch{}
 }
 
-/* =======================
-   Landing
-======================= */
-function openApp(){
-  if (landing) landing.style.display = "none";
-  if (app){
-    app.style.display = "block";
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-}
-startBtn?.addEventListener("click", openApp);
-skipBtn?.addEventListener("click", openApp);
 
 function resetWorkState(){
   if (textInput) textInput.value = "";
@@ -2522,47 +2555,3 @@ clearTextBtn?.addEventListener("click", ()=>{
     1600
   );
 });
-// ===== Account Modal Close (Robust) =====
-(() => {
-  const accountModal = document.getElementById("accountModal");
-  const accountClose = document.getElementById("accountClose");
-  const cancelBtn = document.getElementById("cancelAccountBtn");
-
-  function closeAccountModal() {
-    if (!accountModal) return;
-    accountModal.style.display = "none";
-    accountModal.classList.remove("is-open");
-
-    // optional: رجّع سكرول الصفحة
-    document.body.style.overflow = "";
-
-    // optional: سكّر قائمة الهيدر لو مفتوحة
-    const dd = document.getElementById("headerMenuDropdown");
-    const mb = document.getElementById("headerMenuBtn");
-    if (dd) dd.hidden = true;
-    if (mb) mb.setAttribute("aria-expanded", "false");
-  }
-
-  // لو عندك كود قديم بيفتح المودال بـ display:flex
-  // خليه مثل ما هو، بس الإغلاق صار مضمون
-  if (accountClose) accountClose.addEventListener("click", closeAccountModal);
-  if (cancelBtn) cancelBtn.addEventListener("click", closeAccountModal);
-
-  // إغلاق عند الضغط خارج الكارد
-  if (accountModal) {
-    accountModal.addEventListener("click", (e) => {
-      if (e.target === accountModal) closeAccountModal();
-    });
-  }
-
-  // إغلاق بزر ESC
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && accountModal && accountModal.style.display === "flex") {
-      closeAccountModal();
-    }
-  });
-
-  // إذا كان عندك أي مكان لسه ينادي closeAccountModal() (قديم)
-  // خلّيه شغال برضه:
-  window.closeAccountModal = closeAccountModal;
-})();

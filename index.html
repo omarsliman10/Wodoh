@@ -19,7 +19,7 @@
   <!-- ✅ Mammoth.js for DOCX -->
   <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
 
-  <link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=999">
   <script src="script.js?v=7" defer></script>
 
   <!-- ✅ Quick polish for Paywall/Subscribe colors + Header Menu styling -->
@@ -64,6 +64,13 @@
       object-fit: contain;
       display:block;
     }
+
+    .header{
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
 
     /* ===== Header: action menu (buttons inside one pill) ===== */
     .action-menu{
@@ -124,9 +131,6 @@
         </div>
       </div>
 
-    <p class="sub-subtitle" id="accountSub" data-i18n="accountSubtitle">
-      سجّل دخول برقم الهاتف (كود لمرة واحدة).
-    </p>
 
       <h1 class="title">
         <span class="brand-inline">وضوح</span>
@@ -161,227 +165,261 @@
   <!-- App -->
   <main class="container app" id="app" style="display:none;">
 
-    <!-- ✅ HEADER (FIXED & CLEAN) -->
-    <header class="header">
+      <header class="header" id="appHeader">
 
-      <!-- Brand: logo beside words -->
-      <div class="brand">
-        <div class="brand-logo" aria-label="Wodoh Logo">
-          <img src="./logo.png" alt="Wodoh logo" />
+  <!-- RIGHT -->
+  <div class="header-right">
+    <div class="header-menu-wrap">
+      <button
+        id="headerMenuBtn"
+        class="btn header-menu-btn"
+        type="button"
+        aria-haspopup="true"
+        aria-expanded="false"
+      >
+        ☰ <span data-i18n="menuBtn">القائمة</span>
+      </button>
+
+      <div id="headerMenuDropdown" class="header-menu-dropdown" hidden>
+        <div class="menu-row" id="logoutRow" style="display:none;">
+          <button id="logoutBtn" class="btn btn-soft menu-btn" style="color:#ef4444;">
+            🚪 تسجيل خروج
+          </button>
         </div>
 
-        <div class="brand-text">
-          <div class="brand-lines">
-            <div class="brand-ar" data-i18n="brandAr">وضوح</div>
-            <div class="brand-en" data-i18n="brandEn">Wodoh</div>
-          </div>
+        <div class="menu-row">
+          <button id="mySummariesBtn" class="btn menu-btn summary">📚 ملخصاتي</button>
+        </div>
 
-          <div class="brand-desc">
-            <div class="desc-ar" data-i18n="brandDescAr">حوّل المحتوى إلى فهم — ملخصات وأسئلة تفاعلية</div>
-            <div class="desc-en" data-i18n="brandDescEn">Turn content into understanding — summaries & interactive questions</div>
-          </div>
+        <div class="menu-row">
+          <button id="headerAccountBtn" class="btn menu-btn account">👤 الحساب</button>
+        </div>
+
+        <div class="menu-row">
+          <button id="headerSubscribeBtn" class="btn btn-primary menu-btn">⭐ اشترك</button>
         </div>
       </div>
+    </div>
+  </div>
 
-      <!-- Actions: one menu button opens dropdown + language outside -->
-      <div class="header-actions">
-      <!-- Plan status pill -->
-      <div id="planStatus" class="plan-status free">
-        <span class="dot"></span>
-        <span id="planStatusText">Free</span>
-      </div>
+  <!-- CENTER -->
+  <div class="header-center">
+    <img src="./logo.png" class="center-logo" alt="Wodoh">
+    <div class="center-title">
+      <div class="title-ar">وضوح</div>
+      <div class="title-en">Wodoh</div>
+      <div class="title-desc-ar">حوّل المحتوى إلى فهم</div>
+      <div class="title-desc-en">Turn content into understanding</div>
+    </div>
+  </div>
 
-        <!-- ✅ Menu button -->
-        <div class="header-menu-wrap">
-<button id="headerMenuBtn" class="btn header-menu-btn btn-menu" type="button" aria-haspopup="true" aria-expanded="false">
-  ☰ <span data-i18n="menuBtn">القائمة</span>
-</button>
-          <!-- ✅ Dropdown -->
-          <div id="headerMenuDropdown" class="header-menu-dropdown" hidden>
-          <!-- 🔴 Logout (يظهر فقط بعد تسجيل الدخول) -->
-          <div class="menu-row" id="logoutRow" style="display:none;">
-            <button id="logoutBtn" class="btn btn-soft menu-btn" style="color:#ef4444;">
-              🚪 تسجيل خروج
-            </button>
+  <!-- LEFT -->
+  <div class="header-left">
+    <div id="planStatus" class="plan-status free">
+      <span class="dot"></span>
+      <span>Free</span>
+    </div>
+
+    <button id="langBtn" class="btn lang-btn">🌐 English</button>
+  </div>
+
+</header>
+
+
+    <!-- زر رجوع (يظهر فقط داخل صفحات الخصائص) -->
+    <div class="top-back" id="topBack" style="display:none;margin-top:12px;">
+      <button class="btn btn-ghost" id="backHomeBtn" type="button">⬅ الرجوع للرئيسية</button>
+    </div>
+
+    <!-- ============ HOME VIEW ============ -->
+    <section id="homeView">
+
+      <!-- زرين كبار -->
+    <div class="home-tiles">
+      
+      <button id="goSolve" class="panel home-tile" type="button">
+        <div class="home-tile-title">✅ حل الأسئلة</div>
+        <div class="home-tile-desc">
+          ارفع ملف أسئلة أو الصق الأسئلة، وخلي وضوح يعطيك الإجابات بشكل مرتب.
+        </div>
+      </button>
+
+      <button id="goGenerate" class="panel home-tile" type="button">
+        <div class="home-tile-title">⚡ تلخيص + إنشاء أسئلة</div>
+        <div class="home-tile-desc">
+          ارفع نص/ملف → ملخص + أسئلة اختيار من متعدد وصح/خطأ (حسب الخطة).
+        </div>
+      </button>
+
+    </div>
+      <!-- Feedback (يبقى هنا فقط) -->
+      <section class="feedback" id="feedback">
+        <div class="feedback-card">
+          <div class="feedback-head">
+            <h2 data-i18n="fbTitle">💬 رأيك يهمنا</h2>
+            <p data-i18n="fbDesc">ساعدنا نطوّر وضوح. دقيقة واحدة فقط.</p>
           </div>
 
-            <div class="menu-row">
-            <button id="mySummariesBtn" class="btn menu-btn btn-summaries" type="button" data-i18n="mySummariesBtn">📚 ملخصاتي</button>
+          <div class="feedback-grid">
+            <div class="fb-field">
+              <label data-i18n="fbRatingLabel">التقييم</label>
+              <div class="fb-stars" id="fbStars" role="radiogroup" aria-label="rating">
+                <button type="button" class="star" data-v="1" aria-label="1">★</button>
+                <button type="button" class="star" data-v="2" aria-label="2">★</button>
+                <button type="button" class="star" data-v="3" aria-label="3">★</button>
+                <button type="button" class="star" data-v="4" aria-label="4">★</button>
+                <button type="button" class="star" data-v="5" aria-label="5">★</button>
+              </div>
+              <div class="fb-hint" id="fbRatingHint" data-i18n="fbRatingHint">اختر من 1 إلى 5</div>
             </div>
 
-            <div class="menu-row">
-              <button id="headerAccountBtn" class="btn menu-btn btn-account" type="button" data-i18n="accountBtnTop">👤 الحساب</button>
+            <div class="fb-field">
+              <label for="fbType" data-i18n="fbTypeLabel">نوع الملاحظة</label>
+              <select id="fbType">
+                <option value="idea" data-i18n="fbTypeIdea">اقتراح ميزة</option>
+                <option value="bug" data-i18n="fbTypeBug">مشكلة/خطأ</option>
+                <option value="ux" data-i18n="fbTypeUx">تحسين تجربة الاستخدام</option>
+                <option value="payment" data-i18n="fbTypePayment">الدفع/الاشتراك</option>
+                <option value="other" data-i18n="fbTypeOther">أخرى</option>
+              </select>
             </div>
 
-            <div class="menu-row">
-              <button id="headerSubscribeBtn" class="btn btn-primary menu-btn" type="button" data-i18n="subscribeBtnTop">⭐ اشترك</button>
+            <div class="fb-field fb-wide">
+              <label for="fbMsg" data-i18n="fbMsgLabel">رسالتك</label>
+              <textarea id="fbMsg" rows="4" maxlength="600" data-i18n-placeholder="fbMsgPh" placeholder="اكتب ملاحظتك باختصار..."></textarea>
+              <div class="fb-counter"><span id="fbCount">0</span>/600</div>
             </div>
 
-          </div>
-        </div>
+            <input id="fbWebsite" type="text" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px;opacity:0" />
+            <input id="fbRating" type="hidden" name="rating" value="0" />
 
-        <!-- ✅ Language outside -->
-        <div class="lang-outside">
-        <button id="langBtn" class="btn lang-btn btn-lang" type="button" data-i18n="langBtn">🌐 English</button>
-        </div>
-
-      </div>
-
-
-    </header>
-
-    <section class="panel">
-      <label class="label" id="inputLabel" data-i18n="inputLabel">النص</label>
-
-      <div class="text-tools">
-  <button id="clearTextBtn" type="button" class="btn-clear-text" title="مسح النص">
-    ✕
-  </button>
-</div>
-
-
-      <textarea
-        id="textInput"
-        dir="auto"
-        data-i18n-placeholder="textPlaceholder"
-        placeholder="الصق النص هنا..."
-      ></textarea>
-
-      <div class="uploader" id="dropZone">
-        <div class="uploader-top">
-          <div class="uploader-title" id="uploaderTitle" data-i18n="uploadTitle">📎 رفع ملف</div>
-          <button id="clearFileBtn" type="button" class="btn btn-danger" disabled data-i18n="clearFileBtn">مسح الملف ✖</button>
-        </div>
-
-        <div class="uploader-body">
-          <input id="fileInput" type="file" accept=".txt,.pdf,.docx" hidden />
-          <button id="chooseFileBtn" type="button" class="btn btn-soft" data-i18n="chooseFileBtn">اختيار ملف</button>
-
-          <div class="uploader-hint" id="fileHint" data-i18n="fileHint">
-            اسحب الملف هنا أو اضغط “اختيار ملف” (TXT / PDF / DOCX)
-          </div>
-
-          <div class="file-preview" id="filePreview" style="display:none;">
-            <div class="file-name" id="fileName">—</div>
-            <div class="file-meta" id="fileMeta">—</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Question controls (keep IDs for script.js) -->
-      <div class="pro-controls locked" id="proControls">
-        <div class="row" style="justify-content:space-between;">
-          <div>
-            <p class="title" style="margin:0;" data-i18n="proControlsTitle">تحكم بالأسئلة</p>
-            <div class="muted" data-i18n="proControlsDesc">اختر النوع والعدد (لـ Pro تحكم كامل).</div>
-          </div>
-
-          <span id="controlsPlanBadge" class="plan-pill free" style="padding:7px 10px;">
-            <span class="dot"></span>
-            <span data-i18n="planFree">Free</span>
-          </span>
-        </div>
-
-        <div class="row" style="align-items:flex-end;">
-          <div style="flex:1;min-width:180px;">
-            <label class="label" style="margin-bottom:6px;" data-i18n="qTypeLabel">نوع الأسئلة</label>
-
-            <select id="questionType" class="select" style="width:100%;">
-              <option value="both" data-i18n="qTypeBoth">اختيار من متعدد + صح/خطأ</option>
-              <option value="mcq" data-i18n="qTypeMcq">اختيار من متعدد فقط</option>
-              <option value="tf" data-i18n="qTypeTf">صح/خطأ فقط</option>
-            </select>
-
-            <div id="proLockHint1" style="margin-top:8px;display:none;" class="limit-hint">
-              <strong data-i18n="lockedTitle">🔒 Pro فقط</strong>
-              <div data-i18n="proLockHint">التحكم الكامل متاح للمشترك.</div>
+            <div class="fb-actions fb-wide">
+              <button type="button" class="btn" id="fbSend" data-i18n="fbSend">إرسال</button>
+              <div class="fb-note" data-i18n="fbNote">بدون حساب </div>
             </div>
-          </div>
 
-          <div style="width:180px;min-width:160px;">
-            <label class="label" style="margin-bottom:6px;" data-i18n="qCountLabel">عدد الأسئلة</label>
-            <input id="questionCount" type="number" min="1" max="20" value="5" class="input" style="width:100%;" />
-
-            <div id="proLockHint2" style="margin-top:8px;display:none;" class="limit-hint">
-              <strong data-i18n="freeLimitTitle">🆓 المجاني</strong>
-              <div data-i18n="freeLimitHint">حد أقصى 5 أسئلة.</div>
-            </div>
+            <p id="feedbackSuccess" style="display:none;margin:8px 0 0;opacity:.95;" data-i18n="fbSuccess">
+              ✅ شكرًا لك! تم إرسال الملاحظة.
+            </p>
           </div>
         </div>
+      </section>
 
-        <div class="pro-lock" id="proLockBox" style="display:none;">
-          <div class="txt">
-            <b data-i18n="planPro">Wodoh Pro</b>
-            <span data-i18n="planProDesc">يعطيك تحكم بالنوع والعدد + بدون انتظار + حفظ النتائج.</span>
-          </div>
-          <button id="openSubscribeFromControls" class="btn btn-primary" type="button" data-i18n="upgradeBtn">ترقية ⭐</button>
-        </div>
-      </div>
-
-      <div class="controls" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:12px;">
-        <button id="generateBtn" type="button" class="btn btn-primary btn-wide" style="flex:1;min-width:200px;" data-i18n="generateBtn">
-          تلخيص + أسئلة
-        </button>
-      </div>
-
-      <div id="toast" class="toast" style="display:none;"></div>
     </section>
 
-    <section class="output" id="output"></section>
-    <section id="mySummaries" class="output" style="display:none;"></section>
-
-    <!-- Feedback -->
-    <section class="feedback" id="feedback">
-      <div class="feedback-card">
-        <div class="feedback-head">
-          <h2 data-i18n="fbTitle">💬 رأيك يهمنا</h2>
-          <p data-i18n="fbDesc">ساعدنا نطوّر وضوح. دقيقة واحدة فقط.</p>
+    <!-- ============ SOLVE VIEW (placeholder الآن) ============ -->
+    <section id="solveView" style="display:none;margin-top:14px;">
+      <section class="panel">
+        <label class="label">حل الأسئلة</label>
+        <div style="opacity:.85;line-height:1.7;">
+          (قريبًا) هنا رح نخلي المستخدم يلصق أسئلة/يرفع ملف أسئلة، ونطلع الإجابات.
         </div>
-
-        <div class="feedback-grid">
-          <div class="fb-field">
-            <label data-i18n="fbRatingLabel">التقييم</label>
-            <div class="fb-stars" id="fbStars" role="radiogroup" aria-label="rating">
-              <button type="button" class="star" data-v="1" aria-label="1">★</button>
-              <button type="button" class="star" data-v="2" aria-label="2">★</button>
-              <button type="button" class="star" data-v="3" aria-label="3">★</button>
-              <button type="button" class="star" data-v="4" aria-label="4">★</button>
-              <button type="button" class="star" data-v="5" aria-label="5">★</button>
-            </div>
-            <div class="fb-hint" id="fbRatingHint" data-i18n="fbRatingHint">اختر من 1 إلى 5</div>
-          </div>
-
-          <div class="fb-field">
-            <label for="fbType" data-i18n="fbTypeLabel">نوع الملاحظة</label>
-            <select id="fbType">
-              <option value="idea" data-i18n="fbTypeIdea">اقتراح ميزة</option>
-              <option value="bug" data-i18n="fbTypeBug">مشكلة/خطأ</option>
-              <option value="ux" data-i18n="fbTypeUx">تحسين تجربة الاستخدام</option>
-              <option value="payment" data-i18n="fbTypePayment">الدفع/الاشتراك</option>
-              <option value="other" data-i18n="fbTypeOther">أخرى</option>
-            </select>
-          </div>
-
-          <div class="fb-field fb-wide">
-            <label for="fbMsg" data-i18n="fbMsgLabel">رسالتك</label>
-            <textarea id="fbMsg" rows="4" maxlength="600" data-i18n-placeholder="fbMsgPh" placeholder="اكتب ملاحظتك باختصار..."></textarea>
-            <div class="fb-counter"><span id="fbCount">0</span>/600</div>
-          </div>
-
-          <input id="fbWebsite" type="text" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px;opacity:0" />
-          <input id="fbRating" type="hidden" name="rating" value="0" />
-
-          <div class="fb-actions fb-wide">
-            <button type="button" class="btn" id="fbSend" data-i18n="fbSend">إرسال</button>
-            <div class="fb-note" data-i18n="fbNote">بدون حساب </div>
-          </div>
-
-          <p id="feedbackSuccess" style="display:none;margin:8px 0 0;opacity:.95;" data-i18n="fbSuccess">
-            ✅ شكرًا لك! تم إرسال الملاحظة.
-          </p>
-        </div>
-      </div>
+      </section>
+      <section class="output" id="solveOutput"></section>
     </section>
+
+    <!-- ============ GENERATE VIEW (هو شغلك الحالي) ============ -->
+    <section id="generateView" style="display:none;margin-top:14px;">
+
+      <section class="panel">
+        <label class="label" id="inputLabel" data-i18n="inputLabel">النص</label>
+
+        <div class="text-tools">
+          <button id="clearTextBtn" type="button" class="btn-clear-text" title="مسح النص">✕</button>
+        </div>
+
+        <textarea
+          id="textInput"
+          dir="auto"
+          data-i18n-placeholder="textPlaceholder"
+          placeholder="الصق النص هنا..."
+        ></textarea>
+
+        <div class="uploader" id="dropZone">
+          <div class="uploader-top">
+            <div class="uploader-title" id="uploaderTitle" data-i18n="uploadTitle">📎 رفع ملف</div>
+            <button id="clearFileBtn" type="button" class="btn btn-danger" disabled data-i18n="clearFileBtn">مسح الملف ✖</button>
+          </div>
+
+          <div class="uploader-body">
+            <input id="fileInput" type="file" accept=".txt,.pdf,.docx" hidden />
+            <button id="chooseFileBtn" type="button" class="btn btn-soft" data-i18n="chooseFileBtn">اختيار ملف</button>
+
+            <div class="uploader-hint" id="fileHint" data-i18n="fileHint">
+              اسحب الملف هنا أو اضغط “اختيار ملف” (TXT / PDF / DOCX)
+            </div>
+
+            <div class="file-preview" id="filePreview" style="display:none;">
+              <div class="file-name" id="fileName">—</div>
+              <div class="file-meta" id="fileMeta">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Question controls (keep IDs for script.js) -->
+        <div class="pro-controls locked" id="proControls">
+          <div class="row" style="justify-content:space-between;">
+            <div>
+              <p class="title" style="margin:0;" data-i18n="proControlsTitle">تحكم بالأسئلة</p>
+              <div class="muted" data-i18n="proControlsDesc">اختر النوع والعدد (لـ Pro تحكم كامل).</div>
+            </div>
+
+            <span id="controlsPlanBadge" class="plan-pill free" style="padding:7px 10px;">
+              <span class="dot"></span>
+              <span data-i18n="planFree">Free</span>
+            </span>
+          </div>
+
+          <div class="row" style="align-items:flex-end;">
+            <div style="flex:1;min-width:180px;">
+              <label class="label" style="margin-bottom:6px;" data-i18n="qTypeLabel">نوع الأسئلة</label>
+
+              <select id="questionType" class="select" style="width:100%;">
+                <option value="both" data-i18n="qTypeBoth">اختيار من متعدد + صح/خطأ</option>
+                <option value="mcq" data-i18n="qTypeMcq">اختيار من متعدد فقط</option>
+                <option value="tf" data-i18n="qTypeTf">صح/خطأ فقط</option>
+              </select>
+
+              <div id="proLockHint1" style="margin-top:8px;display:none;" class="limit-hint">
+                <strong data-i18n="lockedTitle">🔒 Pro فقط</strong>
+                <div data-i18n="proLockHint">التحكم الكامل متاح للمشترك.</div>
+              </div>
+            </div>
+
+            <div style="width:180px;min-width:160px;">
+              <label class="label" style="margin-bottom:6px;" data-i18n="qCountLabel">عدد الأسئلة</label>
+              <input id="questionCount" type="number" min="1" max="20" value="5" class="input" style="width:100%;" />
+
+              <div id="proLockHint2" style="margin-top:8px;display:none;" class="limit-hint">
+                <strong data-i18n="freeLimitTitle">🆓 المجاني</strong>
+                <div data-i18n="freeLimitHint">حد أقصى 5 أسئلة.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pro-lock" id="proLockBox" style="display:none;">
+            <div class="txt">
+              <b data-i18n="planPro">Wodoh Pro</b>
+              <span data-i18n="planProDesc">يعطيك تحكم بالنوع والعدد + بدون انتظار + حفظ النتائج.</span>
+            </div>
+            <button id="openSubscribeFromControls" class="btn btn-primary" type="button" data-i18n="upgradeBtn">ترقية ⭐</button>
+          </div>
+        </div>
+
+        <div class="controls" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:12px;">
+          <button id="generateBtn" type="button" class="btn btn-primary btn-wide" style="flex:1;min-width:200px;" data-i18n="generateBtn">
+            تلخيص + أسئلة
+          </button>
+        </div>
+
+        <div id="toast" class="toast" style="display:none;"></div>
+      </section>
+
+      <section class="output" id="output"></section>
+      <section id="mySummaries" class="output" style="display:none;"></section>
+
+    </section>
+
 
     <footer class="footer" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:center;">
       <span>© <span id="year"></span> <span data-i18n="footerBrand">Wodoh – وضوح</span></span>
@@ -398,127 +436,123 @@
 
     <h3 id="accountTitle" class="modal-title">الحساب</h3>
 
-    <p class="modal-subtitle">
-      سجّل دخولك باستخدام رقم هاتفك للوصول إلى ميزات الموقع.<br>
-      بعض الميزات المتقدمة متاحة باشتراك <bdi>Pro</bdi>.
-    </p>
+  <p class="modal-subtitle">
+  سجّل دخولك باستخدام رقم هاتفك للوصول إلى ميزات الموقع.<br>
+  بعض الميزات المتقدمة متاحة باشتراك <bdi>Pro</bdi>.
+  </p>
+<div id="authMsg" style="margin-top:12px;opacity:.92;"></div>
 
-    <div class="form-row">
-      <label class="field-label" for="countryCode">الدولة</label>
-      <select id="countryCode" class="input input--select">
-    <!-- STEP 1: phone -->
-  <div id="phoneStep">
+<!-- STEP 1: phone -->
+<div id="phoneStep">
 
   <div class="form-row">
-    <label class="field-label" for="countrySelect">الدولة</label>
+    <label class="field-label" for="countryCode">الدولة</label>
+    <select id="countryCode" class="input input--select">
+      <!-- A -->
+      <option value="+93">🇦🇫 Afghanistan (+93)</option>
+      <option value="+355">🇦🇱 Albania (+355)</option>
+      <option value="+213">🇩🇿 Algeria (+213)</option>
+      <option value="+54">🇦🇷 Argentina (+54)</option>
+      <option value="+61">🇦🇺 Australia (+61)</option>
+      <option value="+43">🇦🇹 Austria (+43)</option>
 
-  <!-- A -->
-  <option value="+93">🇦🇫 Afghanistan (+93)</option>
-  <option value="+355">🇦🇱 Albania (+355)</option>
-  <option value="+213">🇩🇿 Algeria (+213)</option>
-  <option value="+54">🇦🇷 Argentina (+54)</option>
-  <option value="+61">🇦🇺 Australia (+61)</option>
-  <option value="+43">🇦🇹 Austria (+43)</option>
+      <!-- B -->
+      <option value="+973">🇧🇭 Bahrain (+973)</option>
+      <option value="+880">🇧🇩 Bangladesh (+880)</option>
+      <option value="+32">🇧🇪 Belgium (+32)</option>
+      <option value="+55">🇧🇷 Brazil (+55)</option>
+      <option value="+359">🇧🇬 Bulgaria (+359)</option>
 
-  <!-- B -->
-  <option value="+973">🇧🇭 Bahrain (+973)</option>
-  <option value="+880">🇧🇩 Bangladesh (+880)</option>
-  <option value="+32">🇧🇪 Belgium (+32)</option>
-  <option value="+55">🇧🇷 Brazil (+55)</option>
-  <option value="+359">🇧🇬 Bulgaria (+359)</option>
+      <!-- C -->
+      <option value="+1">🇨🇦 Canada (+1)</option>
+      <option value="+86">🇨🇳 China (+86)</option>
+      <option value="+57">🇨🇴 Colombia (+57)</option>
+      <option value="+385">🇭🇷 Croatia (+385)</option>
+      <option value="+357">🇨🇾 Cyprus (+357)</option>
+      <option value="+420">🇨🇿 Czech Republic (+420)</option>
 
-  <!-- C -->
-  <option value="+1">🇨🇦 Canada (+1)</option>
-  <option value="+86">🇨🇳 China (+86)</option>
-  <option value="+57">🇨🇴 Colombia (+57)</option>
-  <option value="+385">🇭🇷 Croatia (+385)</option>
-  <option value="+357">🇨🇾 Cyprus (+357)</option>
-  <option value="+420">🇨🇿 Czech Republic (+420)</option>
+      <!-- D -->
+      <option value="+45">🇩🇰 Denmark (+45)</option>
 
-  <!-- D -->
-  <option value="+45">🇩🇰 Denmark (+45)</option>
+      <!-- E -->
+      <option value="+20">🇪🇬 Egypt (+20)</option>
+      <option value="+372">🇪🇪 Estonia (+372)</option>
 
-  <!-- E -->
-  <option value="+20">🇪🇬 Egypt (+20)</option>
-  <option value="+372">🇪🇪 Estonia (+372)</option>
+      <!-- F -->
+      <option value="+358">🇫🇮 Finland (+358)</option>
+      <option value="+33">🇫🇷 France (+33)</option>
 
-  <!-- F -->
-  <option value="+358">🇫🇮 Finland (+358)</option>
-  <option value="+33">🇫🇷 France (+33)</option>
+      <!-- G -->
+      <option value="+49">🇩🇪 Germany (+49)</option>
+      <option value="+30">🇬🇷 Greece (+30)</option>
 
-  <!-- G -->
-  <option value="+49">🇩🇪 Germany (+49)</option>
-  <option value="+30">🇬🇷 Greece (+30)</option>
+      <!-- H -->
+      <option value="+36">🇭🇺 Hungary (+36)</option>
 
-  <!-- H -->
-  <option value="+36">🇭🇺 Hungary (+36)</option>
+      <!-- I -->
+      <option value="+91">🇮🇳 India (+91)</option>
+      <option value="+62">🇮🇩 Indonesia (+62)</option>
+      <option value="+98">🇮🇷 Iran (+98)</option>
+      <option value="+964">🇮🇶 Iraq (+964)</option>
+      <option value="+972">🇮🇱 Israel (+972)</option>
+      <option value="+39">🇮🇹 Italy (+39)</option>
 
-  <!-- I -->
-  <option value="+91">🇮🇳 India (+91)</option>
-  <option value="+62">🇮🇩 Indonesia (+62)</option>
-  <option value="+98">🇮🇷 Iran (+98)</option>
-  <option value="+964">🇮🇶 Iraq (+964)</option>
-  <option value="+972">🇮🇱 Israel (+972)</option>
-  <option value="+39">🇮🇹 Italy (+39)</option>
+      <!-- J -->
+      <option value="+962">🇯🇴 Jordan (+962)</option>
+      <option value="+81">🇯🇵 Japan (+81)</option>
 
-  <!-- J -->
-  <option value="+962">🇯🇴 Jordan (+962)</option>
-  <option value="+81">🇯🇵 Japan (+81)</option>
+      <!-- K -->
+      <option value="+965">🇰🇼 Kuwait (+965)</option>
+      <option value="+82">🇰🇷 South Korea (+82)</option>
 
-  <!-- K -->
-  <option value="+965">🇰🇼 Kuwait (+965)</option>
-  <option value="+82">🇰🇷 South Korea (+82)</option>
+      <!-- L -->
+      <option value="+961">🇱🇧 Lebanon (+961)</option>
+      <option value="+218">🇱🇾 Libya (+218)</option>
 
-  <!-- L -->
-  <option value="+961">🇱🇧 Lebanon (+961)</option>
-  <option value="+218">🇱🇾 Libya (+218)</option>
+      <!-- M -->
+      <option value="+60">🇲🇾 Malaysia (+60)</option>
+      <option value="+212">🇲🇦 Morocco (+212)</option>
+      <option value="+52">🇲🇽 Mexico (+52)</option>
 
-  <!-- M -->
-  <option value="+60">🇲🇾 Malaysia (+60)</option>
-  <option value="+212">🇲🇦 Morocco (+212)</option>
-  <option value="+52">🇲🇽 Mexico (+52)</option>
+      <!-- N -->
+      <option value="+31">🇳🇱 Netherlands (+31)</option>
+      <option value="+47">🇳🇴 Norway (+47)</option>
 
-  <!-- N -->
-  <option value="+31">🇳🇱 Netherlands (+31)</option>
-  <option value="+47">🇳🇴 Norway (+47)</option>
+      <!-- O -->
+      <option value="+968">🇴🇲 Oman (+968)</option>
 
-  <!-- O -->
-  <option value="+968">🇴🇲 Oman (+968)</option>
+      <!-- P -->
+      <option value="+970">🇵🇸 Palestine (+970)</option>
+      <option value="+92">🇵🇰 Pakistan (+92)</option>
+      <option value="+63">🇵🇭 Philippines (+63)</option>
+      <option value="+48">🇵🇱 Poland (+48)</option>
+      <option value="+351">🇵🇹 Portugal (+351)</option>
 
-  <!-- P -->
-  <option value="+970">🇵🇸 Palestine (+970)</option>
-  <option value="+92">🇵🇰 Pakistan (+92)</option>
-  <option value="+63">🇵🇭 Philippines (+63)</option>
-  <option value="+48">🇵🇱 Poland (+48)</option>
-  <option value="+351">🇵🇹 Portugal (+351)</option>
+      <!-- Q -->
+      <option value="+974">🇶🇦 Qatar (+974)</option>
 
-  <!-- Q -->
-  <option value="+974">🇶🇦 Qatar (+974)</option>
+      <!-- S -->
+      <option value="+966">🇸🇦 Saudi Arabia (+966)</option>
+      <option value="+381">🇷🇸 Serbia (+381)</option>
+      <option value="+65">🇸🇬 Singapore (+65)</option>
+      <option value="+34">🇪🇸 Spain (+34)</option>
+      <option value="+46">🇸🇪 Sweden (+46)</option>
+      <option value="+41">🇨🇭 Switzerland (+41)</option>
+      <option value="+963">🇸🇾 Syria (+963)</option>
 
-  <!-- S -->
-  <option value="+966">🇸🇦 Saudi Arabia (+966)</option>
-  <option value="+381">🇷🇸 Serbia (+381)</option>
-  <option value="+65">🇸🇬 Singapore (+65)</option>
-  <option value="+34">🇪🇸 Spain (+34)</option>
-  <option value="+46">🇸🇪 Sweden (+46)</option>
-  <option value="+41">🇨🇭 Switzerland (+41)</option>
-  <option value="+963">🇸🇾 Syria (+963)</option>
+      <!-- T -->
+      <option value="+216">🇹🇳 Tunisia (+216)</option>
+      <option value="+90">🇹🇷 Turkey (+90)</option>
 
-  <!-- T -->
-  <option value="+216">🇹🇳 Tunisia (+216)</option>
-  <option value="+90">🇹🇷 Turkey (+90)</option>
+      <!-- U -->
+      <option value="+971">🇦🇪 United Arab Emirates (+971)</option>
+      <option value="+44">🇬🇧 United Kingdom (+44)</option>
+      <option value="+1">🇺🇸 United States (+1)</option>
 
-  <!-- U -->
-  <option value="+971">🇦🇪 United Arab Emirates (+971)</option>
-  <option value="+44">🇬🇧 United Kingdom (+44)</option>
-  <option value="+1">🇺🇸 United States (+1)</option>
-
-  <!-- Y -->
-  <option value="+967">🇾🇪 Yemen (+967)</option>
-
-</select>
-</div>
-
+      <!-- Y -->
+      <option value="+967">🇾🇪 Yemen (+967)</option>
+    </select>
+  </div>
 
 
  <div class="form-row">
@@ -533,7 +567,6 @@
       autocomplete="tel-national"
       maxlength="12"
     />
-    <div id="authMsg" style="margin-top:10px;opacity:.92;"></div>
   </div>
 
   <div class="modal-actions">
@@ -562,8 +595,6 @@
         <button id="backToPhoneBtn" class="btn btn-ghost" type="button">⬅ رجوع</button>
       </div>
     </div>
-
-    <div id="authMsg" style="margin-top:12px;opacity:.92;"></div>
   </div>
 </div>
 
