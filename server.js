@@ -564,6 +564,44 @@ function summaryPlanByLength(text) {
 function buildPrompts({ text, count, questionCount, mode, questionMode, lang, previous, isPro }) {
   const L = normalizeLang(lang);
 
+function buildSolvePrompt({ text }) {
+  // ✅ solve ignores UI lang — uses question language automatically
+  return `
+You are a solver assistant.
+
+Detect the language of the user's questions (Arabic / Hebrew / English) and write the entire output in THAT SAME language.
+
+You will receive questions provided by the user (MCQ and/or True/False).
+Your task is ONLY to solve them and output the answers.
+
+STRICT RULES:
+- Do NOT generate new questions.
+- Do NOT rewrite or rephrase the questions.
+- Do NOT add new options.
+- If a question is unclear or missing options: write "Answer: Unclear" (in the same language as the question) and nothing else for that question.
+
+OUTPUT FORMAT (MUST follow exactly, keep headers in square brackets):
+- Use one or both sections depending on what the user provided:
+  [Multiple Choice]
+  ...
+  [True/False]
+  ...
+
+For MCQ:
+- Keep the question text exactly.
+- Keep options exactly (A/B/C/D if provided).
+- Then one line: "Correct answer: A" (translate the words "Correct answer" to the detected language, but keep the letter A/B/C/D as-is).
+
+For True/False:
+- Keep the statement exactly.
+- Then one line: "Answer: T" or "Answer: F" (translate the word "Answer" to the detected language, but keep T/F as-is).
+
+Now solve the following:
+${text}
+`.trim();
+}
+
+
   // ✅ Free: ignore questionCount/questionMode (limited)
   const effectiveQuestionMode = isPro ? normalizeQuestionMode(questionMode) : "both";
 

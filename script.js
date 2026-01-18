@@ -2805,11 +2805,30 @@ async function readSolveFileToText(file){
   return "";
 }
 
+function setSolveBusy(isBusy){
+  const btn = document.getElementById("solveBtn");
+  if (!btn) return;
+
+  if (!btn.dataset.originalText){
+    btn.dataset.originalText = btn.textContent || (currentLang==="ar" ? "حل الآن" : "Solve");
+  }
+
+  if (isBusy){
+    btn.disabled = true;
+    btn.classList.add("is-busy");
+    btn.textContent = (currentLang==="ar" ? "⏳ جاري الحل..." : "⏳ Solving...");
+  } else {
+    btn.disabled = false;
+    btn.classList.remove("is-busy");
+    btn.textContent = btn.dataset.originalText;
+  }
+}
+
 document.getElementById("solveBtn")?.addEventListener("click", async ()=>{
   const out = document.getElementById("solveOutput");
   if (out) out.innerHTML = "";
 
-  // Pro only (حسب منطقك الحالي)
+  // Pro only
   if (!isSubscribed()){
     showSolveToast(currentLang==="ar" ? "🔒 حل الأسئلة للمشترك فقط" : "🔒 Pro only", "err");
     openSubscribe();
@@ -2831,8 +2850,13 @@ document.getElementById("solveBtn")?.addEventListener("click", async ()=>{
     return;
   }
 
-  // ✅ هنا نستخدم نفس endpoint /api/generate لكن بنمط solve
-  // لازم السيرفر يدعم mode: "solve" ويرجع data.text بنفس شكل parseGeminiText
+  // ✅ START busy
+  setSolveBusy(true);
+  if (document.getElementById("solveBtn")?.disabled) {
+  // already busy; prevent double run
+}
+
+
   showSolveToast(currentLang==="ar" ? "⏳ جاري الحل..." : "⏳ Solving...", "ok", 1400);
   if (out) out.innerHTML = renderSkeleton();
 
@@ -2844,7 +2868,8 @@ document.getElementById("solveBtn")?.addEventListener("click", async ()=>{
       questionMode: "both",
       questionCount: 0
     });
-    lastOutputLang = detected;
+
+  lastOutputLang = detectLangFromText(text); // ✅ حسب السؤال نفسه
 
     if (!r.ok){
       out && (out.innerHTML = "");
@@ -2853,10 +2878,15 @@ document.getElementById("solveBtn")?.addEventListener("click", async ()=>{
     }
 
     const parsed = parseGeminiText(data.text || "");
-out && (out.innerHTML = renderSolvedOnly(parsed));
+    out && (out.innerHTML = renderSolvedOnly(parsed));
+
   }catch(e){
     console.error(e);
     out && (out.innerHTML = "");
     showSolveToast(currentLang==="ar" ? "❌ خطأ اتصال" : "❌ Connection error", "err", 3200);
+  }finally{
+    // ✅ END busy (يرجع طبيعي)
+    setSolveBusy(false);
   }
 });
+

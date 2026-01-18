@@ -3521,3 +3521,9 @@ body.lang-en .feedback-head h2 {
   position: relative;
   z-index: 10;
 }
+#solveBtn.is-busy{
+  filter: brightness(0.72);
+  opacity: .92;
+  transform: translateY(1px);
+  cursor: not-allowed;
+}
