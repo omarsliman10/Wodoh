@@ -2906,3 +2906,488 @@ html{
   :root{ --headerH: 90px; }
 }
 .header-back-btn{ margin-inline-end: 8px; white-space: nowrap; }
+/* =========================
+   LANDING — MATCH SITE STYLE
+   paste at VERY END
+========================= */
+
+/* Card spacing */
+#landing .landing-card{
+  padding: 34px 30px !important;
+}
+
+/* Subtitle: cleaner + readable */
+#landing .subtitle{
+  max-width: 720px;
+  margin: 0 auto 18px !important;
+  font-size: 15.5px !important;
+  line-height: 1.9 !important;
+  opacity: .92;
+}
+
+/* Features: make them "chips" premium */
+#landing .features{
+  grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+  gap: 12px !important;
+  margin-top: 18px !important;
+}
+
+#landing .feat{
+  border-radius: 18px !important;
+  padding: 12px 14px !important;
+  background: rgba(255,255,255,.05) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  box-shadow: 0 10px 26px rgba(0,0,0,.22);
+  font-weight: 800 !important;
+}
+
+/* CTA buttons match your pill style */
+#landing .cta{
+  margin-top: 18px !important;
+  gap: 12px !important;
+}
+
+#landing .cta .btn{
+  height: 46px;
+  border-radius: 999px !important;
+  padding: 0 22px !important;
+  font-weight: 800 !important;
+}
+
+#landing #startBtn{
+  background: linear-gradient(135deg, rgba(124,58,237,.95), rgba(34,211,238,.78)) !important;
+  color: #F8FAFF !important;
+  border: 0 !important;
+  box-shadow: 0 14px 40px rgba(124,58,237,.22), 0 14px 40px rgba(34,211,238,.18) !important;
+}
+
+#landing #skipBtn{
+  background: rgba(255,255,255,.08) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+}
+
+/* Note text: more subtle */
+#landing .note{
+  margin-top: 16px !important;
+  opacity: .92;
+}
+#landing .note-ar{ font-size: 14px !important; }
+#landing .note-en{ font-size: 12.5px !important; opacity: .7 !important; }
+
+/* Mobile tweaks */
+@media (max-width: 720px){
+  #landing .landing-card{ padding: 26px 18px !important; }
+  #landing .features{ grid-template-columns: 1fr !important; }
+  #landing .cta .btn{ width: 100%; }
+}
+/* ===== Home cards colors ===== */
+
+/* تلخيص + إنشاء أسئلة */
+.home-tile.generate,
+#goGenerate{
+  background: linear-gradient(135deg,
+    rgba(124,58,237,.25),
+    rgba(59,130,246,.18)
+  );
+  border: 1px solid rgba(124,58,237,.35);
+}
+.home-tile.generate:hover,
+#goGenerate:hover{
+  box-shadow: 0 20px 60px rgba(124,58,237,.35);
+}
+
+/* حل الأسئلة */
+.home-tile.solve,
+#goSolve{
+  background: linear-gradient(135deg,
+    rgba(34,197,94,.22),
+    rgba(16,185,129,.15)
+  );
+  border: 1px solid rgba(34,197,94,.35);
+}
+.home-tile.solve:hover{
+  box-shadow: 0 20px 60px rgba(34,197,94,.35);
+}
+.pro-only{
+  position: relative;
+  opacity: .85;
+}
+.pro-only .pro-badge{
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: rgba(34,197,94,.15);
+  border: 1px solid rgba(34,197,94,.5);
+  color: #22c55e;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+/* ✅ لا نقلب أماكن العناصر عند الترجمة */
+body.lang-en #app,
+body.lang-en #homeView,
+body.lang-en .home-tiles,
+body.lang-en .feedback,
+body.lang-en .feedback-card {
+  direction: rtl;              /* يثبت ترتيب البوكسات */
+}
+
+/* ✅ النص الإنجليزي يكون LTR ومحاذاته يسار */
+body.lang-en .title,
+body.lang-en .subtitle,
+body.lang-en .micro-note,
+body.lang-en .home-tile-desc,
+body.lang-en .feedback-card p,
+body.lang-en .feedback-card label,
+body.lang-en .feedback-card .fb-hint,
+body.lang-en .uploader-hint {
+  direction: ltr;
+  text-align: left;
+}
+
+/* عناوين الكروت (حتى ما تتغير محاذاتها بشكل غريب) */
+body.lang-en .home-tile-title,
+body.lang-en .feedback-head h2 {
+  text-align: left;
+}
+/* ===== Simple controls (clean) ===== */
+.simple-controls{
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.04);
+  box-shadow: 0 14px 40px rgba(0,0,0,.22);
+}
+
+.simple-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom: 10px;
+}
+
+.simple-title{
+  font-weight: 800;
+  letter-spacing: .2px;
+}
+
+.simple-row{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.count-wrap{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+#questionCount[type="range"]{
+  width:100%;
+  accent-color: #22d3ee;
+}
+
+#qCountValue{
+  min-width: 28px;
+  text-align:center;
+  opacity:.95;
+}
+
+.hint{
+  font-size: 13px;
+  opacity: .82;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.05);
+  border: 1px dashed rgba(255,255,255,.14);
+}
+
+.simple-advanced{
+  margin-top: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.14);
+  overflow:hidden;
+}
+
+.simple-advanced > summary{
+  cursor:pointer;
+  list-style:none;
+  padding: 12px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.simple-advanced > summary::-webkit-details-marker{ display:none; }
+
+.pro-mini{
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(34,197,94,.12);
+  border: 1px solid rgba(34,197,94,.35);
+}
+
+.adv-body{
+  padding: 12px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.upgrade-row{
+  margin-top: 6px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.10);
+}
+.upgrade-text{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  opacity:.95;
+}
+/* =========================
+   Wodoh — Pro controls color polish
+   (paste at END of style.css)
+========================= */
+
+:root{
+  --glass: rgba(255,255,255,.05);
+  --glass2: rgba(255,255,255,.07);
+  --stroke: rgba(255,255,255,.12);
+  --stroke2: rgba(255,255,255,.18);
+
+  --txt: rgba(234,240,255,.96);
+  --muted: rgba(170,183,230,.82);
+
+  --proA: rgba(34,211,238,.16);   /* cyan */
+  --proB: rgba(124,58,237,.18);   /* violet */
+  --proStroke: rgba(34,211,238,.35);
+  --vioStroke: rgba(124,58,237,.32);
+}
+
+/* container */
+.simple-controls{
+  background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+  border: 1px solid var(--stroke);
+}
+
+/* title */
+.simple-title{
+  color: var(--txt);
+}
+
+/* plan pill */
+.plan-pill{
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,.06);
+  color: var(--txt);
+}
+.plan-pill.free{ border-color: var(--vioStroke); }
+.plan-pill.pro{ border-color: var(--proStroke); }
+
+/* Advanced box */
+.simple-advanced{
+  border: 1px solid var(--stroke);
+  background: rgba(10,16,32,.35);
+}
+.simple-advanced > summary{
+  color: var(--txt);
+  background: rgba(255,255,255,.03);
+}
+
+/* Pro mini badge */
+.pro-mini{
+  background: linear-gradient(90deg, var(--proA), var(--proB));
+  border: 1px solid var(--proStroke);
+  color: rgba(234,240,255,.98);
+}
+
+/* select look (type) */
+.simple-controls .select,
+.simple-controls select{
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.14);
+  color: var(--txt);
+  border-radius: 14px;
+}
+.simple-controls select option{
+  background: #0B1020;
+  color: #EAF0FF;
+}
+
+/* locked/disabled (لو بتعطّل الخيارات) */
+.simple-controls select:disabled,
+.simple-controls .select:disabled{
+  opacity: .55;
+  filter: grayscale(.25);
+  cursor: not-allowed;
+}
+
+/* hints بدل المنقّط المزعج */
+.hint{
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.12);
+  color: var(--muted);
+}
+
+/* upgrade row (Wodoh Pro box) */
+.upgrade-row{
+  background: linear-gradient(180deg, rgba(34,211,238,.10), rgba(124,58,237,.10));
+  border: 1px solid rgba(34,211,238,.22);
+}
+.upgrade-text b{ color: var(--txt); }
+.upgrade-text span{ color: var(--muted); }
+
+/* upgrade button (ترقية) */
+#openSubscribeFromControls{
+  background: linear-gradient(90deg, rgba(124,58,237,.95), rgba(34,211,238,.95));
+  border: 0;
+  color: white;
+  box-shadow: 0 14px 40px rgba(0,0,0,.25);
+}
+#openSubscribeFromControls:hover{
+  filter: brightness(1.05);
+}
+
+/* range accent (عدد الأسئلة) */
+#questionCount[type="range"]{
+  accent-color: #22d3ee;
+}
+#qCountValue{
+  color: var(--txt);
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+  padding: 6px 10px;
+  border-radius: 12px;
+}
+/* ===== Advanced arrow next to Pro ===== */
+.simple-advanced > summary{ list-style:none; }
+.simple-advanced > summary::-webkit-details-marker{ display:none; }
+
+.adv-summary{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  cursor:pointer;
+  user-select:none;
+  padding: 12px 12px;
+}
+
+.adv-left{ display:flex; align-items:center; gap:10px; }
+.adv-right{ display:flex; align-items:center; gap:8px; }
+
+.adv-chevron{
+  width: 26px;
+  height: 26px;
+  display:grid;
+  place-items:center;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  opacity:.85;
+  transition: transform .22s ease, opacity .22s ease;
+}
+
+/* لما تتفتح القائمة */
+.simple-advanced[open] .adv-chevron{
+  transform: rotate(180deg);
+  opacity: 1;
+}
+/* remove default marker */
+#advancedBox > summary{ list-style:none; }
+#advancedBox > summary::-webkit-details-marker{ display:none; }
+
+/* arrow */
+.adv-summary{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  cursor:pointer; user-select:none; padding:12px;
+}
+.adv-right{display:flex;align-items:center;gap:8px;}
+.adv-chevron{
+  width:26px;height:26px;display:grid;place-items:center;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  transition: transform .22s ease, opacity .22s ease;
+  opacity:.85;
+}
+#advancedBox[open] .adv-chevron{ transform: rotate(180deg); opacity:1; }
+/* =========================
+   Header menu buttons — color refresh
+   (paste at END of style.css)
+========================= */
+
+.header-menu-dropdown{
+  background: rgba(10,16,32,.92);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 18px;
+  padding: 10px;
+}
+
+/* base look for all menu buttons */
+.header-menu-dropdown .menu-btn,
+.header-menu-dropdown .btn.menu-btn{
+  width: 100%;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  justify-content:flex-start;
+
+  padding: 12px 14px;
+  border-radius: 16px;
+
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  color: rgba(234,240,255,.95);
+
+  box-shadow: 0 12px 28px rgba(0,0,0,.18);
+  transition: transform .15s ease, filter .15s ease, background .15s ease, border-color .15s ease;
+}
+
+.header-menu-dropdown .menu-btn:hover{
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  background: rgba(255,255,255,.085);
+  border-color: rgba(255,255,255,.16);
+}
+
+/* My summaries (cyan) */
+.header-menu-dropdown .menu-btn.summary{
+  background: linear-gradient(90deg, rgba(34,211,238,.18), rgba(34,211,238,.06));
+  border-color: rgba(34,211,238,.22);
+}
+
+/* Account (violet) */
+.header-menu-dropdown .menu-btn.account{
+  background: linear-gradient(90deg, rgba(124,58,237,.18), rgba(124,58,237,.06));
+  border-color: rgba(124,58,237,.22);
+}
+
+/* Subscribe (gold) — even if it's btn-primary */
+.header-menu-dropdown #headerSubscribeBtn{
+  background: linear-gradient(90deg, rgba(245,158,11,.22), rgba(124,58,237,.18));
+  border: 1px solid rgba(245,158,11,.28);
+  color: rgba(255,255,255,.98);
+}
+
+/* icons spacing (optional) */
+.header-menu-dropdown .menu-btn::before{
+  opacity:.95;
+}
+#headerSubscribeBtn.btn-primary{
+  background: linear-gradient(90deg, rgba(245,158,11,.22), rgba(124,58,237,.18)) !important;
+  border: 1px solid rgba(245,158,11,.28) !important;
+}

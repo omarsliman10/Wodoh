@@ -29,6 +29,8 @@ let moreCountdownTimer = null;
 
 let currentFile = null;
 
+const DEV_FORCE_PRO = true;
+
 /* =======================
    Free vs Pro limits
 ======================= */
@@ -44,7 +46,10 @@ let sessionUser = null; // {id,firstName,lastName,subActive,subscriptionId}
 
 // Helpers
 function isLoggedIn(){ return !!sessionUser; }
-function isSubscribed(){ return !!(sessionUser && sessionUser.subActive === true); }
+function isSubscribed(){
+  if (DEV_FORCE_PRO && isLoggedIn()) return true; // ✅ Pro فقط بعد تسجيل الدخول
+  return !!(sessionUser && sessionUser.subActive === true);
+}
 function getSubscriptionId(){ return String(sessionUser?.subscriptionId || ""); }
 
 function getUser(){
@@ -212,7 +217,10 @@ function showView(name){
     el.style.display = (k === name) ? "block" : "none";
   });
 
-  if (topBack) topBack.style.display = (name === "home") ? "none" : "block";
+  // ✅ زر الرجوع (يظهر بكل الصفحات غير home)
+  const backBtn = document.getElementById("backHomeBtn");
+  if (backBtn) backBtn.style.display = (name === "home") ? "none" : "inline-flex";
+
   closeHeaderMenu?.();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -234,7 +242,23 @@ document.addEventListener("click", (e)=>{
   const toGen   = e.target.closest("#goGenerate, [data-action='goGenerate']");
   const back    = e.target.closest("#backHomeBtn, [data-action='backHome']");
 
-  if (toSolve){ e.preventDefault(); showView("solve"); }
+if (toSolve){
+  e.preventDefault();
+
+  if (!isSubscribed()){
+    showToast(
+      currentLang === "ar"
+        ? "🔒 حل الأسئلة متاح لمشتركي Wodoh Pro فقط"
+        : "🔒 Solving questions is available for Pro users only",
+      "err",
+      3200
+    );
+    openSubscribe();
+    return;
+  }
+
+  showView("solve");
+}
   if (toGen){ e.preventDefault(); showView("generate"); }
   if (back){ e.preventDefault(); showView("home"); }
 });
@@ -306,7 +330,7 @@ const I18N = {
     brandDescEn: "Turn content into understanding — summaries & interactive questions",
 
     landingTitle: "تعلّم أوضح، أسرع، وبشكل تفاعلي",
-    landingSubtitle: "الصق نصًا أو ارفع ملفًا، واحصل على ملخص وأسئلة — بالعربية أو الإنجليزية.",
+    landingSubtitle: "توليد أسئلة وملخصات • حل أسئلة مباشرة — الصق نصًا أو ارفع ملفًا وابدأ فورًا",
     landingNoteAr: "منصّة ذكية لتحويل المحتوى إلى فهم حقيقي",
     landingNoteEn: "A smart platform that turns content into real understanding",
 
@@ -473,8 +497,7 @@ const I18N = {
     brandDescEn: "Turn content into understanding — summaries & interactive questions",
 
     landingTitle: "Learn clearer, faster, and interactively",
-    landingSubtitle: "Paste text or upload a file, get a summary + questions — Arabic or English.",
-    landingNoteAr: "منصّة ذكية لتحويل المحتوى إلى فهم حقيقي",
+    landingSubtitle: "Generate summaries & questions • Solve questions instantly — paste text or upload a file and start now",
     landingNoteEn: "A smart platform that turns content into real understanding",
 
     featFast: "⚡ Fast",
@@ -597,7 +620,7 @@ const I18N = {
     homeSolveTitle: "Solve Questions",
     homeSolveDesc: "Upload a questions file or paste your questions, and Wodoh will provide clear, well-organized answers.",
 
-   homeSolveTitle: "✅ Solve Questions",
+   homeSolveTitle: " Solve Questions",
     homeSolveDesc: "Upload a questions file or paste your questions, and Wodoh will give you clean, organized answers.",
     homeGenerateTitle: "⚡ Summary + Question Generation",
     homeGenerateDesc: "Upload text/file → a summary + MCQ and True/False questions (based on your plan).",
@@ -1333,8 +1356,7 @@ document.addEventListener("keydown", (e)=>{
    ✅ عدّل الروابط إذا عندك endpoints مختلفة
 ======================= */
 async function startPhoneOTP(phone){
-  // مثال: { ok:true } أو { ok:false, error:"..." }
-  return apiJSON("/api/auth/phone/start", { phone });
+  return apiJSON("/api/auth/phone/send", { phone });
 }
 
 async function verifyPhoneOTP(phone, code){
@@ -1451,9 +1473,8 @@ document.documentElement.lang = ar ? "ar" : "en";
 document.documentElement.dir = "rtl";   // ثابت (اختياري)
 document.body.dir = "rtl";              // ثابت (اختياري)
 
-/* ✅ غيّر اتجاه المحتوى فقط */
-const appRoot = document.getElementById("app") || document.querySelector("main.container.app");
-if (appRoot) appRoot.setAttribute("dir", ar ? "rtl" : "ltr");
+document.body.classList.toggle("lang-en", !ar);
+document.body.classList.toggle("lang-ar", ar);
 
 /* ✅ الهيدر ثابت LTR حتى لا تتحرك أزرار اليسار */
 const header = document.getElementById("appHeader");
@@ -2598,12 +2619,55 @@ backHomeBtn?.addEventListener("click", ()=>{
   showView("home");
   hideBackBtn();
 });
-goGenerate?.addEventListener("click", ()=>{
-  showView("generate");
-  showBackBtn();
-});
+// ✅ HARD FIX: Solve clear text (works regardless of load order)
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("#clearSolveTextBtn");
+  if (!btn) return;
 
-goSolve?.addEventListener("click", ()=>{
-  showView("solve");
-  showBackBtn();
+  e.preventDefault();
+  e.stopPropagation();
+
+  const ta = document.getElementById("solveTextInput");
+  if (!ta) return;
+
+  ta.value = "";
+  ta.dispatchEvent(new Event("input", { bubbles: true }));
+  ta.focus();
+});
+document.getElementById("startBtn")?.addEventListener("click", () => {
+  const landing = document.getElementById("landing");
+  const app = document.getElementById("app");
+  if (landing) landing.style.display = "none";
+  if (app) app.style.display = "block";
+
+  document.getElementById("homeView") && (document.getElementById("homeView").style.display = "block");
+  document.getElementById("generateView") && (document.getElementById("generateView").style.display = "none");
+  document.getElementById("solveView") && (document.getElementById("solveView").style.display = "none");
+});
+const qc = document.getElementById("questionCount");
+const qv = document.getElementById("qCountValue");
+if (qc && qv) {
+  qv.textContent = qc.value;
+  qc.addEventListener("input", () => (qv.textContent = qc.value));
+}
+// ✅ Solve: Clear text button
+document.addEventListener("DOMContentLoaded", () => {
+  const solveTxt = document.getElementById("solveTextInput");
+  const clearBtn = document.getElementById("clearSolveTextBtn");
+  if (!solveTxt || !clearBtn) return;
+
+  const sync = () => {
+    clearBtn.style.display = solveTxt.value.trim() ? "flex" : "none";
+  };
+
+  clearBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    solveTxt.value = "";
+    solveTxt.focus();
+    sync();
+  });
+
+  solveTxt.addEventListener("input", sync);
+  sync();
 });

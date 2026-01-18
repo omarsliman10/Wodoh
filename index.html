@@ -138,10 +138,9 @@
         <span data-i18n="landingTitle">تعلّم أوضح، أسرع، وبشكل تفاعلي</span>
       </h1>
 
-      <p class="subtitle" data-i18n="landingSubtitle">
-        الصق نصًا أو ارفع ملفًا، واحصل على ملخص وأسئلة اختيار من متعدد وصح/خطأ — بالعربية أو الإنجليزية.
-      </p>
-
+    <p class="subtitle" data-i18n="landingSubtitle">
+      توليد أسئلة وملخصات • حل أسئلة مباشرة — الصق نصًا أو ارفع ملفًا وابدأ فورًا
+    </p>
       <div class="features">
         <div class="feat" data-i18n="featFast">⚡ سريع</div>
         <div class="feat" data-i18n="featInteractive">🧠 تفاعلي</div>
@@ -149,11 +148,9 @@
         <div class="feat" data-i18n="featLangs">🌐 لغات</div>
       </div>
 
-      <div class="cta">
-        <button id="startBtn" class="btn btn-primary" type="button" data-i18n="startBtn">ابدأ الآن</button>
-        <button id="skipBtn" class="btn btn-ghost" type="button" data-i18n="skipBtn">تخطي</button>
-      </div>
-
+    <div class="cta cta-center">
+      <button id="startBtn" class="btn btn-primary" type="button" data-i18n="startBtn">ابدأ الآن</button>
+    </div>
       <p class="note">
         <span class="note-ar" data-i18n="landingNoteAr">منصّة ذكية لتحويل المحتوى إلى فهم حقيقي</span>
         <span class="note-en" data-i18n="landingNoteEn">A smart platform that turns content into real understanding</span>
@@ -240,7 +237,8 @@
       <!-- زرين كبار -->
     <div class="home-tiles">
       
-    <button id="goSolve" class="panel home-tile" type="button">
+<button id="goSolve" class="panel home-tile solve pro-only" type="button">
+  <span class="pro-badge">PRO</span>
 <div class="home-tile-title"
   data-i18n="homeSolveTitle"
   data-i18n-icon="✅">
@@ -316,15 +314,55 @@
     </section>
 
     <!-- ============ SOLVE VIEW (placeholder الآن) ============ -->
-    <section id="solveView" style="display:none;margin-top:14px;">
-      <section class="panel">
-        <label class="label">حل الأسئلة</label>
-        <div style="opacity:.85;line-height:1.7;">
-          (قريبًا) هنا رح نخلي المستخدم يلصق أسئلة/يرفع ملف أسئلة، ونطلع الإجابات.
+<section id="solveView" style="display:none;margin-top:14px;">
+  <section class="panel">
+    <label class="label" data-i18n="solveLabel">حل الأسئلة</label>
+
+    <!-- ✅ Text input -->
+<div class="text-tools" style="position:relative;">
+  <button id="clearSolveTextBtn" type="button" class="btn-clear-text" title="مسح النص">✕</button>
+
+  <textarea
+    id="solveTextInput"
+    dir="auto"
+    placeholder="الصق أسئلة الاختبار هنا... (MCQ / صح-خطأ)"
+    style="min-height:190px;"
+  ></textarea>
+</div>
+
+    <!-- ✅ File uploader (separate from generate uploader to avoid breaking) -->
+    <div class="uploader" id="solveDropZone">
+      <div class="uploader-top">
+        <div class="uploader-title">📎 رفع ملف أسئلة</div>
+        <button id="clearSolveFileBtn" type="button" class="btn btn-danger" disabled>مسح الملف ✖</button>
+      </div>
+
+      <div class="uploader-body">
+        <input id="solveFileInput" type="file" accept=".txt,.pdf,.docx" hidden />
+        <button id="chooseSolveFileBtn" type="button" class="btn btn-soft">اختيار ملف</button>
+
+        <div class="uploader-hint" id="solveFileHint">
+          اسحب الملف هنا أو اضغط “اختيار ملف” (TXT / PDF / DOCX)
         </div>
-      </section>
-      <section class="output" id="solveOutput"></section>
-    </section>
+
+        <div class="file-preview" id="solveFilePreview" style="display:none;">
+          <div class="file-name" id="solveFileName">—</div>
+          <div class="file-meta" id="solveFileMeta">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:12px;">
+      <button id="solveBtn" type="button" class="btn btn-primary btn-wide" style="flex:1;min-width:200px;">
+        ✅ حلّ الآن
+      </button>
+
+      <div id="solveToast" class="toast" style="display:none;"></div>
+    </div>
+  </section>
+
+  <section class="output" id="solveOutput"></section>
+</section>
 
     <!-- ============ GENERATE VIEW (هو شغلك الحالي) ============ -->
     <section id="generateView" style="display:none;margin-top:14px;">
@@ -364,55 +402,70 @@
           </div>
         </div>
 
-        <!-- Question controls (keep IDs for script.js) -->
-        <div class="pro-controls locked" id="proControls">
-          <div class="row" style="justify-content:space-between;">
-            <div>
-              <p class="title" style="margin:0;" data-i18n="proControlsTitle">تحكم بالأسئلة</p>
-              <div class="muted" data-i18n="proControlsDesc">اختر النوع والعدد (لـ Pro تحكم كامل).</div>
-            </div>
+<!-- ✅ Simple Question Controls (same IDs, cleaner UI) -->
+<div class="simple-controls" id="proControls">
 
-            <span id="controlsPlanBadge" class="plan-pill free" style="padding:7px 10px;">
-              <span class="dot"></span>
-              <span data-i18n="planFree">Free</span>
-            </span>
-          </div>
+  <div class="simple-top">
+    <div class="simple-title" data-i18n="proControlsTitle">إعدادات الأسئلة</div>
+    <span id="controlsPlanBadge" class="plan-pill free">
+      <span class="dot"></span>
+      <span data-i18n="planFree">Free</span>
+    </span>
+  </div>
 
-          <div class="row" style="align-items:flex-end;">
-            <div style="flex:1;min-width:180px;">
-              <label class="label" style="margin-bottom:6px;" data-i18n="qTypeLabel">نوع الأسئلة</label>
+  <!-- Count (always visible, simple) -->
+  <div class="simple-row">
+    <label class="label" data-i18n="qCountLabel">عدد الأسئلة</label>
 
-              <select id="questionType" class="select" style="width:100%;">
-                <option value="both" data-i18n="qTypeBoth">اختيار من متعدد + صح/خطأ</option>
-                <option value="mcq" data-i18n="qTypeMcq">اختيار من متعدد فقط</option>
-                <option value="tf" data-i18n="qTypeTf">صح/خطأ فقط</option>
-              </select>
+    <div class="count-wrap">
+      <input id="questionCount" type="range" min="1" max="20" value="5" />
+      <b id="qCountValue">5</b>
+    </div>
 
-              <div id="proLockHint1" style="margin-top:8px;display:none;" class="limit-hint">
-                <strong data-i18n="lockedTitle">🔒 Pro فقط</strong>
-                <div data-i18n="proLockHint">التحكم الكامل متاح للمشترك.</div>
-              </div>
-            </div>
+    <div id="proLockHint2" class="hint" style="display:none;" data-i18n="freeLimitHint">
+      حد أقصى 5 أسئلة في المجاني.
+    </div>
+  </div>
 
-            <div style="width:180px;min-width:160px;">
-              <label class="label" style="margin-bottom:6px;" data-i18n="qCountLabel">عدد الأسئلة</label>
-              <input id="questionCount" type="number" min="1" max="20" value="5" class="input" style="width:100%;" />
+  <!-- Advanced (Pro) -->
+  <details class="simple-advanced" id="advancedBox">
+    <summary class="adv-summary">
+      <div class="adv-left">
+        <span data-i18n="advancedTitle">إعدادات متقدمة</span>
+      </div>
 
-              <div id="proLockHint2" style="margin-top:8px;display:none;" class="limit-hint">
-                <strong data-i18n="freeLimitTitle">🆓 المجاني</strong>
-                <div data-i18n="freeLimitHint">حد أقصى 5 أسئلة.</div>
-              </div>
-            </div>
-          </div>
+      <div class="adv-right">
+        <span class="pro-mini" data-i18n="proOnly">Pro</span>
+        <span class="adv-chevron" aria-hidden="true">▾</span>
+      </div>
+    </summary>
 
-          <div class="pro-lock" id="proLockBox" style="display:none;">
-            <div class="txt">
-              <b data-i18n="planPro">Wodoh Pro</b>
-              <span data-i18n="planProDesc">يعطيك تحكم بالنوع والعدد + بدون انتظار + حفظ النتائج.</span>
-            </div>
-            <button id="openSubscribeFromControls" class="btn btn-primary" type="button" data-i18n="upgradeBtn">ترقية ⭐</button>
-          </div>
+    <div class="adv-body">
+      <label class="label" data-i18n="qTypeLabel">نوع الأسئلة</label>
+      <select id="questionType" class="select">
+        <option value="both" data-i18n="qTypeBoth">اختيار من متعدد + صح/خطأ</option>
+        <option value="mcq" data-i18n="qTypeMcq">اختيار من متعدد فقط</option>
+        <option value="tf" data-i18n="qTypeTf">صح/خطأ فقط</option>
+      </select>
+
+      <div id="proLockHint1" class="hint" style="display:none;" data-i18n="proLockHint">
+        التحكم الكامل متاح للمشترك.
+      </div>
+
+      <div class="upgrade-row" id="proLockBox" style="display:none;">
+        <div class="upgrade-text">
+          <b data-i18n="planPro">Wodoh Pro</b>
+          <span data-i18n="planProDesc">تحكم بالنوع والعدد + بدون انتظار + حفظ النتائج.</span>
         </div>
+        <button id="openSubscribeFromControls" class="btn btn-primary" type="button" data-i18n="upgradeBtn">
+          ترقية ⭐
+        </button>
+      </div>
+    </div>
+  </details>
+
+
+</div>
 
         <div class="controls" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:12px;">
     <button id="generateBtn" type="button" class="btn btn-primary btn-wide"

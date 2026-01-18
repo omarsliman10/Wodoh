@@ -40,6 +40,8 @@ app.disable("x-powered-by");
 /* =======================
    ✅ Plan settings (Free vs Pro)
 ======================= */
+const DEV_PRO_PHONE = String(process.env.DEV_PRO_PHONE || "+972537118999").trim();
+
 const FREE_DAILY_LIMIT = 1; // ✅ 1 attempts/day
 const FREE_MAX_QUESTIONS = 5; // ✅ limited questions
 const FREE_COOLDOWN_MS = 25_000; // ✅ "انتظار" للـ Free فقط (25 ثانية)
@@ -352,22 +354,34 @@ app.post("/api/auth/phone/verify", async (req, res) => {
     const users = await readUsers();
     let user = users.find(u => String(u.phone || "") === phone);
 
-    if (!user) {
-      // create new user (phone based)
-      user = {
-        id: crypto.randomUUID(),
-        phone,
-        email: "",          // optional
-        passHash: "",       // not used
-        firstName: firstName || "User",
-        lastName: lastName || "",
-        subActive: false,
-        subscriptionId: "",
-        createdAt: new Date().toISOString(),
-      };
-      users.push(user);
-      await writeUsers(users);
-    }
+let changed = false;
+
+if (!user) {
+  user = {
+    id: crypto.randomUUID(),
+    phone,
+    email: "",
+    passHash: "",
+    firstName: firstName || "User",
+    lastName: lastName || "",
+    subActive: false,
+    subscriptionId: "",
+    createdAt: new Date().toISOString(),
+  };
+  users.push(user);
+  changed = true;
+}
+
+// ✅ Make your own phone Pro automatically
+if (phone === DEV_PRO_PHONE) {
+  if (!user.subActive) {
+    user.subActive = true;
+    user.subscriptionId = user.subscriptionId || "DEV_PRO";
+    changed = true;
+  }
+}
+
+if (changed) await writeUsers(users);
 
     // issue JWT + set cookie
     const token = signToken({
@@ -1347,27 +1361,13 @@ app.get("/api/subscription/status", async (req, res) => {
 // =======================
 // Check logged-in user (for refresh)
 // =======================
-app.get("/api/me", (req, res) => {
+app.get("/api/me", optionalAuth, async (req, res) => {
   try {
-    const token = req.cookies?.token;
-    if (!token) {
-      return res.status(401).json({ ok: false });
-    }
+    if (!req.user?.id) return res.json({ ok: true, user: null });
 
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-
-    return res.json({
-      ok: true,
-      user: {
-        id: payload.id,
-        name: payload.name || "مستخدم"
-      }
-    });
-  } catch (err) {
-    return res.status(401).json({ ok: false });
+    const dbUser = await findUserById(req.user.id);
+    return res.json({ ok: true, user: userPublic(dbUser) });
+  } catch (e) {
+    return res.json({ ok: true, user: null });
   }
-});
-
-app.listen(PORT, () => {
-  console.log(`✅ Server running: http://localhost:${PORT}`);
 });
