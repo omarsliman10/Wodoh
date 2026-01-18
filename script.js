@@ -1805,6 +1805,39 @@ async function onGenerate(e){
     });
 
     lastOutputLang = detected;
+    if (!r.ok){
+  if (r.status === 429 || r.status === 402 || data?.code === "FREE_LIMIT"){
+    showPaywall();
+    return;
+  }
+  showToast((data?.error || t("toastErr")), "err", 3500);
+  return;
+}
+
+const parsed = parseGeminiText(data.text || "");
+
+// خزّن أسئلة لمنع التكرار
+previousQuestions = [
+  ...parsed.mcq.map(q=>q.question),
+  ...parsed.tf.map(q=>q.statement)
+];
+
+// اعرض النتيجة
+if (output) output.innerHTML = renderUI(parsed);
+
+// حفظ “ملخصاتي” فقط للمشترك (اختياري)
+if (isSubscribed()){
+  const summaryText = (parsed.summaryParas || []).join("\n\n") || (parsed.summary || []).join("\n\n");
+  addSummaryItem({
+    title: currentLang==="ar" ? "ملخص جديد" : "New Summary",
+    summaryText,
+    questions: [...(parsed.mcq||[]), ...(parsed.tf||[])]
+  });
+}
+
+saveSession();
+showToast(t("toastGenerated"), "ok", 2000);
+
 
     // ✅ الصق هنا نفس الكود الموجود عندك بعد if(!r.ok) إلى قبل الـ catch
     // يعني: if(!r.ok){...} ثم parseGeminiText/renderUI/addSummaryItem/saveSession/showToast ...
@@ -2672,4 +2705,84 @@ document.addEventListener("DOMContentLoaded", () => {
 
   solveTxt.addEventListener("input", sync);
   sync();
+});
+// =======================
+// Solve (RUN) — minimal working handler
+// =======================
+function showSolveToast(msg, type="ok", ms=2600){
+  const t = document.getElementById("solveToast");
+  if (!t) return;
+  t.className = `toast ${type==="err" ? "err" : "ok"}`;
+  t.textContent = msg;
+  t.style.display = "block";
+  setTimeout(()=>{ t.style.display="none"; t.textContent=""; }, ms);
+}
+
+async function readSolveFileToText(file){
+  const ext = (file.name.split(".").pop() || "").toLowerCase();
+  if (ext === "txt") return await readTxt(file);
+  if (ext === "pdf") return await readPdf(file);
+  if (ext === "docx") return await readDocx(file);
+  return "";
+}
+
+document.getElementById("solveBtn")?.addEventListener("click", async ()=>{
+  const out = document.getElementById("solveOutput");
+  if (out) out.innerHTML = "";
+
+  // Pro only (حسب منطقك الحالي)
+  if (!isSubscribed()){
+    showSolveToast(currentLang==="ar" ? "🔒 حل الأسئلة للمشترك فقط" : "🔒 Pro only", "err");
+    openSubscribe();
+    return;
+  }
+
+  const ta = document.getElementById("solveTextInput");
+  const fi = document.getElementById("solveFileInput");
+  const file = fi?.files?.[0] || null;
+
+  let text = (ta?.value || "").trim();
+  if (!text && file){
+    showSolveToast(currentLang==="ar" ? "📄 جاري قراءة الملف..." : "📄 Reading file...", "ok", 1200);
+    text = String(await readSolveFileToText(file)).trim();
+  }
+
+  if (!text){
+    showSolveToast(currentLang==="ar" ? "⚠️ الصق أسئلة أو ارفع ملف" : "⚠️ Paste questions or upload a file", "err");
+    return;
+  }
+
+  // ✅ هنا نستخدم نفس endpoint /api/generate لكن بنمط solve
+  // لازم السيرفر يدعم mode: "solve" ويرجع data.text بنفس شكل parseGeminiText
+  showSolveToast(currentLang==="ar" ? "⏳ جاري الحل..." : "⏳ Solving...", "ok", 1400);
+  if (out) out.innerHTML = renderSkeleton();
+
+  try{
+    const { r, data, detected } = await callAPI({
+      text,
+      mode: "solve",
+      count: 0,
+      questionMode: "both",
+      questionCount: 0
+    });
+    lastOutputLang = detected;
+
+    if (!r.ok){
+      out && (out.innerHTML = "");
+      showSolveToast((data?.error || (currentLang==="ar"?"❌ خطأ":"❌ Error")), "err", 3200);
+      return;
+    }
+
+    const parsed = parseGeminiText(data.text || "");
+    out && (out.innerHTML = `
+      <div class="card">
+        <h3>${currentLang==="ar" ? "✅ الإجابات" : "✅ Answers"}</h3>
+        ${renderQuestionsOnly(parsed)}
+      </div>
+    `);
+  }catch(e){
+    console.error(e);
+    out && (out.innerHTML = "");
+    showSolveToast(currentLang==="ar" ? "❌ خطأ اتصال" : "❌ Connection error", "err", 3200);
+  }
 });

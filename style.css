@@ -3391,3 +3391,133 @@ body.lang-en .feedback-head h2 {
   background: linear-gradient(90deg, rgba(245,158,11,.22), rgba(124,58,237,.18)) !important;
   border: 1px solid rgba(245,158,11,.28) !important;
 }
+/* ===== Top pills: Plan + Language (clean, aligned) ===== */
+.top-pills{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 12px 30px rgba(0,0,0,.22);
+}
+
+.top-pill{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Plan pill (Free/Pro) */
+#planStatus.top-pill{
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: #EAF0FF;
+}
+
+/* اللون يتغير حسب الكلاس اللي عندك (free / pro) */
+#planStatus.free{
+  border-color: rgba(124,58,237,.28);
+  box-shadow: 0 8px 22px rgba(124,58,237,.20);
+}
+#planStatus.pro{
+  border-color: rgba(34,211,238,.30);
+  box-shadow: 0 8px 22px rgba(34,211,238,.18);
+}
+
+/* Dot أجمل */
+#planStatus .dot{
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34,197,94,.15);
+}
+#planStatus.free .dot{ background:#a855f7; box-shadow:0 0 0 3px rgba(168,85,247,.18); }
+#planStatus.pro  .dot{ background:#22d3ee; box-shadow:0 0 0 3px rgba(34,211,238,.18); }
+
+/* Language pill button */
+#langBtn.top-pill{
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: #EAF0FF;
+  cursor: pointer;
+  transition: transform .12s ease, background .12s ease, border-color .12s ease;
+}
+#langBtn.top-pill:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.22);
+}
+#langBtn.top-pill:active{
+  transform: translateY(0);
+}
+
+/* Mobile: يصيروا سطر مرتب وما يطلعوا برا */
+@media (max-width: 720px){
+  .top-pills{
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+/* ثابتة فوق + تحت بعض */
+.top-pills--fixed{
+  position: fixed;
+  top: 16px;
+  left: 16px;      /* إذا بدكها يمين: right:16px بدل left */
+  z-index: 9999;
+
+  display: flex;
+  flex-direction: column;   /* ✅ تحت بعض */
+  align-items: flex-start;
+  gap: 8px;
+
+  padding: 0;               /* ما بدنا إطار واحد كبير */
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+/* خلي كل pill شكله مرتب لوحده */
+.top-pills--fixed .top-pill{
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  box-shadow: 0 10px 24px rgba(0,0,0,.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* على الموبايل: نخليها أصغر شوي */
+@media (max-width: 720px){
+  .top-pills--fixed{
+    top: 10px;
+    left: 10px;
+  }
+  .top-pills--fixed .top-pill{
+    height: 32px;
+    font-size: 12.5px;
+  }
+}
+#homeView, .home-tiles{
+  position: relative;
+  z-index: 5;
+}
+
+.header, #appHeader{
+  position: relative;
+  z-index: 10;
+}
