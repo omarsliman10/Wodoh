@@ -1371,3 +1371,9 @@ app.get("/api/me", optionalAuth, async (req, res) => {
     return res.json({ ok: true, user: null });
   }
 });
+process.on("unhandledRejection", (err) => console.error("UNHANDLED REJECTION:", err));
+process.on("uncaughtException", (err) => console.error("UNCAUGHT EXCEPTION:", err));
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log("✅ Server running on port:", PORT);
+});

@@ -29,7 +29,7 @@ let moreCountdownTimer = null;
 
 let currentFile = null;
 
-const DEV_FORCE_PRO = true;
+const DEV_FORCE_PRO = false;
 
 /* =======================
    Free vs Pro limits
@@ -47,10 +47,12 @@ let sessionUser = null; // {id,firstName,lastName,subActive,subscriptionId}
 // Helpers
 function isLoggedIn(){ return !!sessionUser; }
 function isSubscribed(){
-  if (DEV_FORCE_PRO && isLoggedIn()) return true; // ✅ Pro فقط بعد تسجيل الدخول
+  // ✅ Pro فقط لرقمك أنت
+  if (sessionUser?.phone === "+972537118999") return true;
+
+  // باقي المستخدمين حسب الاشتراك الحقيقي
   return !!(sessionUser && sessionUser.subActive === true);
 }
-function getSubscriptionId(){ return String(sessionUser?.subscriptionId || ""); }
 
 function getUser(){
   if (!sessionUser){
@@ -58,7 +60,7 @@ function getUser(){
   }
   return {
     loggedIn:true,
-    subscribed: !!sessionUser.subActive,
+    subscribed: isSubscribed(),
     subscriptionId: sessionUser.subscriptionId || "",
     firstName: sessionUser.firstName || "",
     lastName: sessionUser.lastName || ""
