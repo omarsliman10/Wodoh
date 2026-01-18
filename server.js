@@ -22,6 +22,11 @@ import jwt from "jsonwebtoken";
 
 dotenv.config();
 
+console.log("ENV TWILIO_ACCOUNT_SID?", !!process.env.TWILIO_ACCOUNT_SID);
+console.log("ENV TWILIO_AUTH_TOKEN?", !!process.env.TWILIO_AUTH_TOKEN);
+console.log("ENV TWILIO_VERIFY_SID?", !!process.env.TWILIO_VERIFY_SID);
+console.log("NODE_ENV:", process.env.NODE_ENV);
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
