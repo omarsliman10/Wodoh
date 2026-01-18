@@ -2058,6 +2058,85 @@ function renderTF(q){
     </div>`;
 }
 
+// =======================
+// Solve rendering: show answers directly (NO user interaction)
+// =======================
+function renderSolvedOnly(p){
+  const L = outLang();
+  const rtl = (L === "ar" || L === "he");
+
+  let h = `<div class="card" dir="${rtl ? "rtl" : "ltr"}">
+    <h3>${currentLang === "ar" ? "✅ الحل (الإجابات الصحيحة)" : "✅ Solved Answers"}</h3>
+  `;
+
+  // MCQ solved
+  if (p.mcq && p.mcq.length){
+    h += `<div style="margin-top:10px;font-weight:800;opacity:.95">
+      ${currentLang==="ar" ? "اختيار من متعدد" : "Multiple Choice"}
+    </div>`;
+
+    h += p.mcq.map((q, idx)=>{
+      const correct = String(q.correct || "").toUpperCase();
+      const correctText = q.options?.[correct] || "";
+      return `
+        <div style="margin:12px 0;padding:12px;border-radius:14px;
+          background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);">
+          <div style="font-weight:800;margin-bottom:8px;">${idx+1}) ${escapeHtml(q.question)}</div>
+
+          <div style="opacity:.92;line-height:1.8">
+            ${Object.entries(q.options || {}).map(([k,v])=>{
+              const isC = (String(k).toUpperCase() === correct);
+              return `
+                <div style="padding:8px 10px;border-radius:12px;margin:6px 0;
+                  border:1px solid ${isC ? "rgba(34,197,94,.45)" : "rgba(255,255,255,.08)"};
+                  background:${isC ? "rgba(34,197,94,.10)" : "rgba(255,255,255,.02)"};">
+                  <b style="display:inline-block;min-width:22px">${escapeHtml(k)})</b>
+                  ${escapeHtml(v)}
+                  ${isC ? ` <span style="opacity:.9">✅</span>` : ""}
+                </div>
+              `;
+            }).join("")}
+          </div>
+
+          <div style="margin-top:8px;opacity:.95">
+            <b>${currentLang==="ar" ? "الإجابة:" : "Answer:"}</b>
+            ${escapeHtml(correct)}${correctText ? ` — ${escapeHtml(correctText)}` : ""}
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // TF solved
+  if (p.tf && p.tf.length){
+    h += `<div style="margin-top:10px;font-weight:800;opacity:.95">
+      ${currentLang==="ar" ? "صح / خطأ" : "True / False"}
+    </div>`;
+
+    h += p.tf.map((q, idx)=>{
+      const c = String(q.correct || "T").toUpperCase();
+      const label =
+        (outLang()==="ar") ? (c==="T" ? "صح" : "خطأ") :
+        (outLang()==="he") ? (c==="T" ? "נכון" : "לא נכון") :
+        (c==="T" ? "True" : "False");
+
+      return `
+        <div style="margin:10px 0;padding:12px;border-radius:14px;
+          background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);">
+          <div style="font-weight:800;margin-bottom:8px;">${idx+1}) ${escapeHtml(q.statement)}</div>
+          <div style="opacity:.95">
+            <b>${currentLang==="ar" ? "الإجابة:" : "Answer:"}</b> ${escapeHtml(label)} ✅
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  h += `</div>`;
+  return h;
+}
+
+
 /* =======================
    Parser
 ======================= */
@@ -2774,12 +2853,7 @@ document.getElementById("solveBtn")?.addEventListener("click", async ()=>{
     }
 
     const parsed = parseGeminiText(data.text || "");
-    out && (out.innerHTML = `
-      <div class="card">
-        <h3>${currentLang==="ar" ? "✅ الإجابات" : "✅ Answers"}</h3>
-        ${renderQuestionsOnly(parsed)}
-      </div>
-    `);
+out && (out.innerHTML = renderSolvedOnly(parsed));
   }catch(e){
     console.error(e);
     out && (out.innerHTML = "");
