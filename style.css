@@ -2697,7 +2697,10 @@ main.container.app{
 
 /* خليهم جنب بعض على اليسار */
 #planStatus{ left: var(--sidePad) !important; }
-#langBtn{ left: calc(var(--sidePad) + 92px) !important; } /* غيّر 92 إذا بدك مسافة أقل/أكثر */
+#langBtn{
+  left: var(--sidePad) !important;                 /* نفس خط Free */
+  top: calc(var(--topRow) + 48px) !important;      /* تحت Free */
+}
 
 /* ✅ خليه صندوق منفصل تحت الزر (مش جزء من نفس الكبسولة) */
 .header-menu-wrap{ position: relative; z-index: 9999; }
@@ -3521,9 +3524,11 @@ body.lang-en .feedback-head h2 {
   position: relative;
   z-index: 10;
 }
-#solveBtn.is-busy{
-  filter: brightness(0.72);
-  opacity: .92;
-  transform: translateY(1px);
-  cursor: not-allowed;
+/* Mobile: لا تمدد زر اللغة */
+@media (max-width: 600px){
+  #langBtn{
+    width: auto !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
 }
