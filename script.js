@@ -1391,31 +1391,25 @@ function applyLang(){
   const ar = currentLang === "ar";
   const dict = I18N[currentLang] || I18N.ar;
 
-document.documentElement.lang = ar ? "ar" : "en";
+  document.documentElement.lang = ar ? "ar" : "en";
 
-/* ✅ لا تقلب اتجاه الصفحة كلها */
-document.documentElement.dir = "rtl";   // ثابت (اختياري)
-document.body.dir = "rtl";              // ثابت (اختياري)
+  document.documentElement.dir = "rtl";
+  document.body.dir = "rtl";
 
-document.body.classList.toggle("lang-en", !ar);
-document.body.classList.toggle("lang-ar", ar);
+  document.body.classList.toggle("lang-en", !ar);
+  document.body.classList.toggle("lang-ar", ar);
 
-/* ✅ الهيدر ثابت LTR حتى لا تتحرك أزرار اليسار */
-const header = document.getElementById("appHeader");
-if (header) header.setAttribute("dir", "ltr");
-document.querySelectorAll("[data-i18n]").forEach((el)=>{
-  const key = el.getAttribute("data-i18n");
-  if (!key) return;
-  if (dict[key] == null) return;
+  const header = document.getElementById("appHeader");
+  if (header) header.setAttribute("dir", "ltr");
 
-  // ✅ إذا العنصر فيه إيموجي/أيقونة ثابتة في البداية، حافظ عليها
-  const icon = (el.getAttribute("data-i18n-icon") || "").trim();
-  if (icon) {
-    el.textContent = `${icon} ${dict[key]}`;
-  } else {
-    el.textContent = dict[key];
-  }
-});
+  document.querySelectorAll("[data-i18n]").forEach((el)=>{
+    const key = el.getAttribute("data-i18n");
+    if (!key) return;
+    if (dict[key] == null) return;
+
+    const icon = (el.getAttribute("data-i18n-icon") || "").trim();
+    el.textContent = icon ? `${icon} ${dict[key]}` : dict[key];
+  });
 
   document.querySelectorAll("[data-i18n-placeholder]").forEach((el)=>{
     const key = el.getAttribute("data-i18n-placeholder");
@@ -1423,27 +1417,26 @@ document.querySelectorAll("[data-i18n]").forEach((el)=>{
     if (dict[key] != null) el.setAttribute("placeholder", dict[key]);
   });
 
+  // ✅ هذا كان سبب الكراش — لازم يكون هنا داخل applyLang
+  document.querySelectorAll("[data-i18n-title]").forEach((el)=>{
+    const key = el.getAttribute("data-i18n-title");
+    if (!key) return;
+    if (dict[key] != null) el.setAttribute("title", dict[key]);
+  });
+
   if (langBtn) langBtn.textContent = dict.langBtn;
-const btn = GEN_BTN || generateBtn;
-if (btn && !btn.disabled){
-  const icon = (btn.getAttribute("data-i18n-icon") || "").trim();
-  btn.textContent = icon ? `${icon} ${dict.generateBtn}` : dict.generateBtn;
-}
+
+  const btn = GEN_BTN || generateBtn;
+  if (btn && !btn.disabled){
+    const icon = (btn.getAttribute("data-i18n-icon") || "").trim();
+    btn.textContent = icon ? `${icon} ${dict.generateBtn}` : dict.generateBtn;
+  }
 
   if (paywallTitle && dict.paywallTitle) paywallTitle.textContent = dict.paywallTitle;
   if (paywallText && dict.paywallText) paywallText.textContent = dict.paywallText;
 
-
   refreshHeaderButtons();
 }
-
-document.querySelectorAll("[data-i18n-title]").forEach((el)=>{
-  const key = el.getAttribute("data-i18n-title");
-  if (!key) return;
-  if (dict[key] != null) el.setAttribute("title", dict[key]);
-});
-
-
 
 /* =======================
    Session Save/Restore
