@@ -202,8 +202,8 @@ const VIEWS = {
   home: document.getElementById("homeView") || document.querySelector('[data-view="home"]'),
   solve: document.getElementById("solveView") || document.querySelector('[data-view="solve"]'),
   generate: document.getElementById("generateView") || document.querySelector('[data-view="generate"]'),
+  summaries: document.getElementById("mySummariesView") || document.getElementById("mySummaries") // ✅ NEW
 };
-
 const topBack = document.getElementById("topBack");
 
 function showView(name){
@@ -257,6 +257,35 @@ if (toSolve){
   if (toGen){ e.preventDefault(); showView("generate"); }
   if (back){ e.preventDefault(); showView("home"); }
 });
+
+document.addEventListener("click", (e)=>{
+  const btn = e.target.closest("#mySummariesBtn, #historyBtn, [data-action='mySummaries']");
+  if (!btn) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  if (!isLoggedIn()){
+    pendingAction = ""; // ما بدنا نعلّق اشتراك هنا
+    openAccount();
+    showToast(
+      currentLang==="ar" ? "🔐 سجّل دخول أولًا" : "🔐 Please log in first",
+      "err",
+      2500
+    );
+    return;
+  }
+
+  if (!isSubscribed()){
+    showToast(t("toastNeedProHistory"), "err", 2800);
+    openSubscribe();
+    return;
+  }
+
+  showSummariesView();
+});
+
+
 /* =======================
    Header Menu (Dropdown)
 ======================= */
@@ -2167,15 +2196,30 @@ function deleteSummaryItem(id){
 }
 
 /* Views */
+let lastMainView = "home";
+
 function showSummariesView(){
-  if (panel) panel.style.display = "none";
-  if (output) output.style.display = "none";
-  if (mySummariesWrap) mySummariesWrap.style.display = "block";
+  // احفظ وين كنت قبل
+  lastMainView = getCurrentViewName() || lastMainView || "home";
+
+  // افتح صفحة الملخصات
+  if (typeof showView === "function") showView("summaries");
+
+  // render
+  renderMySummaries();
 }
+
 function showMainView(){
-  if (mySummariesWrap) mySummariesWrap.style.display = "none";
-  if (panel) panel.style.display = "";
-  if (output) output.style.display = "";
+  if (typeof showView === "function") showView(lastMainView || "home");
+}
+
+// helper to detect current view
+function getCurrentViewName(){
+  for (const [k, el] of Object.entries(VIEWS)){
+    if (!el) continue;
+    if (el.style.display !== "none") return k;
+  }
+  return "home";
 }
 
 function renderMySummaries(){
