@@ -2728,7 +2728,7 @@ document.getElementById("solveBtn")?.addEventListener("click", async ()=>{
     }
 
     const parsed = parseGeminiText(data.text || "");
-out && (out.innerHTML = renderSolvedOnly(parsed));
+    out && (out.innerHTML = renderSolvedOnly(parsed));
   }catch(e){
     console.error(e);
     out && (out.innerHTML = "");

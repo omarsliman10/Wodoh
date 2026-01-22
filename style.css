@@ -3603,5 +3603,5 @@ body.lang-en .feedback-head h2 {
 
   /* 8) iOS viewport safety */
   html, body{ height: auto !important; }
-  .landing{ min-height: auto !important; }
+ .landing{ min-height: auto !important; }
 }
