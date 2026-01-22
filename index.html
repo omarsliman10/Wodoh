@@ -755,7 +755,7 @@
             <div class="plan-name" data-i18n="planMonthly">Monthly</div>
             <div class="plan-desc" data-i18n="planUnlimited">Unlimited</div>
           </div>
-          <div class="plan-price">PayPal Plan</div>
+        <div class="plan-price">Pro</div>
           <div class="plan-desc">Unlimited access</div>
         </button>
 
@@ -769,12 +769,10 @@
         </button>
       </div>
 
-      <div class="sub-pay">
-        <div class="paypal-note" id="paypalNote" data-i18n="paypalNote">
-          ادفع عبر PayPal لتفعيل الاشتراك.
-        </div>
+      <div class="tiny-hint" style="margin-top:10px;opacity:.9">
+  الدفع قيد الإعداد (Apple Pay / Card) — قريبًا.
+</div>
 
-        <div id="paypalButtons" class="paypal-box" style="margin-top:12px;"></div>
 
         <div class="tiny-hint" id="subHint" data-i18n="subHint" style="margin-top:10px;">
           عند تفعيل الاشتراك سيتم إزالة حد 1 محاولة/اليوم.
@@ -790,9 +788,3 @@
     if (y) y.textContent = new Date().getFullYear();
   </script>
 
-  <!-- PayPal SDK (SUBSCRIPTIONS) -->
-  <script
-    src="https://www.paypal.com/sdk/js?client-id=AQhaA8WOxv9FdWToZccgDLITuazgbSw1bRwSpKARLc1c4bidUFTzsOAjUVf97rVFcw0RaGq0awF9_WhB&vault=true&intent=subscription&components=buttons">
-  </script>
-</body>
-</html>

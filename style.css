@@ -649,24 +649,6 @@ html[dir="rtl"] .q button[data-opt]{ text-align:right; }
   opacity: .80;
 }
 
-#subscribeModal .sub-pay{
-  margin-top: 14px;
-  padding: 14px;
-  border-radius: 18px;
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(0,0,0,.18);
-}
-#subscribeModal .sub-pay-title{
-  font-weight: 800;
-  margin-bottom: 10px;
-}
-#subscribeModal .paypal-box{
-  border-radius: 14px;
-  padding: 10px;
-  background: rgba(255,255,255,.04);
-  border: 1px solid rgba(255,255,255,.10);
-}
-#paypalButtons > div{ margin: 0 auto; }
 
 #subscribeModal .sub-foot{
   margin-top: 10px;
@@ -3532,26 +3514,21 @@ body.lang-en .feedback-head h2 {
     padding-right: 16px !important;
   }
 }
+
+
 /* =========================================
-   MOBILE ONLY — FIX OVERLAP + WHITE GAP
-   (PASTE AT VERY END - does NOT affect PC)
+   MOBILE PATCH (SAFE) — affects MOBILE only
+   paste at VERY END
 ========================================= */
 @media (max-width: 760px){
 
-  /* 1) منع الفراغ الأبيض/السكرول الأفقي */
+  /* 0) Stop horizontal white gap */
   html, body{
     max-width: 100%;
     overflow-x: hidden !important;
   }
 
-  /* 2) container/landing ما يطلع برا الشاشة */
-  .container,
-  .landing-card{
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
-  /* 3) إلغاء تثبيت الأزرار لوحدها (هذا سبب التداخل الأكبر) */
+  /* 1) Cancel any old “fixed pills” rules on mobile only */
   #headerMenuBtn,
   #planStatus,
   #langBtn{
@@ -3559,15 +3536,18 @@ body.lang-en .feedback-head h2 {
     top: auto !important;
     left: auto !important;
     right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
   }
 
-  /* 4) الهيدر هو الوحيد fixed (بدون انقلاب أماكن) */
+  /* 2) Header: the ONLY fixed element */
   #appHeader{
     position: fixed !important;
-    top: 0 !important; left: 0 !important; right: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
     z-index: 99999 !important;
 
-    /* لو عندك direction:ltr ثابت، خليه زي ما هو */
     display: grid !important;
     grid-template-columns: auto 1fr auto !important;
     align-items: center !important;
@@ -3578,22 +3558,29 @@ body.lang-en .feedback-head h2 {
     backdrop-filter: blur(14px) !important;
     -webkit-backdrop-filter: blur(14px) !important;
     border-bottom: 1px solid rgba(255,255,255,.10) !important;
+
+    /* make sure header is clickable */
+    pointer-events: auto !important;
+    overflow: visible !important;
   }
 
-  /* 5) تصغير الشعار عشان ما يزحم */
+  /* 3) Keep left items aligned (Free + Language) */
+  #appHeader .header-left{
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* 4) Logo size (not huge on mobile) */
   #appHeader .center-logo{
     width: 64px !important;
     height: 64px !important;
   }
 
-  /* 6) خلي left pills جنب بعض داخل الهيدر */
-  #appHeader .header-left{
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 8px !important;
-  }
-
-  /* 7) الدروبداون ما يعمل دفع/تداخل */
+  /* 5) Dropdown: overlay, not pushing layout */
   #headerMenuDropdown,
   .header-menu-dropdown{
     position: absolute !important;
@@ -3604,13 +3591,17 @@ body.lang-en .feedback-head h2 {
     max-width: calc(100vw - 16px) !important;
   }
 
-  /* 8) أهم نقطة: زح كل المحتوى تحت الهيدر */
+  /* 6) Push page content under fixed header (MOBILE ONLY) */
   body{
-    padding-top: 92px !important; /* إذا لسا تداخل: خليها 100-110 */
+    padding-top: 92px !important; /* increase to 100-110 if still overlap */
   }
 
-  /* لو عندك padding-top قديم على main.container.app خلّيه صفر بالموبايل */
+  /* 7) Remove any old “main padding-top” on mobile */
   main.container.app{
     padding-top: 0 !important;
   }
+
+  /* 8) iOS viewport safety */
+  html, body{ height: auto !important; }
+  .landing{ min-height: auto !important; }
 }

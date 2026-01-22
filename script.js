@@ -4,12 +4,6 @@
 const FULL_COUNT = 5;
 const MORE_COUNT = 3;
 
-/* ✅ PayPal Plan IDs (LIVE) */
-const PAYPAL_PLAN_IDS = {
-  monthly: "P-42A822454X567163XNFIV7MY",
-  yearly:  "P-02486823H7988883MNFIV6LY",
-};
-
 let currentLang = "ar"; // UI language only (ar/en)
 let previousQuestions = [];
 let lastSourceText = "";
@@ -185,7 +179,6 @@ const closePaywall = document.getElementById("closePaywall");
 /* Subscribe modal */
 const subscribeModal = document.getElementById("subscribeModal");
 const subClose = document.getElementById("subClose");
-const paypalButtonsEl = document.getElementById("paypalButtons");
 
 // ✅ Fallback IDs if HTML uses different ids
 const _fallback = (el, id) => el || document.getElementById(id);
@@ -1001,21 +994,9 @@ paywallSubscribeBtn?.addEventListener("click", ()=>{
 });
 
 /* =======================
-   Subscribe modal (PayPal REAL) + SERVER VERIFY + SERVER ACTIVATE
+   Subscribe modal (NO PayPal)
 ======================= */
-let selectedPlan = "monthly";
-let paypalRendered = false;
-let paypalWaitTimer = null;
-
-function getSelectedPlanId(){
-  return PAYPAL_PLAN_IDS[selectedPlan] || PAYPAL_PLAN_IDS.monthly;
-}
-
 function closeSubscribe(){
-  if (paypalWaitTimer){
-    clearInterval(paypalWaitTimer);
-    paypalWaitTimer = null;
-  }
   closeModal(subscribeModal);
 }
 
@@ -1023,139 +1004,33 @@ async function openSubscribe(){
   await syncSession(); // ✅ ensure session
 
   if (!isLoggedIn()){
-  pendingAction = "subscribe";
-  openAccount(); // ✅ افتح تسجيل الدخول بدل رسالة
-  return;
-}
-
+    pendingAction = "subscribe";
+    openAccount();
+    return;
+  }
 
   if (isSubscribed()){
     showToast(t("toastSubAlready"), "ok", 1800);
     return;
   }
 
+  // ✅ افتح المودال بس بدون أي بوابات دفع
   openModal(subscribeModal);
-  ensurePayPalButtons();
+
+  // ✅ لو بدك تعرض رسالة داخل المودال بدل PayPal
+  // (إذا عندك عنصر placeholder في HTML مثل #paypalNote أو #paypalButtons، خليهم محذوفين من HTML أساسًا)
+  showToast(
+    currentLang === "ar"
+      ? "💳 الدفع قيد الإعداد (Card / Apple Pay) قريبًا."
+      : "💳 Payments are being set up (Card / Apple Pay) soon.",
+    "ok",
+    2600
+  );
 }
 
 SUB_BTN?.addEventListener("click", ()=> openSubscribe());
 subClose?.addEventListener("click", closeSubscribe);
 subscribeModal?.addEventListener("click",(e)=>{ if (e.target === subscribeModal) closeSubscribe(); });
-
-document.querySelectorAll(".plan").forEach(btn=>{
-  btn.addEventListener("click", ()=>{
-    document.querySelectorAll(".plan").forEach(x=> x.classList.remove("active"));
-    btn.classList.add("active");
-    selectedPlan = btn.getAttribute("data-plan") || "monthly";
-  });
-});
-
-function ensurePayPalButtons(){
-  if (paypalRendered) return;
-  if (!paypalButtonsEl) return;
-
-  paypalButtonsEl.innerHTML = "";
-
-  const isReady = () => !!(window.paypal && window.paypal.Buttons);
-
-  if (!isReady()){
-    showToast(
-      currentLang === "ar"
-        ? "⏳ جاري تحميل PayPal... انتظر ثوانٍ"
-        : "⏳ Loading PayPal... please wait",
-      "ok",
-      2200
-    );
-
-    if (paypalWaitTimer) return;
-
-    paypalWaitTimer = setInterval(()=>{
-      if (!subscribeModal || subscribeModal.style.display !== "flex"){
-        clearInterval(paypalWaitTimer);
-        paypalWaitTimer = null;
-        return;
-      }
-
-      if (isReady()){
-        clearInterval(paypalWaitTimer);
-        paypalWaitTimer = null;
-        ensurePayPalButtons();
-      }
-    }, 250);
-
-    return;
-  }
-
-  try{
-    window.paypal.Buttons({
-      style: { layout: "vertical", shape: "rect", label: "subscribe" },
-
-      createSubscription: function(data, actions) {
-        const planId = getSelectedPlanId();
-        return actions.subscription.create({ plan_id: planId });
-      },
-
-      onApprove: async function(data) {
-        await syncSession(); // ✅ refresh session before activate
-
-        if (!isLoggedIn()){
-          showToast(
-            currentLang==="ar"
-            ? "🔒 لازم تسجّل دخول قبل تفعيل الاشتراك."
-            : "🔒 Please log in before activating subscription.",
-            "err",
-            3500
-          );
-          return;
-        }
-
-        const subscriptionId = data?.subscriptionID || "";
-        if (!subscriptionId){
-          showToast(t("toastErr"), "err", 3000);
-          return;
-        }
-
-        // 1) Verify from server (PayPal)
-        const verify = await serverVerifySubscription(subscriptionId);
-        if (!verify.ok || !verify.active){
-          console.error("Verify failed:", verify);
-          showToast(t("toastSubVerifyFail"), "err", 4500);
-          return;
-        }
-
-        // 2) Activate on server
-        const act = await apiJSON("/api/subscription/activate", { subscriptionId });
-        if (!act.data?.ok){
-          console.error("Activate failed:", act);
-          showToast(t("toastSubVerifyFail"), "err", 4500);
-          return;
-        }
-
-        // 3) Refresh session => subActive:true
-        await syncSession();
-
-        closeSubscribe();
-        refreshHeaderButtons();
-        showToast(t("toastSubOn"), "ok", 2600);
-      },
-
-      onError: function(err){
-        console.error("PayPal error:", err);
-        showToast(t("toastErr"), "err", 3500);
-      },
-
-      onCancel: function(){
-        showToast(currentLang==="ar" ? "تم إلغاء العملية." : "Checkout canceled.", "err", 2000);
-      }
-
-    }).render("#paypalButtons");
-
-    paypalRendered = true;
-  }catch(e){
-    console.error(e);
-    showToast(t("toastErr"), "err", 3500);
-  }
-}
 
 /* =======================
    Account (Phone OTP) Modal
@@ -2805,30 +2680,11 @@ async function readSolveFileToText(file){
   return "";
 }
 
-function setSolveBusy(isBusy){
-  const btn = document.getElementById("solveBtn");
-  if (!btn) return;
-
-  if (!btn.dataset.originalText){
-    btn.dataset.originalText = btn.textContent || (currentLang==="ar" ? "حل الآن" : "Solve");
-  }
-
-  if (isBusy){
-    btn.disabled = true;
-    btn.classList.add("is-busy");
-    btn.textContent = (currentLang==="ar" ? "⏳ جاري الحل..." : "⏳ Solving...");
-  } else {
-    btn.disabled = false;
-    btn.classList.remove("is-busy");
-    btn.textContent = btn.dataset.originalText;
-  }
-}
-
 document.getElementById("solveBtn")?.addEventListener("click", async ()=>{
   const out = document.getElementById("solveOutput");
   if (out) out.innerHTML = "";
 
-  // Pro only
+  // Pro only (حسب منطقك الحالي)
   if (!isSubscribed()){
     showSolveToast(currentLang==="ar" ? "🔒 حل الأسئلة للمشترك فقط" : "🔒 Pro only", "err");
     openSubscribe();
@@ -2850,13 +2706,8 @@ document.getElementById("solveBtn")?.addEventListener("click", async ()=>{
     return;
   }
 
-  // ✅ START busy
-  setSolveBusy(true);
-  if (document.getElementById("solveBtn")?.disabled) {
-  // already busy; prevent double run
-}
-
-
+  // ✅ هنا نستخدم نفس endpoint /api/generate لكن بنمط solve
+  // لازم السيرفر يدعم mode: "solve" ويرجع data.text بنفس شكل parseGeminiText
   showSolveToast(currentLang==="ar" ? "⏳ جاري الحل..." : "⏳ Solving...", "ok", 1400);
   if (out) out.innerHTML = renderSkeleton();
 
@@ -2868,8 +2719,7 @@ document.getElementById("solveBtn")?.addEventListener("click", async ()=>{
       questionMode: "both",
       questionCount: 0
     });
-
-  lastOutputLang = detectLangFromText(text); // ✅ حسب السؤال نفسه
+    lastOutputLang = detected;
 
     if (!r.ok){
       out && (out.innerHTML = "");
@@ -2878,15 +2728,10 @@ document.getElementById("solveBtn")?.addEventListener("click", async ()=>{
     }
 
     const parsed = parseGeminiText(data.text || "");
-    out && (out.innerHTML = renderSolvedOnly(parsed));
-
+out && (out.innerHTML = renderSolvedOnly(parsed));
   }catch(e){
     console.error(e);
     out && (out.innerHTML = "");
     showSolveToast(currentLang==="ar" ? "❌ خطأ اتصال" : "❌ Connection error", "err", 3200);
-  }finally{
-    // ✅ END busy (يرجع طبيعي)
-    setSolveBusy(false);
   }
 });
-
