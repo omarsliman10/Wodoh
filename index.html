@@ -318,29 +318,49 @@
     <label class="label" data-i18n="solveLabel">حل الأسئلة</label>
 
     <!-- ✅ Text input -->
-<div class="text-tools" style="position:relative;">
-  <button id="clearSolveTextBtn" type="button" class="btn-clear-text" title="مسح النص">✕</button>
+    <div class="text-tools" style="position:relative;">
+      <button
+        id="clearSolveTextBtn"
+        type="button"
+        class="btn-clear-text"
+        data-i18n-title="clearTextTitle"
+        title="مسح النص"
+      >✕</button>
 
-  <textarea
-    id="solveTextInput"
-    dir="auto"
-    placeholder="الصق أسئلة الاختبار هنا... (MCQ / صح-خطأ)"
-    style="min-height:190px;"
-  ></textarea>
-</div>
+      <textarea
+        id="solveTextInput"
+        dir="auto"
+        data-i18n-placeholder="solveTextPlaceholder"
+        placeholder="الصق أسئلة الاختبار هنا... (MCQ / صح-خطأ)"
+        style="min-height:190px;"
+      ></textarea>
+    </div>
 
-    <!-- ✅ File uploader (separate from generate uploader to avoid breaking) -->
+    <!-- ✅ File uploader -->
     <div class="uploader" id="solveDropZone">
       <div class="uploader-top">
-        <div class="uploader-title">📎 رفع ملف أسئلة</div>
-        <button id="clearSolveFileBtn" type="button" class="btn btn-danger" disabled>مسح الملف ✖</button>
+        <div class="uploader-title" data-i18n="solveUploadTitle">📎 رفع ملف أسئلة</div>
+
+        <button
+          id="clearSolveFileBtn"
+          type="button"
+          class="btn btn-danger"
+          disabled
+          data-i18n="solveClearFileBtn"
+        >مسح الملف ✖</button>
       </div>
 
       <div class="uploader-body">
         <input id="solveFileInput" type="file" accept=".txt,.pdf,.docx" hidden />
-        <button id="chooseSolveFileBtn" type="button" class="btn btn-soft">اختيار ملف</button>
 
-        <div class="uploader-hint" id="solveFileHint">
+        <button
+          id="chooseSolveFileBtn"
+          type="button"
+          class="btn btn-soft"
+          data-i18n="solveChooseFileBtn"
+        >اختيار ملف</button>
+
+        <div class="uploader-hint" id="solveFileHint" data-i18n="solveFileHint">
           اسحب الملف هنا أو اضغط “اختيار ملف” (TXT / PDF / DOCX)
         </div>
 
@@ -352,9 +372,13 @@
     </div>
 
     <div class="controls" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:12px;">
-      <button id="solveBtn" type="button" class="btn btn-primary btn-wide" style="flex:1;min-width:200px;">
-        ✅ حلّ الآن
-      </button>
+      <button
+        id="solveBtn"
+        type="button"
+        class="btn btn-primary btn-wide"
+        style="flex:1;min-width:200px;"
+        data-i18n="solveNowBtn"
+      >✅ حلّ الآن</button>
 
       <div id="solveToast" class="toast" style="display:none;"></div>
     </div>

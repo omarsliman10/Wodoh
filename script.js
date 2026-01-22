@@ -286,6 +286,7 @@ document.addEventListener("click", (e)=>{
 });
 
 
+
 /* =======================
    Header Menu (Dropdown)
 ======================= */
@@ -508,9 +509,17 @@ const I18N = {
     homeGenerateDesc: "ارفع نصًا أو ملفًا لتحصل على ملخص واضح مع أسئلة اختيار من متعدد وصح/خطأ (حسب الخطة).",
 
     homeSolveTitle: "حل الأسئلة",
-    homeSolveDesc: "ارفع ملف أسئلة أو الصق الأسئلة، وسيعطيك وضوح الإجابات بشكل مرتب وواضح."
+    homeSolveDesc: "ارفع ملف أسئلة أو الصق الأسئلة، وسيعطيك وضوح الإجابات بشكل مرتب وواضح.",
 
-    
+        solveLabel: "حل الأسئلة",
+    solveTextPlaceholder: "الصق أسئلة الاختبار هنا... (MCQ / صح-خطأ)",
+    solveUploadTitle: "📎 رفع ملف أسئلة",
+    solveClearFileBtn: "مسح الملف ✖",
+    solveChooseFileBtn: "اختيار ملف",
+    solveFileHint: 'اسحب الملف هنا أو اضغط "اختيار ملف" (TXT / PDF / DOCX)',
+    solveNowBtn: "✅ حلّ الآن",
+    clearTextTitle: "مسح النص",
+
 
   },
 
@@ -658,6 +667,15 @@ const I18N = {
     headerDescEn: "Turn content into understanding",
 
     langBtn: "🌐 العربية",
+
+    solveLabel: "Solve Questions",
+    solveTextPlaceholder: "Paste your exam questions here... (MCQ / True-False)",
+    solveUploadTitle: "📎 Upload Questions File",
+    solveClearFileBtn: "Clear file ✖",
+    solveChooseFileBtn: "Choose file",
+    solveFileHint: "Drag the file here or click “Choose file” (TXT / PDF / DOCX)",
+    solveNowBtn: "✅ Solve now",
+    clearTextTitle: "Clear text",
 
 
   // ✅ Feedback
@@ -1418,6 +1436,14 @@ if (btn && !btn.disabled){
 
   refreshHeaderButtons();
 }
+
+document.querySelectorAll("[data-i18n-title]").forEach((el)=>{
+  const key = el.getAttribute("data-i18n-title");
+  if (!key) return;
+  if (dict[key] != null) el.setAttribute("title", dict[key]);
+});
+
+
 
 /* =======================
    Session Save/Restore
@@ -2261,7 +2287,6 @@ function renderMySummaries(){
     </div>
   `;
 
-  document.getElementById("backFromSummaries")?.addEventListener("click", showMainView);
 
   wrap.querySelectorAll("[data-open]").forEach(btn=>{
     btn.addEventListener("click", ()=> openSummary(btn.getAttribute("data-open")));
@@ -2315,7 +2340,6 @@ function openSummary(id){
     </div>
   `;
 
-  document.getElementById("backToList")?.addEventListener("click", renderMySummaries);
   wrap.scrollIntoView({ behavior:"smooth", block:"start" });
 }
 
@@ -2345,6 +2369,27 @@ HIST_BTN?.addEventListener("click", ()=>{
 document.addEventListener("keydown",(e)=>{
   if (e.key==="Escape" && mySummariesWrap?.style.display==="block") showMainView();
 });
+
+// ✅ Back buttons inside My Summaries — always works
+document.addEventListener("click", (e) => {
+  const backList = e.target.closest("#backFromSummaries"); // رجوع من القائمة للرئيسية/الصفحة السابقة
+  if (backList) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation?.();
+    showMainView(); // يرجع للصفحة اللي كنت فيها قبل الملخصات
+    return;
+  }
+
+  const backToList = e.target.closest("#backToList"); // رجوع من فتح ملخص إلى قائمة الملخصات
+  if (backToList) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation?.();
+    renderMySummaries(); // يرجع لقائمة الملخصات
+    return;
+  }
+}, true); // ✅ capture
 
 /* =======================
    Language toggle (UI only)
