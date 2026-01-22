@@ -520,6 +520,7 @@ const I18N = {
     solveNowBtn: "✅ حلّ الآن",
     clearTextTitle: "مسح النص",
 
+    advancedTitle: "إعدادات متقدمة",
 
   },
 
@@ -677,6 +678,7 @@ const I18N = {
     solveNowBtn: "✅ Solve now",
     clearTextTitle: "Clear text",
 
+     advancedTitle: "Advanced Settings",
 
   // ✅ Feedback
   fbTitle: "💬 Your feedback matters",
