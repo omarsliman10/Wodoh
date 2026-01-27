@@ -2347,7 +2347,7 @@ document.addEventListener("keydown",(e)=>{
   if (e.key==="Escape" && mySummariesWrap?.style.display==="block") showMainView();
 });
 
-كط
+
 /* =======================
    Language toggle (UI only)
 ======================= */
@@ -2504,18 +2504,40 @@ fbSend?.addEventListener("click", sendFeedbackFormspree);
 window.testPhone = function(){
   alert(getFullPhoneNumber());
 };
+
 async function logout(){
   try{
-    await fetch("/api/auth/logout", {
-      method: "POST",
-      credentials: "include"
-    });
+    await fetch("/api/auth/logout", { method:"POST", credentials:"include" });
   }catch(e){}
 
+  // ✅ session
   sessionUser = null;
+
+  // ✅ امسح كل حالة الشغل (لكن لا تمسح ملخصاتي)
+  try{
+    localStorage.removeItem(LS_SESSION_KEY); // wodoh_last_session_v6
+  }catch{}
+
+  // امسح المدخلات والنتائج والملفات
+  resetWorkState(); // عندك موجودة
+
+  // ✅ لو عندك solve inputs
+  const solveTa = document.getElementById("solveTextInput");
+  if (solveTa) solveTa.value = "";
+  const solveOut = document.getElementById("solveOutput");
+  if (solveOut) solveOut.innerHTML = "";
+  const solveFi = document.getElementById("solveFileInput");
+  if (solveFi) solveFi.value = "";
+
   refreshHeaderButtons();
   closeHeaderMenu?.();
+
+  // رجّع للصفحة الرئيسية
+  showView?.("home");
 }
+document.getElementById("logoutBtn")?.addEventListener("click", logout);
+
+
 document.getElementById("logoutBtn")?.addEventListener("click", logout);
 (function () {
   const select = document.getElementById("countryCode");
