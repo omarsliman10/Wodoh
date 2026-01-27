@@ -212,6 +212,8 @@ function showView(name){
     el.style.display = (k === name) ? "block" : "none";
   });
 
+  document.body.classList.toggle("view-home", name === "home");
+
   // ✅ زر الرجوع (يظهر بكل الصفحات غير home)
   const backBtn = document.getElementById("backHomeBtn");
   if (backBtn) backBtn.style.display = (name === "home") ? "none" : "inline-flex";
@@ -301,6 +303,8 @@ function closeHeaderMenu(){
   if (!headerMenuDropdown) return;
   headerMenuDropdown.hidden = true;
   headerMenuBtn?.setAttribute("aria-expanded", "false");
+    // ✅ اخفي logout لما تسكر القائمة
+  toggleLogoutRow(false);
 }
 
 function openHeaderMenu(){
@@ -544,7 +548,7 @@ const I18N = {
     mySummariesBtn: "📚 My Summaries",
     accountBtnTop: "👤 Account",
     subscribeBtnTop: "⭐ Subscribe",
-    generateBtn: "📚Summary + Questions",
+    generateBtn: "Summary + Questions",
 
     inputLabel: "Text",
     uploadTitle: "📎 Upload file",
@@ -1271,7 +1275,32 @@ function closeAccount({ clearPending = false } = {}){
   });
 })();
 
-ACC_BTN?.addEventListener("click", openAccount);
+function toggleLogoutRow(force){
+  const row = document.getElementById("logoutRow");
+  if (!row) return;
+
+  // force: true/false أو toggle لو مش موجود
+  if (typeof force === "boolean"){
+    row.style.display = force ? "block" : "none";
+  } else {
+    row.style.display = (row.style.display === "block") ? "none" : "block";
+  }
+}
+
+// ✅ لما تضغط على الاسم
+ACC_BTN?.addEventListener("click", (e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+
+  // لو مش مسجل دخول: افتح مودال الحساب
+  if (!isLoggedIn()){
+    openAccount();
+    return;
+  }
+
+  // لو مسجل دخول: افتح/سكر زر تسجيل الخروج
+  toggleLogoutRow();
+});
 accountClose?.addEventListener("click", ()=> closeAccount({ clearPending:true }));
 cancelAccountBtn?.addEventListener("click", ()=> closeAccount({ clearPending:true }));
 
@@ -1991,58 +2020,31 @@ function renderTF(q){
 // =======================
 // Solve rendering: show answers directly (NO user interaction)
 // =======================
-function renderSolvedOnly(p){
-  const L = outLang();
+function renderSingleAnswerOnly(p){
+  const L = detectLangFromText(lastSourceText || "");
   const rtl = (L === "ar" || L === "he");
 
-  const tfLabel = (c)=>{
-    c = String(c || "T").toUpperCase();
-    if (L === "ar") return c === "T" ? "صح" : "خطأ";
-    if (L === "he") return c === "T" ? "נכון" : "לא נכון";
-    return c === "T" ? "True" : "False";
-  };
-
-  let html = `
-    <div class="card" dir="${rtl ? "rtl" : "ltr"}">
-      <h3>✅ ${currentLang === "ar" ? "الإجابات النهائية" : "Final Answers"}</h3>
-  `;
-
-  // اختيار من متعدد → الجواب فقط
+  // ✅ لو في MCQ: رجّع نص الإجابة الصحيحة فقط
   if (p.mcq && p.mcq.length){
-    p.mcq.forEach((q, i)=>{
-      const correctKey = q.correct;
-      const correctText = q.options?.[correctKey] || "";
-      html += `
-        <div style="margin:12px 0;padding:12px;border-radius:12px;
-          background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.35);">
-          <b>${i+1}) ${escapeHtml(q.question)}</b><br>
-          <span style="opacity:.9">
-            ${currentLang==="ar" ? "الإجابة:" : "Answer:"}
-            ${escapeHtml(correctText)}
-          </span>
-        </div>
-      `;
-    });
+    const q = p.mcq[0];
+    const key = String(q.correct || "").toUpperCase();
+    const ans = (q.options && q.options[key]) ? q.options[key] : key;
+    return `<div class="card" dir="${rtl ? "rtl" : "ltr"}">${escapeHtml(ans || "")}</div>`;
   }
 
-  // صح / خطأ → الجواب فقط
+  // ✅ لو في صح/خطأ: رجّع صح/خطأ حسب لغة السؤال
   if (p.tf && p.tf.length){
-    p.tf.forEach((q, i)=>{
-      html += `
-        <div style="margin:12px 0;padding:12px;border-radius:12px;
-          background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.35);">
-          <b>${i+1}) ${escapeHtml(q.statement)}</b><br>
-          <span style="opacity:.9">
-            ${currentLang==="ar" ? "الإجابة:" : "Answer:"}
-            ${tfLabel(q.correct)}
-          </span>
-        </div>
-      `;
-    });
+    const q = p.tf[0];
+    const c = String(q.correct || "T").toUpperCase();
+    const ans =
+      (L==="ar") ? (c==="T" ? "صح" : "خطأ") :
+      (L==="he") ? (c==="T" ? "נכון" : "לא נכון") :
+                   (c==="T" ? "True" : "False");
+
+    return `<div class="card" dir="${rtl ? "rtl" : "ltr"}">${escapeHtml(ans)}</div>`;
   }
 
-  html += `</div>`;
-  return html;
+  return `<div class="card" dir="${rtl ? "rtl" : "ltr"}"></div>`;
 }
 
 
@@ -2782,7 +2784,7 @@ document.getElementById("solveBtn")?.addEventListener("click", async ()=>{
     }
 
     const parsed = parseGeminiText(data.text || "");
-out && (out.innerHTML = renderSolvedOnly(parsed));
+out && (out.innerHTML = renderSingleAnswerOnly(parsed));
   }catch(e){
     console.error(e);
     out && (out.innerHTML = "");

@@ -3036,93 +3036,13 @@ body.lang-en .feedback-head h2 {
   opacity:1;
   transform: scale(1.06);
 }
-/* =========================
-   MOBILE HEADER FIX (no HTML changes)
-========================= */
+/* ✅ اخفاء نص الهيدر (العنوان + الوصف) خارج الصفحة الرئيسية */
+body:not(.view-home) .header-center .center-title{
+  display: none !important;
+}
+/* ✅ موبايل: اخفاء نص الهيدر دائمًا في الصفحات غير الرئيسية */
 @media (max-width: 720px){
-
-  /* خلي الهيدر يلف (wrap) بدل ما يزاحم */
-  #appHeader{
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-  }
-
-  /* الصف الأول: يمين + يسار */
-  #appHeader .header-right{
-    order: 1;
-    flex: 0 0 auto;
-  }
-
-  #appHeader .header-left{
-    order: 2;
-    flex: 1 1 auto;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 10px;
-  }
-
-  /* الرجوع يصير سطر لحاله بعرض كامل (لو ظاهر) */
-  #backHomeBtn{
-    flex: 1 1 100%;
-    width: 100%;
-    justify-content: center;
-  }
-
-  /* الـ pills (Free + Language) */
-  .top-pills{
-    display: flex;
-    flex: 1 1 auto;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
-  #planStatus{
-    height: 36px;
-    padding: 0 12px;
-    border-radius: 999px;
-  }
-
-  #langBtn{
-    height: 36px;
-    padding: 0 12px;
-    border-radius: 999px;
-    white-space: nowrap;
-  }
-
-  /* زر القائمة أصغر شوي */
-  #headerMenuBtn{
-    height: 36px;
-    padding: 0 12px;
-    border-radius: 999px;
-    white-space: nowrap;
-  }
-
-  /* الصف الثاني: العنوان بالوسط بعرض كامل */
-  #appHeader .header-center{
-    order: 3;
-    flex: 1 1 100%;
-    width: 100%;
-    text-align: center;
-    margin-top: 2px;
-  }
-
-  /* صغّر وصف العنوان بالموبايل */
-  #appHeader .title-desc-ar,
-  #appHeader .title-desc-en{
-    font-size: 12px;
-    opacity: .85;
-  }
-
-  #appHeader .title-ar,
-  #appHeader .title-en{
-    font-size: 18px;
-    line-height: 1.1;
+  body:not(.view-home) .header-center{
+    display: none !important;
   }
 }
