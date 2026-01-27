@@ -20,6 +20,8 @@ import bcrypt from "bcryptjs";
 import twilio from "twilio";
 import jwt from "jsonwebtoken";
 
+import { createHmac, timingSafeEqual } from "crypto";
+
 dotenv.config();
 
 console.log("ENV TWILIO_ACCOUNT_SID?", !!process.env.TWILIO_ACCOUNT_SID);
@@ -90,22 +92,71 @@ app.use(cookieParser());
 // =======================
 // ✅ Paddle Webhook (MUST be BEFORE express.json)
 // =======================
-app.post("/api/paddle/webhook", express.raw({ type: "application/json" }), async (req, res) => {
-  try {
-    console.log("✅ Paddle webhook received");
+const PADDLE_WEBHOOK_SECRET = String(process.env.PADDLE_WEBHOOK_SECRET || "").trim();
 
-    // حالياً خلّينا بس نطبع البودي عشان نتأكد يوصل
+function verifyPaddleSignature(req) {
+  // Paddle يرسل التوقيع بالهيدر (اسم الهيدر قد يختلف حسب نوع الويبهوك)
+  const sig =
+    String(req.headers["paddle-signature"] || req.headers["paddle-signature-v1"] || "").trim();
+
+  if (!PADDLE_WEBHOOK_SECRET || !sig) return false;
+
+  // نحسب HMAC على البودي الخام
+  const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from(String(req.body || ""), "utf8");
+  const expected = createHmac("sha256", PADDLE_WEBHOOK_SECRET).update(raw).digest("hex");
+
+  // مقارنة آمنة
+  try {
+    return timingSafeEqual(Buffer.from(expected, "utf8"), Buffer.from(sig, "utf8"));
+  } catch {
+    return false;
+  }
+}
+
+app.post("/api/paddle/webhook", express.raw({ type: "*/*" }), async (req, res) => {
+  try {
+    const okSig = verifyPaddleSignature(req);
+    if (!okSig) {
+      console.log("❌ Paddle webhook: bad signature");
+      return res.status(401).json({ ok: false });
+    }
+
     const raw = req.body.toString("utf8");
-    console.log("RAW:", raw.slice(0, 800)); // أول 800 حرف
+    let event = null;
+    try { event = JSON.parse(raw); } catch {}
+
+    console.log("✅ Paddle webhook verified");
+    console.log("PADDLE EVENT:", event?.event_type || event?.type || "unknown");
+
+    // ✅ أهم جزء: لازم يكون عندك طريقة تربط الدفع بالمستخدم
+    // أسهل حل: ابعث userId في الـ passthrough/metadata من الفرونت
+    const userId =
+      event?.data?.custom_data?.userId ||
+      event?.data?.metadata?.userId ||
+      event?.data?.passthrough?.userId ||
+      null;
+
+    if (userId) {
+      const updated = await updateUserById(userId, {
+        subActive: true,
+        subscriptionId: String(event?.data?.subscription_id || event?.data?.id || "PADDLE").slice(0, 80),
+      });
+
+      if (updated) {
+        console.log("✅ Pro activated for user:", userId);
+      } else {
+        console.log("⚠️ user not found for userId:", userId);
+      }
+    } else {
+      console.log("⚠️ No userId in Paddle webhook payload (need passthrough/metadata)");
+    }
 
     return res.json({ ok: true });
   } catch (e) {
     console.error("Paddle webhook error:", e);
-    return res.status(500).json({ ok:false });
+    return res.status(500).json({ ok: false });
   }
 });
-
-
 /* =======================
    Body
    ✅ Keep rawBody for PayPal webhooks verification

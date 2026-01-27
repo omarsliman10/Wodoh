@@ -181,8 +181,8 @@ const subscribeModal = document.getElementById("subscribeModal");
 const subClose = document.getElementById("subClose");
 
 // ✅ Paddle price IDs (غيّرهم من Paddle Dashboard)
-const PADDLE_PRICE_MONTHLY = "pri_xxxxx_monthly";
-const PADDLE_PRICE_YEARLY  = "pri_xxxxx_yearly";
+const PADDLE_PRICE_MONTHLY = "pri_01kfk186aqa8k9rdgc8bed3ymb";
+const PADDLE_PRICE_YEARLY  = "pri_01kfk1atxx6ymveaj4gg3w13j5";
 
 function getSelectedPlan(){
   const active = document.querySelector(".sub-plans .plan.active");
@@ -207,15 +207,18 @@ document.getElementById("paddlePayBtn")?.addEventListener("click", async ()=>{
   }
 
   // ✅ افتح Checkout
-  Paddle.Checkout.open({
-    items: [{ priceId, quantity: 1 }],
+Paddle.Checkout.open({
+  items: [{ priceId, quantity: 1 }],
 
-    // مهم جدًا: نمرّر userId لحتى الويبهوك يعرف مين يفعّل
-    customData: {
-      userId: sessionUser?.id,
-      phone: sessionUser?.phone || ""
-    }
-  });
+  customData: {
+    userId: sessionUser?.id,
+    phone: sessionUser?.phone || ""
+  },
+
+  settings: {
+    successUrl: `${location.origin}/?app=1&thanks=1`
+  }
+});
 });
 
 document.querySelectorAll(".sub-plans .plan").forEach(btn=>{
@@ -1116,16 +1119,6 @@ async function openSubscribe(){
 
   // ✅ افتح المودال بس بدون أي بوابات دفع
   openModal(subscribeModal);
-
-  // ✅ لو بدك تعرض رسالة داخل المودال بدل PayPal
-  // (إذا عندك عنصر placeholder في HTML مثل #paypalNote أو #paypalButtons، خليهم محذوفين من HTML أساسًا)
-  showToast(
-    currentLang === "ar"
-      ? "💳 الدفع قيد الإعداد (Card / Apple Pay) قريبًا."
-      : "💳 Payments are being set up (Card / Apple Pay) soon.",
-    "ok",
-    2600
-  );
 }
 
 SUB_BTN?.addEventListener("click", ()=> openSubscribe());
@@ -2891,4 +2884,40 @@ document.addEventListener("DOMContentLoaded", () => {
       feedbackSuccess.style.display = "none";
     }, 3000);
   });
+});
+async function waitForProActivation(timeoutMs = 20000){
+  const start = Date.now();
+
+  while (Date.now() - start < timeoutMs){
+    await syncSession();
+
+    if (isSubscribed()){
+      showToast(
+        currentLang === "ar" ? "⭐ تم تفعيل الاشتراك!" : "⭐ Subscription activated!",
+        "ok",
+        2500
+      );
+      refreshHeaderButtons();
+      closeSubscribe();
+      return;
+    }
+
+    await new Promise(r => setTimeout(r, 1200));
+  }
+
+  showToast(
+    currentLang === "ar"
+      ? "✅ تم الدفع، وإذا ما تفعل الاشتراك خلال دقيقة تواصل معنا."
+      : "✅ Payment completed. If Pro is not active yet, contact support.",
+    "err",
+    4000
+  );
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  const params = new URLSearchParams(location.search);
+  if (params.get("thanks") === "1"){
+    history.replaceState({}, "", "/?app=1");
+    waitForProActivation();
+  }
 });

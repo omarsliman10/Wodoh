@@ -26,11 +26,10 @@
 <script defer>
   window.addEventListener("DOMContentLoaded", () => {
     // ✅ حدد البيئة
-    Paddle.Environment.set("production"); // أو "sandbox"
+    Paddle.Environment.set("sandbox"); // أو "sandbox"
 
     // ✅ هذا مش API KEY — هذا Client-side token من Paddle
-    Paddle.Setup({ token: "PADDLE_CLIENT_SIDE_TOKEN" });
-  });
+    Paddle.Setup({ token: "PADDLE_CLIENT_SIDE_TOKEN" });  });
 </script>
 
 <!-- موقعك -->
