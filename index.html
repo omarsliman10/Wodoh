@@ -20,6 +20,20 @@
   <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
 
 <link rel="stylesheet" href="style.css?v=999">
+
+<!-- ✅ Paddle (لازم قبل script.js) -->
+<script src="https://cdn.paddle.com/paddle/v2/paddle.js" defer></script>
+<script defer>
+  window.addEventListener("DOMContentLoaded", () => {
+    // ✅ حدد البيئة
+    Paddle.Environment.set("production"); // أو "sandbox"
+
+    // ✅ هذا مش API KEY — هذا Client-side token من Paddle
+    Paddle.Setup({ token: "PADDLE_CLIENT_SIDE_TOKEN" });
+  });
+</script>
+
+<!-- موقعك -->
 <script src="script.js?v=1000" defer></script>
 
   <!-- ✅ Quick polish for Paywall/Subscribe colors + Header Menu styling -->
@@ -811,8 +825,10 @@
         </button>
       </div>
 
-      <div class="tiny-hint" style="margin-top:10px;opacity:.9">
-  الدفع قيد الإعداد (Apple Pay / Card) — قريبًا.
+<div class="sub-actions" style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+  <button id="paddlePayBtn" class="btn btn-primary" type="button">
+    💳 ادفع واشترك الآن
+  </button>
 </div>
 
 

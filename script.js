@@ -180,6 +180,52 @@ const closePaywall = document.getElementById("closePaywall");
 const subscribeModal = document.getElementById("subscribeModal");
 const subClose = document.getElementById("subClose");
 
+// ✅ Paddle price IDs (غيّرهم من Paddle Dashboard)
+const PADDLE_PRICE_MONTHLY = "pri_xxxxx_monthly";
+const PADDLE_PRICE_YEARLY  = "pri_xxxxx_yearly";
+
+function getSelectedPlan(){
+  const active = document.querySelector(".sub-plans .plan.active");
+  return active?.dataset?.plan || "monthly";
+}
+
+document.getElementById("paddlePayBtn")?.addEventListener("click", async ()=>{
+  await syncSession();
+
+  if (!isLoggedIn()){
+    pendingAction = "subscribe";
+    openAccount();
+    return;
+  }
+
+  const plan = getSelectedPlan();
+  const priceId = (plan === "yearly") ? PADDLE_PRICE_YEARLY : PADDLE_PRICE_MONTHLY;
+
+  if (!window.Paddle){
+    showToast("❌ Paddle لم يتم تحميله", "err", 2500);
+    return;
+  }
+
+  // ✅ افتح Checkout
+  Paddle.Checkout.open({
+    items: [{ priceId, quantity: 1 }],
+
+    // مهم جدًا: نمرّر userId لحتى الويبهوك يعرف مين يفعّل
+    customData: {
+      userId: sessionUser?.id,
+      phone: sessionUser?.phone || ""
+    }
+  });
+});
+
+document.querySelectorAll(".sub-plans .plan").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".sub-plans .plan").forEach(x=>x.classList.remove("active"));
+    btn.classList.add("active");
+  });
+});
+
+
 // ✅ Fallback IDs if HTML uses different ids
 const _fallback = (el, id) => el || document.getElementById(id);
 
