@@ -335,6 +335,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const p = document.getElementById("phoneLocalInput");
   const c = document.getElementById("codeInput");
   const s = document.getElementById("sendCodeBtn");
+  const firstNameInput = document.getElementById("firstNameInput"); // ✅ جديد
 
   if (p) p.value = "";
   if (c) c.value = "";
@@ -656,7 +657,7 @@ const I18N = {
 
    homeSolveTitle: " Solve Questions",
     homeSolveDesc: "Upload a questions file or paste your questions, and Wodoh will give you clean, organized answers.",
-    homeGenerateTitle: "⚡ Summary + Question Generation",
+    homeGenerateTitle: " Summary + Question Generation",
     homeGenerateDesc: "Upload text/file → a summary + MCQ and True/False questions (based on your plan).",
 
     mySummariesBtn: "My Summaries",
@@ -922,14 +923,14 @@ function refreshHeaderButtons(){
   const u = getUser();
 
   // ✅ Show name not email
-  if (headerAccountBtn){
-    const fullName = `${u.firstName || ""} ${u.lastName || ""}`.trim();
-    if (u.loggedIn){
-      headerAccountBtn.textContent = fullName ? `👤 ${fullName}` : t("accountBtnTop");
-    } else {
-      headerAccountBtn.textContent = t("accountBtnTop");
+    if (headerAccountBtn){
+      const name = String(u.firstName || "").trim();
+      if (u.loggedIn){
+        headerAccountBtn.textContent = name ? `👤 ${name}` : "👤 User";
+      } else {
+        headerAccountBtn.textContent = t("accountBtnTop");
+      }
     }
-  }
 
   if (headerSubscribeBtn){
     if (u.subscribed){
@@ -1150,7 +1151,12 @@ verifyCodeBtn?.addEventListener("click", async ()=>{
   verifyCodeBtn.textContent = currentLang==="ar" ? "⏳ جاري التحقق..." : "⏳ Verifying...";
 
   try{
-    const { r, data } = await verifyPhoneOTP(phone, code);
+    const firstName = String(document.getElementById("firstNameInput")?.value || "").trim();
+    if (firstName.length < 2){
+      authSetMsg(currentLang==="ar" ? "⚠️ أدخل الاسم" : "⚠️ Enter your name", false);
+      return;
+    }
+    const { r, data } = await verifyPhoneOTP(phone, code, firstName);
 
     if (!r.ok || data?.ok !== true){
       // ✅ رسائل خطأ حسب رد السيرفر (إذا بتبعت code / error)
@@ -1285,9 +1291,8 @@ async function startPhoneOTP(phone){
   return apiJSON("/api/auth/phone/send", { phone });
 }
 
-async function verifyPhoneOTP(phone, code){
-  // مثال: { ok:true } أو { ok:false, error:"..." }
-  return apiJSON("/api/auth/phone/verify", { phone, code });
+async function verifyPhoneOTP(phone, code, firstName){
+  return apiJSON("/api/auth/phone/verify", { phone, code, firstName });
 }
 
 function normalizePhone(p){
@@ -1990,75 +1995,54 @@ function renderSolvedOnly(p){
   const L = outLang();
   const rtl = (L === "ar" || L === "he");
 
-  let h = `<div class="card" dir="${rtl ? "rtl" : "ltr"}">
-    <h3>${currentLang === "ar" ? "✅ الحل (الإجابات الصحيحة)" : "✅ Solved Answers"}</h3>
+  const tfLabel = (c)=>{
+    c = String(c || "T").toUpperCase();
+    if (L === "ar") return c === "T" ? "صح" : "خطأ";
+    if (L === "he") return c === "T" ? "נכון" : "לא נכון";
+    return c === "T" ? "True" : "False";
+  };
+
+  let html = `
+    <div class="card" dir="${rtl ? "rtl" : "ltr"}">
+      <h3>✅ ${currentLang === "ar" ? "الإجابات النهائية" : "Final Answers"}</h3>
   `;
 
-  // MCQ solved
+  // اختيار من متعدد → الجواب فقط
   if (p.mcq && p.mcq.length){
-    h += `<div style="margin-top:10px;font-weight:800;opacity:.95">
-      ${currentLang==="ar" ? "اختيار من متعدد" : "Multiple Choice"}
-    </div>`;
-
-    h += p.mcq.map((q, idx)=>{
-      const correct = String(q.correct || "").toUpperCase();
-      const correctText = q.options?.[correct] || "";
-      return `
-        <div style="margin:12px 0;padding:12px;border-radius:14px;
-          background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);">
-          <div style="font-weight:800;margin-bottom:8px;">${idx+1}) ${escapeHtml(q.question)}</div>
-
-          <div style="opacity:.92;line-height:1.8">
-            ${Object.entries(q.options || {}).map(([k,v])=>{
-              const isC = (String(k).toUpperCase() === correct);
-              return `
-                <div style="padding:8px 10px;border-radius:12px;margin:6px 0;
-                  border:1px solid ${isC ? "rgba(34,197,94,.45)" : "rgba(255,255,255,.08)"};
-                  background:${isC ? "rgba(34,197,94,.10)" : "rgba(255,255,255,.02)"};">
-                  <b style="display:inline-block;min-width:22px">${escapeHtml(k)})</b>
-                  ${escapeHtml(v)}
-                  ${isC ? ` <span style="opacity:.9">✅</span>` : ""}
-                </div>
-              `;
-            }).join("")}
-          </div>
-
-          <div style="margin-top:8px;opacity:.95">
-            <b>${currentLang==="ar" ? "الإجابة:" : "Answer:"}</b>
-            ${escapeHtml(correct)}${correctText ? ` — ${escapeHtml(correctText)}` : ""}
-          </div>
+    p.mcq.forEach((q, i)=>{
+      const correctKey = q.correct;
+      const correctText = q.options?.[correctKey] || "";
+      html += `
+        <div style="margin:12px 0;padding:12px;border-radius:12px;
+          background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.35);">
+          <b>${i+1}) ${escapeHtml(q.question)}</b><br>
+          <span style="opacity:.9">
+            ${currentLang==="ar" ? "الإجابة:" : "Answer:"}
+            ${escapeHtml(correctText)}
+          </span>
         </div>
       `;
-    }).join("");
+    });
   }
 
-  // TF solved
+  // صح / خطأ → الجواب فقط
   if (p.tf && p.tf.length){
-    h += `<div style="margin-top:10px;font-weight:800;opacity:.95">
-      ${currentLang==="ar" ? "صح / خطأ" : "True / False"}
-    </div>`;
-
-    h += p.tf.map((q, idx)=>{
-      const c = String(q.correct || "T").toUpperCase();
-      const label =
-        (outLang()==="ar") ? (c==="T" ? "صح" : "خطأ") :
-        (outLang()==="he") ? (c==="T" ? "נכון" : "לא נכון") :
-        (c==="T" ? "True" : "False");
-
-      return `
-        <div style="margin:10px 0;padding:12px;border-radius:14px;
-          background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);">
-          <div style="font-weight:800;margin-bottom:8px;">${idx+1}) ${escapeHtml(q.statement)}</div>
-          <div style="opacity:.95">
-            <b>${currentLang==="ar" ? "الإجابة:" : "Answer:"}</b> ${escapeHtml(label)} ✅
-          </div>
+    p.tf.forEach((q, i)=>{
+      html += `
+        <div style="margin:12px 0;padding:12px;border-radius:12px;
+          background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.35);">
+          <b>${i+1}) ${escapeHtml(q.statement)}</b><br>
+          <span style="opacity:.9">
+            ${currentLang==="ar" ? "الإجابة:" : "Answer:"}
+            ${tfLabel(q.correct)}
+          </span>
         </div>
       `;
-    }).join("");
+    });
   }
 
-  h += `</div>`;
-  return h;
+  html += `</div>`;
+  return html;
 }
 
 
@@ -2250,12 +2234,10 @@ function renderMySummaries(){
   const list = loadSummaries();
   const title = currentLang==="ar" ? "📚 ملخصاتي" : "📚 My Summaries";
   const empty = currentLang==="ar" ? "لا يوجد ملخصات محفوظة بعد." : "No saved summaries yet.";
-  const backLabel = currentLang==="ar" ? "⬅ رجوع" : "⬅ Back";
 
   wrap.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
       <h2 style="margin:0">${title}</h2>
-      <button id="backFromSummaries" class="btn btn-soft" type="button">${backLabel}</button>
     </div>
 
     ${list.length === 0 ? `<div style="opacity:.8">${empty}</div>` : ""}
@@ -2365,27 +2347,7 @@ document.addEventListener("keydown",(e)=>{
   if (e.key==="Escape" && mySummariesWrap?.style.display==="block") showMainView();
 });
 
-// ✅ Back buttons inside My Summaries — always works
-document.addEventListener("click", (e) => {
-  const backList = e.target.closest("#backFromSummaries"); // رجوع من القائمة للرئيسية/الصفحة السابقة
-  if (backList) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation?.();
-    showMainView(); // يرجع للصفحة اللي كنت فيها قبل الملخصات
-    return;
-  }
-
-  const backToList = e.target.closest("#backToList"); // رجوع من فتح ملخص إلى قائمة الملخصات
-  if (backToList) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation?.();
-    renderMySummaries(); // يرجع لقائمة الملخصات
-    return;
-  }
-}, true); // ✅ capture
-
+كط
 /* =======================
    Language toggle (UI only)
 ======================= */
@@ -2401,7 +2363,7 @@ questionTypeEl?.addEventListener("change", ()=> updateProLocks());
 updateProLocks();
 
 // =======================
-// Feedback (Stars -> Formspree)
+// Feedback (Formspree) — NO browser alert, show inline success + clear fields
 // =======================
 const FORMSPREE_URL = "https://formspree.io/f/mvzgvjwz";
 
@@ -2412,23 +2374,7 @@ const fbSend  = document.getElementById("fbSend");
 const fbCount = document.getElementById("fbCount");
 const fbWebsite = document.getElementById("fbWebsite");
 const fbRatingInput = document.getElementById("fbRating");
-
-// optional success element (create it if you want)
 let feedbackSuccess = document.getElementById("feedbackSuccess");
-if (!feedbackSuccess) {
-  // إذا ما عندك عنصر نجاح، أنشئه تلقائيًا تحت الزر
-  const place = fbSend?.parentElement;
-  if (place) {
-    feedbackSuccess = document.createElement("p");
-    feedbackSuccess.id = "feedbackSuccess";
-    feedbackSuccess.style.display = "none";
-    feedbackSuccess.textContent =
-      currentLang === "ar"
-         ? "✅ شكرًا لك! تم إرسال الملاحظة."
-         : "✅ Thanks! Your feedback has been sent.";
-    place.appendChild(feedbackSuccess);
-  }
-}
 
 let fbRating = 0;
 
@@ -2452,25 +2398,33 @@ fbMsg?.addEventListener("input", ()=>{
   if (fbCount) fbCount.textContent = String((fbMsg.value || "").length);
 });
 
+function showFeedbackSuccess(text){
+  if (!feedbackSuccess) return;
+  feedbackSuccess.textContent = text;
+  feedbackSuccess.style.display = "block";
+  setTimeout(()=> feedbackSuccess && (feedbackSuccess.style.display="none"), 3500);
+}
+
 async function sendFeedbackFormspree(){
-  if (!fbSend || !fbMsg || !fbType || !fbRatingInput) return; // ✅ prevent crash if feedback UI not present
-  // honeypot ...
+  // honeypot
   if (fbWebsite && String(fbWebsite.value || "").trim()) return;
 
   const type = String(fbType?.value || "other");
   const msg  = String(fbMsg?.value || "").trim();
 
+  // ✅ بدل alert: استخدم showToast (إذا عندك) أو رجّع رسالة بسيطة
   if (!fbRating){
-    showToast(t("toastPickRating"), "err", 2500);
+    showToast?.(t?.("toastPickRating") || "⚠️ اختر تقييمًا", "err", 2400);
     return;
   }
   if (msg.length < 8){
-    showToast(t("toastWriteMsgMin"), "err", 2600);
+    showToast?.(t?.("toastWriteMsgMin") || "⚠️ اكتب رسالة قصيرة (على الأقل 8 أحرف)", "err", 2400);
     return;
   }
 
-  fbSend.disabled = true; // الآن آمن لأننا تأكدنا فوق
-
+  if (!fbSend) return;
+  fbSend.disabled = true;
+  fbSend.textContent = (currentLang === "ar") ? "⏳ جاري الإرسال..." : "⏳ Sending...";
 
   try{
     const fd = new FormData();
@@ -2487,30 +2441,34 @@ async function sendFeedbackFormspree(){
     });
 
     if (!res.ok){
-      showToast(t("toastFeedbackErr"), "err", 2600);
+      showToast?.(t?.("toastFeedbackErr") || "❌ خطأ، جرّب مرة أخرى", "err", 2600);
       return;
     }
 
-    // reset UI
+    // ✅ reset UI
     setStarsUI(0);
     if (fbMsg) fbMsg.value = "";
     if (fbCount) fbCount.textContent = "0";
 
-    if (feedbackSuccess) {
-      feedbackSuccess.style.display = "block";
-      setTimeout(() => (feedbackSuccess.style.display = "none"), 4000);
-    }
-      showToast(t("toastFeedbackSent"), "ok", 2400);
+    // ✅ نجاح تحت الزر
+    showFeedbackSuccess(
+      currentLang === "ar"
+        ? "✅ شكرًا لك! تم إرسال الملاحظة."
+        : "✅ Thanks! Your feedback has been sent."
+    );
+
+    showToast?.(t?.("toastFeedbackSent") || "🙏 شكرًا! وصلتنا ملاحظتك", "ok", 2200);
+
   }catch(e){
     console.error(e);
-    showToast(t("toastConnErr"), "err", 2600);
+    showToast?.(t?.("toastConnErr") || "❌ خطأ اتصال", "err", 2600);
   }finally{
     fbSend.disabled = false;
+    fbSend.textContent = (currentLang === "ar") ? "إرسال" : "Send";
   }
 }
 
 fbSend?.addEventListener("click", sendFeedbackFormspree);
-
 /* =======================
    Open App directly if ?app=1
 ======================= */
@@ -2707,16 +2665,6 @@ document.addEventListener("click", (e) => {
   ta.dispatchEvent(new Event("input", { bubbles: true }));
   ta.focus();
 });
-document.getElementById("startBtn")?.addEventListener("click", () => {
-  const landing = document.getElementById("landing");
-  const app = document.getElementById("app");
-  if (landing) landing.style.display = "none";
-  if (app) app.style.display = "block";
-
-  document.getElementById("homeView") && (document.getElementById("homeView").style.display = "block");
-  document.getElementById("generateView") && (document.getElementById("generateView").style.display = "none");
-  document.getElementById("solveView") && (document.getElementById("solveView").style.display = "none");
-});
 const qc = document.getElementById("questionCount");
 const qv = document.getElementById("qCountValue");
 if (qc && qv) {
@@ -2818,4 +2766,59 @@ out && (out.innerHTML = renderSolvedOnly(parsed));
     out && (out.innerHTML = "");
     showSolveToast(currentLang==="ar" ? "❌ خطأ اتصال" : "❌ Connection error", "err", 3200);
   }
+});
+document.addEventListener("DOMContentLoaded", () => {
+  const fbSend = document.getElementById("fbSend");
+  const fbMsg = document.getElementById("fbMsg");
+  const fbType = document.getElementById("fbType");
+  const fbStars = document.getElementById("fbStars");
+  const fbRating = document.getElementById("fbRating");
+  const fbCount = document.getElementById("fbCount");
+  const feedbackSuccess = document.getElementById("feedbackSuccess");
+
+  if (!fbSend) return;
+
+  let ratingValue = 0;
+
+  // ⭐ اختيار التقييم
+  fbStars?.addEventListener("click", (e) => {
+    const star = e.target.closest(".star");
+    if (!star) return;
+
+    ratingValue = Number(star.dataset.v);
+    fbRating.value = ratingValue;
+
+    fbStars.querySelectorAll(".star").forEach(s => {
+      s.classList.toggle("active", Number(s.dataset.v) <= ratingValue);
+    });
+  });
+
+  // 🔢 عداد الأحرف
+  fbMsg?.addEventListener("input", () => {
+    fbCount.textContent = fbMsg.value.length;
+  });
+
+  // 📩 إرسال
+  fbSend.addEventListener("click", async () => {
+    if (!ratingValue || fbMsg.value.trim().length < 3) {
+      alert("اكتب رسالة واختر تقييم");
+      return;
+    }
+
+    // (هنا ممكن يكون عندك إرسال Formspree — نخليه مثل ما هو)
+    // await sendFeedbackFormspree();
+
+    // ✅ نجاح الإرسال (UI فقط)
+    fbMsg.value = "";
+    fbCount.textContent = "0";
+    fbRating.value = "0";
+    ratingValue = 0;
+
+    fbStars.querySelectorAll(".star").forEach(s => s.classList.remove("active"));
+
+    feedbackSuccess.style.display = "block";
+    setTimeout(() => {
+      feedbackSuccess.style.display = "none";
+    }, 3000);
+  });
 });

@@ -2981,7 +2981,7 @@ body.lang-en .feedback-head h2 {
   line-height: 1.6;
   max-width: 92%;
 }
-
+ 
 
 /* Hover ناعم */
 @media (hover:hover){
@@ -2998,4 +2998,102 @@ body.lang-en .feedback-head h2 {
   .home-tile{ padding: 16px; }
   .home-tile-title{ font-size: 17.5px; }
   .home-tile-desc{ font-size: 13px; }
+}
+/* =========================
+   Header Mobile Fix (safe)
+   affects <= 720px only
+========================= */
+@media (max-width: 720px){
+
+  /* اجعل الهيدر يلف وينزل سطور بشكل مرتب */
+  #appHeader{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px;
+    padding: 10px 12px;
+  }
+
+  /* خفف مساحة الأعمدة */
+  #appHeader .header-right,
+  #appHeader .header-center,
+  #appHeader .header-left{
+    min-width: 0;
+  }
+
+  /* الترتيب:
+     - القائمة + الرجوع فوق
+     - العنوان بالوسط لحاله
+     - Free + اللغة تحت
+  */
+  #appHeader .header-right{ order: 1; }
+  #appHeader .header-center{ order: 2; width:100%; }
+  #appHeader .header-left{ order: 3; width:100%; }
+
+  /* العنوان بالنص ويصير أصغر شوي */
+  #appHeader .header-center{
+    display:flex;
+    justify-content:center;
+    text-align:center;
+  }
+  #appHeader .center-title{
+    line-height: 1.1;
+  }
+  #appHeader .center-title .title-desc-ar,
+  #appHeader .center-title .title-desc-en{
+    font-size: 12px;
+    opacity: .85;
+  }
+
+  /* زر الرجوع ما يزحم */
+  #backHomeBtn{
+    font-size: 12px;
+    padding: 10px 12px;
+  }
+
+  /* صف Free + اللغة يصير مرتب بعرض كامل */
+  #appHeader .top-pills{
+    display:flex;
+    width:100%;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:space-between;
+  }
+
+  #planStatus{
+    flex: 0 0 auto;
+  }
+
+  #langBtn{
+    flex: 1;
+    min-width: 160px;
+  }
+}
+/* ===== Landing logo overlap fix (mobile only) ===== */
+@media (max-width: 520px){
+
+  /* صغّر المربع حق اللوجو وحرّكه شوي لفوق/للزاوية */
+  .landing-logo-corner{
+    width: 86px !important;
+    height: 86px !important;
+    top: 14px !important;
+    right: 14px !important;
+    left: auto !important;
+  }
+
+  /* صغّر الصورة داخل المربع */
+  .landing-logo-img{
+    width: 70% !important;
+    height: 70% !important;
+  }
+
+  /* أعطِ مساحة للعنوان حتى ما يدخل عليه اللوجو */
+  .landing-card{
+    padding-top: 130px !important;
+  }
+
+  /* لو كلمة وضوح كبيرة كثير بالموبايل، خفّفها شوي */
+  .title .brand-inline{
+    font-size: 40px !important;
+  }
 }

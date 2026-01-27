@@ -492,19 +492,22 @@
 
 </div>
 
-        <div class="controls" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:12px;">
-    <button id="generateBtn" type="button" class="btn btn-primary btn-wide"
-      style="flex:1;min-width:200px;"
-      data-i18n="generateBtn"
-      data-i18n-icon="📚">
-    </button>
+<div class="controls" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:12px;">
+  <button id="generateBtn"
+          type="button"
+          class="btn btn-primary btn-wide"
+          style="flex:1;min-width:200px;"
+          data-i18n="generateBtn"
+          data-i18n-icon="📚"></button>
 
-        <div id="toast" class="toast" style="display:none;"></div>
-      </section>
+  <div id="toast" class="toast" style="display:none;"></div>
+</div> <!-- ✅ CLOSE controls -->
 
-      <section class="output" id="output"></section>
+</section> <!-- ✅ CLOSE panel -->
 
-    </section>
+<section class="output" id="output"></section>
+
+</section> <!-- ✅ CLOSE generateView -->
 <!-- ============ MY SUMMARIES VIEW ============ -->
 <section id="mySummariesView" style="display:none;margin-top:14px;">
   <section id="mySummaries" class="output"></section>
@@ -534,6 +537,19 @@
 
 <!-- STEP 1: phone -->
 <div id="phoneStep">
+
+  <!-- ✅ Name -->
+<div class="form-row">
+  <label class="field-label" for="firstNameInput">الاسم</label>
+  <input
+    id="firstNameInput"
+    class="input"
+    type="text"
+    placeholder="الاسم"
+    autocomplete="given-name"
+  />
+</div>
+
 
   <div class="form-row">
     <label class="field-label" for="countryCode">الدولة</label>
@@ -643,6 +659,7 @@
       <option value="+967">🇾🇪 Yemen (+967)</option>
     </select>
   </div>
+
 
 
  <div class="form-row">
